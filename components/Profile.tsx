@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Link as LinkIcon } from 'lucide-react';
+import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Link as LinkIcon, Phone, Lock, LogIn, UserPlus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -8,7 +8,7 @@ import { auth, googleProvider, facebookProvider } from '../services/firebaseConf
 import * as firebaseAuth from "firebase/auth";
 
 // Cast to any to avoid "has no exported member" errors
-const { signInWithPopup, signOut } = firebaseAuth as any;
+const { signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } = firebaseAuth as any;
 
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
@@ -23,13 +23,19 @@ export const Profile: React.FC = () => {
     birthYear: '',
     hometown: '',
     address: '',
-    company: ''
+    company: '',
+    phoneNumber: ''
   });
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const isOnline = useOnlineStatus();
   
+  // Auth State
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+
   // Update state
   const APP_VERSION = "1.0.0";
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'latest' | 'available' | 'downloading'>('idle');
@@ -43,29 +49,93 @@ export const Profile: React.FC = () => {
     setEditForm(profile);
   }, [profile]);
 
-  // Handle Login and Data Separation
-  const login = async (providerName: 'google' | 'facebook') => {
+  const handleEmailAuth = async () => {
     if (!isOnline) return;
+    if (!emailInput || !passwordInput) {
+        alert("Please enter email and password.");
+        return;
+    }
     setIsSyncing(true);
 
     try {
-        const authInstance = auth;
-        if (authInstance && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
-            const provider = providerName === 'google' ? googleProvider : facebookProvider;
-            const result = await signInWithPopup(authInstance, provider!);
-            const user = result.user;
-            
-            // 1. SET SESSION: Save the unique email/ID to separate data
+        let user;
+        if (auth && (auth as any).apiKey !== "YOUR_API_KEY_HERE") {
+             // Real Firebase Auth
+            if (authMode === 'register') {
+                const credential = await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
+                user = credential.user;
+            } else {
+                const credential = await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+                user = credential.user;
+            }
+        } else {
+            // Simulated Auth (Fallback)
+             // In a real app, you would never do this. This is just to satisfy the offline/demo requirement.
+             // We treat the email as the unique ID.
+             user = {
+                 email: emailInput,
+                 uid: emailInput, // Use email as UID for simulation
+                 displayName: emailInput.split('@')[0],
+                 photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${emailInput}`
+             }
+             // Simulate network delay
+             await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        if (user) {
+             // 1. SET SESSION: Save the unique email/ID to separate data
             const userId = user.email || user.uid;
             localStorage.setItem(SESSION_KEY, userId);
             
             // 2. TRIGGER SWITCH: Notify hooks to switch to the user's data bucket
             window.dispatchEvent(new Event('auth-change'));
 
-            // 3. UPDATE DATA: Now we are writing to "email_user_profile"
+            // 3. UPDATE DATA
             setTimeout(() => {
                 setProfile({
                     ...profile, // Keep existing fields if they were loaded from storage
+                    name: user.displayName || 'User',
+                    email: user.email || '',
+                    avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
+                    provider: 'email',
+                    isLoggedIn: true,
+                });
+                setIsSyncing(false);
+                setEmailInput('');
+                setPasswordInput('');
+            }, 100);
+        }
+
+    } catch (error: any) {
+        console.error("Auth Error:", error);
+        alert(`${authMode === 'login' ? 'Login' : 'Registration'} failed: ${error.message}`);
+        setIsSyncing(false);
+    }
+  };
+
+  // Handle Login and Data Separation
+  const loginSocial = async (providerName: 'google' | 'facebook') => {
+    if (!isOnline) return;
+    setIsSyncing(true);
+
+    try {
+        const authInstance = auth;
+        if (authInstance && (authInstance as any).apiKey !== "YOUR_API_KEY_HERE" && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
+            const provider = providerName === 'google' ? googleProvider : facebookProvider;
+            const result = await signInWithPopup(authInstance, provider!);
+            const user = result.user;
+            
+            // 1. SET SESSION
+            const userId = user.email || user.uid;
+            localStorage.setItem(SESSION_KEY, userId);
+            
+            // 2. TRIGGER SWITCH
+            window.dispatchEvent(new Event('auth-change'));
+
+            // 3. UPDATE DATA
+            setTimeout(() => {
+                setProfile({
+                    ...profile,
                     name: user.displayName || 'User',
                     email: user.email || '',
                     avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
@@ -78,14 +148,9 @@ export const Profile: React.FC = () => {
         } else {
             // FALLBACK: Demo mode
             console.warn("Chạy chế độ Demo login (Chưa config Firebase)");
-            
-            // Mock Data
             const demoEmail = providerName === 'google' ? 'demo_google@gmail.com' : 'demo_fb@facebook.com';
             
-            // 1. SET SESSION
             localStorage.setItem(SESSION_KEY, demoEmail);
-            
-            // 2. TRIGGER SWITCH
             window.dispatchEvent(new Event('auth-change'));
 
             setTimeout(() => {
@@ -98,7 +163,8 @@ export const Profile: React.FC = () => {
                     birthYear: '1995',
                     hometown: 'Hanoi, Vietnam',
                     address: '123 Street, City',
-                    company: 'NanoTech Inc.'
+                    company: 'NanoTech Inc.',
+                    phoneNumber: '0123456789'
                 });
                 setIsSyncing(false);
             }, 1000);
@@ -112,7 +178,7 @@ export const Profile: React.FC = () => {
 
   const logout = () => {
     setIsSyncing(true);
-    if (auth) {
+    if (auth && (auth as any).apiKey !== "YOUR_API_KEY_HERE") {
         signOut(auth).catch(console.error);
     }
 
@@ -129,6 +195,7 @@ export const Profile: React.FC = () => {
         // 4. Reset local UI state
         setIsEditing(false);
         setIsSyncing(false);
+        setAuthMode('login'); // Reset to login screen
     }, 500);
   };
 
@@ -184,10 +251,11 @@ export const Profile: React.FC = () => {
   };
 
   const exportProfileExcel = () => {
-    const headers = ["Name", "Email", "Avatar", "Provider", "Birth Year", "Hometown", "Address", "Company"];
+    const headers = ["Name", "Email", "Phone", "Avatar", "Provider", "Birth Year", "Hometown", "Address", "Company"];
     const row = [
         `"${profile.name}"`, 
         profile.email, 
+        `"${profile.phoneNumber || ''}"`,
         profile.avatar,
         profile.provider, 
         profile.birthYear || '', 
@@ -209,6 +277,7 @@ export const Profile: React.FC = () => {
         <img src="${profile.avatar}" width="100" style="border-radius:50%; margin-bottom: 20px;" />
         <table border="1" style="border-collapse:collapse;width:100%; margin-top: 20px;">
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Email</td><td style="padding:10px;">${profile.email}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.phoneNumber}</td><td style="padding:10px;">${profile.phoneNumber || ''}</td></tr>
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Avatar URL</td><td style="padding:10px;">${profile.avatar}</td></tr>
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.birthYear}</td><td style="padding:10px;">${profile.birthYear || ''}</td></tr>
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.hometown}</td><td style="padding:10px;">${profile.hometown || ''}</td></tr>
@@ -233,6 +302,7 @@ export const Profile: React.FC = () => {
 
   const profileFields = [
     { label: t.birthYear, key: 'birthYear' as keyof UserProfile, icon: Calendar },
+    { label: t.phoneNumber, key: 'phoneNumber' as keyof UserProfile, icon: Phone },
     { label: t.hometown, key: 'hometown' as keyof UserProfile, icon: MapPin },
     { label: t.address, key: 'address' as keyof UserProfile, icon: Home },
     { label: t.company, key: 'company' as keyof UserProfile, icon: Briefcase }
@@ -274,9 +344,13 @@ export const Profile: React.FC = () => {
                         <div className="absolute bottom-1 right-1 bg-white p-1 rounded-full shadow-sm">
                             {profile.provider === 'facebook' ? (
                                 <Facebook size={20} className="text-[#1877F2]" fill="currentColor"/>
-                            ) : (
+                            ) : profile.provider === 'google' ? (
                                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5">
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G" className="w-full h-full"/>
+                                </div>
+                            ) : (
+                                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-slate-500">
+                                    <Mail size={12}/>
                                 </div>
                             )}
                         </div>
@@ -480,12 +554,12 @@ export const Profile: React.FC = () => {
           </div>
         ) : (
           <div className="w-full max-w-sm space-y-4 animate-fade-in">
-             <div className="text-center mb-8">
-                 <div className="w-20 h-20 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+             <div className="text-center mb-6">
+                 <div className="w-20 h-20 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                      <User size={32} />
                  </div>
                  <h3 className="text-lg font-bold text-slate-700">Welcome to Daily Task</h3>
-                 <p className="text-slate-400 text-sm">Sign in with Google to sync tasks and enable Gemini AI features.</p>
+                 <p className="text-slate-400 text-sm">Sign in to sync your data.</p>
              </div>
             
             {!isOnline && (
@@ -494,8 +568,57 @@ export const Profile: React.FC = () => {
                  </div>
             )}
 
+            {/* Email/Password Auth Form */}
+            <div className="bg-white p-5 rounded-2xl shadow-md border border-slate-100 space-y-3">
+                 <div className="relative">
+                    <Mail size={16} className="absolute left-3 top-3.5 text-slate-400"/>
+                    <input 
+                        type="email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="Email"
+                        className="w-full pl-9 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm"
+                        disabled={!isOnline}
+                    />
+                 </div>
+                 <div className="relative">
+                    <Lock size={16} className="absolute left-3 top-3.5 text-slate-400"/>
+                    <input 
+                        type="password"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder={t.password}
+                        className="w-full pl-9 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm"
+                        disabled={!isOnline}
+                    />
+                 </div>
+                 <button 
+                    onClick={handleEmailAuth}
+                    disabled={!isOnline || !emailInput || !passwordInput || isSyncing}
+                    className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+                 >
+                     {authMode === 'login' ? <LogIn size={18}/> : <UserPlus size={18}/>}
+                     {authMode === 'login' ? t.login : t.register}
+                 </button>
+                 
+                 <div className="text-center">
+                    <button 
+                        onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                        className="text-xs text-orange-500 font-bold hover:underline"
+                    >
+                        {authMode === 'login' ? t.noAccount : t.haveAccount}
+                    </button>
+                 </div>
+            </div>
+
+            <div className="flex items-center gap-4 py-2">
+                <div className="flex-1 h-px bg-slate-200"></div>
+                <span className="text-xs text-slate-400 font-medium uppercase">Or</span>
+                <div className="flex-1 h-px bg-slate-200"></div>
+            </div>
+
              <button 
-                onClick={() => login('google')}
+                onClick={() => loginSocial('google')}
                 disabled={!isOnline}
                 className={`w-full py-3.5 border rounded-xl shadow-sm font-bold flex items-center justify-center gap-3 transition-all relative overflow-hidden group ${!isOnline ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95'}`}
              >
@@ -505,7 +628,7 @@ export const Profile: React.FC = () => {
              </button>
 
              <button 
-                onClick={() => login('facebook')}
+                onClick={() => loginSocial('facebook')}
                 disabled={!isOnline}
                 className={`w-full py-3.5 rounded-xl shadow-md font-bold flex items-center justify-center gap-3 transition-all relative overflow-hidden ${!isOnline ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[#1877F2] text-white hover:bg-[#166fe5] active:scale-95'}`}
              >

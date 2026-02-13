@@ -27,12 +27,13 @@ export interface UserProfile {
   name: string;
   email: string;
   avatar: string;
-  provider: 'google' | 'facebook' | null;
+  provider: 'google' | 'facebook' | 'email' | null;
   isLoggedIn: boolean;
   birthYear?: string;
   hometown?: string;
   address?: string;
   company?: string;
+  phoneNumber?: string;
 }
 
 export interface DailyReflection {

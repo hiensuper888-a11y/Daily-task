@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, CheckCircle, Circle, Calendar, ListFilter, Archive, TrendingUp, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, ArrowDown, ArrowUp, Minus, ArrowUpDown, Filter } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Circle, Calendar, ListFilter, Archive, TrendingUp, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, ArrowDown, ArrowUp, Minus, ArrowUpDown, Search, SlidersHorizontal, ArrowDownNarrowWide, ArrowUpNarrowWide, XCircle } from 'lucide-react';
 import { Task, Subtask, FilterType, Priority } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,9 +9,16 @@ export const TodoList: React.FC = () => {
   const [tasks, setTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   const [inputValue, setInputValue] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
-  const [filter, setFilter] = useState<FilterType>('all');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  
+  // Advanced Filtering & Sorting State
+  const [filterStatus, setFilterStatus] = useState<FilterType>('all');
+  const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'date'>('priority');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   // State for subtask input [taskId]: value
   const [subtaskInputs, setSubtaskInputs] = useState<Record<number, string>>({});
@@ -48,13 +55,6 @@ export const TodoList: React.FC = () => {
   const goToToday = () => {
     setSelectedDate(new Date());
   };
-
-  const tasksForSelectedDate = useMemo(() => {
-    return tasks.filter(task => {
-        const taskDate = new Date(task.createdAt);
-        return taskDate.toDateString() === selectedDate.toDateString();
-    });
-  }, [tasks, selectedDate]);
 
   const addTask = () => {
     if (inputValue.trim() === '') return;
@@ -213,35 +213,70 @@ export const TodoList: React.FC = () => {
   };
 
   const archiveCompleted = () => {
-    const idsToArchive = filteredTasks.filter(t => t.completed).map(t => t.id);
+    const idsToArchive = processedTasks.filter(t => t.completed).map(t => t.id);
     setTasks(tasks.map(task => idsToArchive.includes(task.id) ? { ...task, archived: true } : task));
   };
 
-  const visibleTasks = tasksForSelectedDate.filter(t => !t.archived);
-  
-  // Sorting
-  visibleTasks.sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+  // ----- FILTERING & SORTING LOGIC -----
+  const processedTasks = useMemo(() => {
+    // 1. Initial filter by date and archive status
+    let result = tasks.filter(task => {
+        const taskDate = new Date(task.createdAt);
+        return taskDate.toDateString() === selectedDate.toDateString() && !task.archived;
+    });
 
-      if (sortBy === 'priority') {
-          const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, undefined: 0 };
-          const pA = priorityOrder[a.priority || 'undefined'];
-          const pB = priorityOrder[b.priority || 'undefined'];
-          if (pA !== pB) return pB - pA;
-      }
-      return b.id - a.id;
-  });
+    // 2. Filter by Status
+    if (filterStatus === 'active') {
+        result = result.filter(t => !t.completed);
+    } else if (filterStatus === 'completed') {
+        result = result.filter(t => t.completed);
+    }
 
-  const totalTasks = visibleTasks.length;
-  const totalProgressSum = visibleTasks.reduce((sum, task) => sum + task.progress, 0);
+    // 3. Filter by Priority
+    if (filterPriority !== 'all') {
+        result = result.filter(t => t.priority === filterPriority);
+    }
+
+    // 4. Filter by Search Query
+    if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        result = result.filter(t => t.text.toLowerCase().includes(q));
+    }
+
+    // 5. Sorting
+    result.sort((a, b) => {
+        // Always keep completed tasks at the bottom for better UX
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+
+        let cmp = 0;
+        if (sortBy === 'priority') {
+            const pVal = { high: 3, medium: 2, low: 1, undefined: 0 };
+            const valA = pVal[a.priority || 'undefined'] || 0;
+            const valB = pVal[b.priority || 'undefined'] || 0;
+            cmp = valA - valB;
+        } else {
+            // Sort by Date
+            cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
+
+        return sortDirection === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [tasks, selectedDate, filterStatus, filterPriority, searchQuery, sortBy, sortDirection]);
+
+  // Statistics for the header
+  const tasksForSelectedDate = useMemo(() => {
+    return tasks.filter(task => {
+        const taskDate = new Date(task.createdAt);
+        return taskDate.toDateString() === selectedDate.toDateString() && !task.archived;
+    });
+  }, [tasks, selectedDate]);
+
+  const totalTasks = tasksForSelectedDate.length;
+  const totalProgressSum = tasksForSelectedDate.reduce((sum, task) => sum + task.progress, 0);
   const overallProgress = totalTasks === 0 ? 0 : Math.round(totalProgressSum / totalTasks);
-  const completedCount = visibleTasks.filter(t => t.completed).length;
-
-  const filteredTasks = visibleTasks.filter(task => {
-    if (filter === 'active') return !task.completed;
-    if (filter === 'completed') return task.completed;
-    return true;
-  });
+  const completedCount = tasksForSelectedDate.filter(t => t.completed).length;
 
   return (
     <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent">
@@ -352,31 +387,97 @@ export const TodoList: React.FC = () => {
             </div>
 
             {/* Filters Bar */}
-            <div className="flex items-center justify-between gap-4 py-1 overflow-x-auto custom-scrollbar">
-                 <div className="flex p-1 bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm">
-                    {(['all', 'active', 'completed'] as FilterType[]).map((f) => (
+            <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar py-1">
+                    {/* Status Toggle */}
+                    <div className="flex p-1 bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm shrink-0">
+                        {(['all', 'active', 'completed'] as FilterType[]).map((f) => (
+                            <button 
+                            key={f}
+                            onClick={() => setFilterStatus(f)}
+                            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all capitalize ${
+                            filterStatus === f 
+                            ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
+                            : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                            }`}
+                        >
+                            {f === 'all' ? t.all : f === 'active' ? t.active : t.completed}
+                        </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {/* Advanced Filters Toggle */}
                         <button 
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all capitalize ${
-                        filter === f 
-                        ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                        }`}
-                    >
-                        {f === 'all' ? t.all : f === 'active' ? t.active : t.completed}
-                    </button>
-                    ))}
+                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                            className={`p-2.5 rounded-xl text-xs font-bold transition-all border shadow-sm flex items-center justify-center ${
+                                showAdvancedFilters || searchQuery || filterPriority !== 'all'
+                                ? 'bg-white text-blue-600 border-blue-200'
+                                : 'bg-white/60 text-slate-500 border-white/40 hover:bg-white'
+                            }`}
+                        >
+                            <SlidersHorizontal size={18} />
+                            {(searchQuery || filterPriority !== 'all') && (
+                                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white translate-x-1 -translate-y-1"></span>
+                            )}
+                        </button>
+
+                        {/* Sort Controls */}
+                        <div className="flex items-center bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm p-1">
+                            <button 
+                                onClick={() => setSortBy(sortBy === 'priority' ? 'date' : 'priority')}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-white hover:text-blue-600 transition-all"
+                            >
+                                <span className="text-blue-600">{sortBy === 'priority' ? t.sortPriority : t.sortDate}</span>
+                            </button>
+                            <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                            <button
+                                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-white transition-colors"
+                            >
+                                {sortDirection === 'asc' ? <ArrowUpNarrowWide size={16}/> : <ArrowDownNarrowWide size={16}/>}
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <button 
-                    onClick={() => setSortBy(prev => prev === 'priority' ? 'date' : 'priority')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-white/60 backdrop-blur-md border border-white/40 text-slate-600 hover:bg-white hover:text-blue-600 transition-all shadow-sm group whitespace-nowrap"
-                >
-                    <ArrowUpDown size={14} className="text-slate-400 group-hover:text-blue-500 transition-colors"/>
-                    <span className="text-slate-500">{t.sortBy}:</span>
-                    <span className="text-blue-600">{sortBy === 'priority' ? t.sortPriority : t.sortDate}</span>
-                </button>
+                {/* Advanced Filters Drawer */}
+                {showAdvancedFilters && (
+                    <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-3 border border-white/50 shadow-sm animate-fade-in grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="relative">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input 
+                                type="text" 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search tasks..." 
+                                className="w-full pl-9 pr-8 py-2 bg-white rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400"
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
+                                    <XCircle size={14} fill="currentColor" className="bg-white rounded-full"/>
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 p-1">
+                            <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Priority:</span>
+                            {(['all', 'high', 'medium', 'low'] as const).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setFilterPriority(p)}
+                                    className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                        filterPriority === p 
+                                        ? (p === 'all' ? 'bg-slate-800 text-white' : p === 'high' ? 'bg-rose-500 text-white' : p === 'medium' ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white')
+                                        : 'text-slate-500 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
          </div>
       </div>
@@ -384,16 +485,18 @@ export const TodoList: React.FC = () => {
       {/* List */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 custom-scrollbar space-y-4">
         <div className="max-w-4xl mx-auto w-full pb-24 md:pb-8">
-            {filteredTasks.length === 0 ? (
+            {processedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <div className="bg-slate-100 p-6 rounded-full mb-4 ring-8 ring-slate-50">
                     <ListFilter size={40} className="opacity-40" />
                 </div>
-                <p className="text-base font-medium text-slate-500">{t.emptyTasks}</p>
+                <p className="text-base font-medium text-slate-500">
+                    {searchQuery ? "No matching tasks found." : t.emptyTasks}
+                </p>
             </div>
             ) : (
             <ul className="space-y-4">
-                {filteredTasks.map((task) => {
+                {processedTasks.map((task) => {
                     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
                     const priorityColor = getPriorityColor(task.priority);
 
