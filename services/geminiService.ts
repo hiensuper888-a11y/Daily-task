@@ -1,5 +1,8 @@
 import { GoogleGenAI, Chat } from "@google/genai";
 
+// Declare process for TypeScript since @types/node might not be present
+declare const process: { env: { API_KEY: string } };
+
 // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
