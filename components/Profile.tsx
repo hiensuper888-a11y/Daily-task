@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase } from 'lucide-react';
+import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Link as LinkIcon } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -38,6 +38,7 @@ export const Profile: React.FC = () => {
   // Temporary state for editing
   const [editForm, setEditForm] = useState(profile);
 
+  // Sync editForm with profile whenever profile changes (e.g. after login or storage update)
   useEffect(() => {
     setEditForm(profile);
   }, [profile]);
@@ -62,7 +63,6 @@ export const Profile: React.FC = () => {
             window.dispatchEvent(new Event('auth-change'));
 
             // 3. UPDATE DATA: Now we are writing to "email_user_profile"
-            // We use a timeout to ensure the hook has switched keys
             setTimeout(() => {
                 setProfile({
                     ...profile, // Keep existing fields if they were loaded from storage
@@ -129,13 +129,11 @@ export const Profile: React.FC = () => {
         // 4. Reset local UI state
         setIsEditing(false);
         setIsSyncing(false);
-        
-        // Reload page to ensure clean state (optional but safer for full reset)
-        // window.location.reload(); 
     }, 500);
   };
 
   const handleSave = () => {
+    // This updates the RealtimeStorage, which persists it to the specific user's key
     setProfile(editForm);
     setIsEditing(false);
   };
@@ -148,10 +146,7 @@ export const Profile: React.FC = () => {
   const handleCheckUpdate = () => {
       if (!isOnline) return;
       setUpdateStatus('checking');
-      
-      // Simulate network request
       setTimeout(() => {
-          // Demo: Always find an update if we are on 1.0.0 for demonstration
           if (APP_VERSION === "1.0.0") {
               setUpdateStatus('available');
           } else {
@@ -163,8 +158,6 @@ export const Profile: React.FC = () => {
   const handleDownloadUpdate = () => {
     setUpdateStatus('downloading');
     setDownloadProgress(0);
-    
-    // Simulate download progress
     const interval = setInterval(() => {
       setDownloadProgress(prev => {
         if (prev >= 100) {
@@ -191,10 +184,11 @@ export const Profile: React.FC = () => {
   };
 
   const exportProfileExcel = () => {
-    const headers = ["Name", "Email", "Provider", "Birth Year", "Hometown", "Address", "Company"];
+    const headers = ["Name", "Email", "Avatar", "Provider", "Birth Year", "Hometown", "Address", "Company"];
     const row = [
         `"${profile.name}"`, 
         profile.email, 
+        profile.avatar,
         profile.provider, 
         profile.birthYear || '', 
         `"${profile.hometown || ''}"`, 
@@ -212,8 +206,10 @@ export const Profile: React.FC = () => {
       <head><meta charset="utf-8"><title>Profile</title></head>
       <body style="font-family: Arial, sans-serif;">
         <h1 style="color: #f97316;">${t.profile} - ${profile.name}</h1>
+        <img src="${profile.avatar}" width="100" style="border-radius:50%; margin-bottom: 20px;" />
         <table border="1" style="border-collapse:collapse;width:100%; margin-top: 20px;">
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Email</td><td style="padding:10px;">${profile.email}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Avatar URL</td><td style="padding:10px;">${profile.avatar}</td></tr>
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.birthYear}</td><td style="padding:10px;">${profile.birthYear || ''}</td></tr>
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.hometown}</td><td style="padding:10px;">${profile.hometown || ''}</td></tr>
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.address}</td><td style="padding:10px;">${profile.address || ''}</td></tr>
@@ -258,15 +254,23 @@ export const Profile: React.FC = () => {
       </div>
 
       <div className="flex-1 p-6 flex flex-col items-center justify-start overflow-y-auto custom-scrollbar pb-24">
-        {/* Check direct session key for initial render flicker prevention, but rely on profile.isLoggedIn for logic */}
         {profile.isLoggedIn ? (
           <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 flex flex-col animate-fade-in space-y-8">
             
             {/* User Details Section */}
             <div>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 border-b border-slate-100 pb-8">
-                    <div className="relative shrink-0">
-                        <img src={profile.avatar} alt="Avatar" className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-orange-100 shadow-sm object-cover" />
+                    <div className="relative shrink-0 group">
+                        <img 
+                            src={editForm.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} 
+                            alt="Avatar" 
+                            className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-orange-100 shadow-sm object-cover bg-white" 
+                        />
+                        {isEditing && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                <Camera size={24} className="text-white"/>
+                            </div>
+                        )}
                         <div className="absolute bottom-1 right-1 bg-white p-1 rounded-full shadow-sm">
                             {profile.provider === 'facebook' ? (
                                 <Facebook size={20} className="text-[#1877F2]" fill="currentColor"/>
@@ -281,25 +285,45 @@ export const Profile: React.FC = () => {
                     <div className="text-center sm:text-left flex-1 w-full">
                         {isEditing ? (
                             <div className="space-y-3">
-                                <label className="block text-xs font-bold text-slate-400 uppercase">Tên hiển thị</label>
-                                <input 
-                                    name="name" 
-                                    value={editForm.name} 
-                                    onChange={handleInputChange} 
-                                    className="w-full text-xl font-bold border-b border-slate-200 focus:border-orange-500 focus:outline-none py-1 bg-slate-50 rounded px-2" 
-                                    placeholder="Name" 
-                                />
-                                
-                                <label className="block text-xs font-bold text-slate-400 uppercase mt-2">Email</label>
-                                <div className="relative">
-                                    <Mail size={16} className="absolute left-2 top-2.5 text-slate-400"/>
-                                    <input 
-                                        name="email" 
-                                        value={editForm.email} 
-                                        onChange={handleInputChange} 
-                                        className="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm text-slate-600"
-                                        placeholder="Email"
-                                    />
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Display Name</label>
+                                        <input 
+                                            name="name" 
+                                            value={editForm.name} 
+                                            onChange={handleInputChange} 
+                                            className="w-full text-lg font-bold border-b-2 border-slate-200 focus:border-orange-500 focus:outline-none py-1 bg-slate-50 rounded px-2 text-slate-800" 
+                                            placeholder="Your Name" 
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Email Address</label>
+                                        <div className="relative">
+                                            <Mail size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                                            <input 
+                                                name="email" 
+                                                value={editForm.email} 
+                                                onChange={handleInputChange} 
+                                                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm text-slate-600 font-medium"
+                                                placeholder="your@email.com"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Avatar URL</label>
+                                        <div className="relative">
+                                            <LinkIcon size={16} className="absolute left-3 top-2.5 text-slate-400"/>
+                                            <input 
+                                                name="avatar" 
+                                                value={editForm.avatar} 
+                                                onChange={handleInputChange} 
+                                                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm text-slate-600 font-medium"
+                                                placeholder="https://example.com/avatar.jpg"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -337,7 +361,7 @@ export const Profile: React.FC = () => {
                                         value={(editForm[field.key] as string) || ''} 
                                         onChange={handleInputChange} 
                                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none transition-all text-slate-700 font-medium"
-                                        placeholder={field.label}
+                                        placeholder={`Enter ${field.label}`}
                                     />
                                 </div>
                             ) : (
@@ -351,11 +375,11 @@ export const Profile: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
                     {isEditing ? (
-                        <button onClick={handleSave} className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2">
+                        <button onClick={handleSave} className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200">
                             <Save size={18} /> {t.saveProfile}
                         </button>
                     ) : (
-                        <button onClick={() => setIsEditing(true)} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-colors">
+                        <button onClick={() => setIsEditing(true)} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-slate-200">
                             {t.editProfile}
                         </button>
                     )}
