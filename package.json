@@ -1,6 +1,6 @@
 {
   "name": "daily-task-web",
-  "version": "*",
+  "version": "1.0.0",
   "description": "Daily Task App by Mr.Hien",
   "main": "main.js",
   "homepage": ".",

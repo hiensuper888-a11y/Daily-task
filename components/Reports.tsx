@@ -175,11 +175,12 @@ export const Reports: React.FC = () => {
   const exportToWord = () => {
     const data = getFilteredTasks();
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+    // Use type assertion (as keyof typeof t) to fix TS7053
     const htmlContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset="utf-8"><title>Report</title></head>
       <body style="font-family: Arial, sans-serif;">
-        <h1 style="color:#059669">${t.reportHeader} - ${t[period]}</h1>
+        <h1 style="color:#059669">${t.reportHeader} - ${t[period as keyof typeof t]}</h1>
         <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
         <h2 style="background:#f0fdf4; padding:5px;">Overview</h2>
         <ul>
@@ -240,7 +241,8 @@ export const Reports: React.FC = () => {
       try {
         const pres = new PptxGenJS();
         const slide = pres.addSlide();
-        slide.addText(`${t.reportHeader} - ${t[period]}`, { x: 0.5, y: 0.5, fontSize: 18, bold: true });
+        // Use type assertion (as keyof typeof t) to fix TS7053
+        slide.addText(`${t.reportHeader} - ${t[period as keyof typeof t]}`, { x: 0.5, y: 0.5, fontSize: 18, bold: true });
         slide.addText(`Score: ${chartData.currentScore}%`, { x: 0.5, y: 1.0, fontSize: 14 });
         await pres.writeFile({ fileName: `nano-report-${period}.pptx` });
       } catch(e) { console.error(e) }
@@ -284,7 +286,8 @@ export const Reports: React.FC = () => {
                     period === p ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                 }`}
                 >
-                {t[p]}
+                {/* Use type assertion here */}
+                {t[p as keyof typeof t]}
                 </button>
             ))}
             </div>
