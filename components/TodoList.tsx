@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, ListFilter, Archive, TrendingUp, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, ArrowDown, ArrowUp, Minus, Search, SlidersHorizontal, Clock, MoreHorizontal, CalendarClock, Bell, BellOff, Flag, Hourglass, CalendarDays, AlertCircle, PlayCircle } from 'lucide-react';
-import { Task, Subtask, FilterType, Priority } from '../types';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer } from 'lucide-react';
+import { Task, FilterType, Priority } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
@@ -10,11 +10,10 @@ export const TodoList: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   
-  // New Input States for enhanced features
+  // Enhanced Input States
   const [deadline, setDeadline] = useState<string>('');
   const [estimatedTime, setEstimatedTime] = useState<number | undefined>(undefined); // in minutes
   const [showInputDetails, setShowInputDetails] = useState(false);
-  const deadlineInputRef = useRef<HTMLInputElement>(null);
 
   // Filtering & Sorting
   const [filterStatus, setFilterStatus] = useState<FilterType>('all');
@@ -41,24 +40,34 @@ export const TodoList: React.FC = () => {
       return m > 0 ? `${hrs}h ${m}m` : `${hrs} ${t.hours}`;
   };
 
-  // Helper: Format Deadline Display (Relative)
+  // Helper: Format Deadline Display (Relative & Status)
   const formatDeadline = (isoString: string) => {
       const target = new Date(isoString);
       const now = new Date();
-      const diffMs = target.getTime() - now.getTime();
-      const diffHrs = Math.ceil(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      if(isNaN(target.getTime())) return null;
 
-      if (diffMs < 0) return { text: t.overdue, color: 'text-red-500 bg-red-50 border-red-200', isOverdue: true };
+      const diffMs = target.getTime() - now.getTime();
+      const diffHrs = diffMs / (1000 * 60 * 60);
       
-      if (diffHrs < 24) {
-          return { text: `${diffHrs}h left`, color: 'text-orange-600 bg-orange-50 border-orange-200', isOverdue: false };
+      const isOverdue = diffMs < 0;
+      const isSoon = diffHrs > 0 && diffHrs < 24;
+
+      let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+      let colorClass = 'text-slate-500 bg-slate-50 border-slate-200';
+      let icon = <CalendarClock size={12} />;
+
+      if (isOverdue) {
+          text = t.overdue; // Or show specific date
+          colorClass = 'text-red-600 bg-red-50 border-red-200 font-bold';
+          icon = <AlertCircle size={12} />;
+      } else if (isSoon) {
+          const hrsLeft = Math.ceil(diffHrs);
+          text = `${hrsLeft}h left`;
+          colorClass = 'text-orange-600 bg-orange-50 border-orange-200 font-bold';
+          icon = <Timer size={12} />;
       }
-      return { 
-          text: target.toLocaleDateString(language, { day: 'numeric', month: 'short' }), 
-          color: 'text-slate-500 bg-slate-50 border-slate-200',
-          isOverdue: false
-      };
+
+      return { text, fullDate: target.toLocaleString(), colorClass, icon, isOverdue };
   };
 
   const isToday = (date: Date) => {
@@ -77,13 +86,13 @@ export const TodoList: React.FC = () => {
   const addTask = () => {
     if (inputValue.trim() === '') return;
     
-    // Created Date (Assigned Date) defaults to currently viewed date + current time
+    // Created Date logic
     let createdDate = new Date(viewDate);
     const now = new Date();
     if (isToday(viewDate)) {
         createdDate = now;
     } else {
-        createdDate.setHours(9, 0, 0); // Default to 9 AM if adding to future/past date
+        createdDate.setHours(9, 0, 0); 
     }
 
     const newTask: Task = {
@@ -105,7 +114,7 @@ export const TodoList: React.FC = () => {
     setInputValue('');
     setDeadline('');
     setEstimatedTime(undefined);
-    setShowInputDetails(false);
+    // Don't close details immediately to allow rapid entry
     setNewPriority('medium');
   };
 
@@ -179,13 +188,13 @@ export const TodoList: React.FC = () => {
         return true;
       })
       .sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1; // Completed last
-        // Then by Priority
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        // Priority
         const pMap = { high: 3, medium: 2, low: 1 };
         const pA = pMap[a.priority || 'medium'];
         const pB = pMap[b.priority || 'medium'];
         if (pA !== pB) return pB - pA;
-        // Then by Created Time
+        // Time
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
   }, [tasks, viewDate, filterStatus, searchQuery]);
@@ -202,10 +211,9 @@ export const TodoList: React.FC = () => {
   return (
     <div className="flex flex-col h-full relative">
       
-      {/* --- HEADER SECTION --- */}
+      {/* --- HEADER --- */}
       <div className="px-6 py-6 pb-2">
         <div className="flex flex-col gap-6">
-            {/* Top Bar: Title & Stats */}
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">{t.todoHeader}</h1>
@@ -224,9 +232,7 @@ export const TodoList: React.FC = () => {
                 </div>
             </div>
 
-            {/* Date Navigation & Filters */}
             <div className="flex flex-col gap-4">
-                {/* Date Card */}
                 <div className="bg-white rounded-2xl p-2 shadow-sm border border-slate-100 flex items-center justify-between">
                     <button onClick={() => navigateDate(-1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
                         <ChevronLeft size={20} />
@@ -255,7 +261,6 @@ export const TodoList: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Filter Pills */}
                 <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
                     {(['all', 'active', 'completed'] as FilterType[]).map(f => (
                         <button
@@ -313,7 +318,6 @@ export const TodoList: React.FC = () => {
                             }`}
                         >
                             <div className="flex items-start gap-3">
-                                {/* Checkbox */}
                                 <button 
                                     onClick={() => toggleTask(task.id)}
                                     className={`mt-1 shrink-0 transition-colors ${task.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-500'}`}
@@ -336,10 +340,10 @@ export const TodoList: React.FC = () => {
                                         </button>
                                     </div>
                                     
-                                    {/* Task Metadata Badges */}
-                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                    {/* Task Info Chips */}
+                                    <div className="flex items-center gap-2 mt-3 flex-wrap">
                                         {/* Priority */}
-                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border flex items-center gap-1.5 ${
                                             task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                                             task.priority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                             'bg-amber-50 text-amber-600 border-amber-100'
@@ -348,14 +352,14 @@ export const TodoList: React.FC = () => {
                                         </span>
 
                                         {/* Assigned Date */}
-                                        <span className="text-[10px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-md border bg-slate-50 text-slate-500 border-slate-100">
+                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-slate-50 text-slate-500 border-slate-100" title={new Date(task.createdAt).toLocaleString()}>
                                             <CalendarDays size={10} />
                                             {t.assignedDate}: {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric'})}
                                         </span>
 
-                                        {/* Estimated Time */}
+                                        {/* Estimate */}
                                         {task.estimatedTime && (
-                                            <span className="text-[10px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-md border bg-blue-50 text-blue-600 border-blue-100">
+                                            <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-indigo-50 text-indigo-600 border-indigo-100">
                                                 <Hourglass size={10} />
                                                 {formatEstimate(task.estimatedTime)}
                                             </span>
@@ -363,14 +367,13 @@ export const TodoList: React.FC = () => {
 
                                         {/* Deadline */}
                                         {deadlineInfo && (
-                                            <span className={`text-[10px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-md border ${deadlineInfo.color}`}>
-                                                {deadlineInfo.isOverdue ? <AlertCircle size={10} /> : <CalendarClock size={10} />}
+                                            <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
+                                                {deadlineInfo.icon}
                                                 {deadlineInfo.text}
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* Slider */}
                                     {!task.completed && (
                                         <div className="mt-4 flex items-center gap-2 group/slider">
                                             <div className="relative flex-1 h-1.5 bg-slate-100 rounded-full">
@@ -433,36 +436,50 @@ export const TodoList: React.FC = () => {
         )}
       </div>
 
-      {/* --- SMART INPUT BAR (Floating) --- */}
+      {/* --- SMART INPUT BAR --- */}
       <div className="absolute bottom-4 left-0 right-0 px-4 z-30">
-        <div className={`max-w-3xl mx-auto bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-indigo-900/15 border border-white/50 ring-1 ring-slate-900/5 transition-all duration-300 ${showInputDetails ? 'p-4 rounded-[1.5rem]' : 'p-2'}`}>
+        <div className={`max-w-3xl mx-auto bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-indigo-900/15 border border-white/50 ring-1 ring-slate-900/5 transition-all duration-300 ${showInputDetails ? 'p-4 rounded-[1.5rem]' : 'p-2'}`}>
             
             {/* Quick Actions (Expanded) */}
             {showInputDetails && (
                 <div className="flex flex-wrap items-center gap-3 mb-3 animate-fade-in border-b border-slate-100 pb-3">
-                    {/* Deadline Picker */}
-                    <div className="relative group">
-                        <button 
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${deadline ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                            onClick={() => deadlineInputRef.current?.showPicker()}
-                        >
-                            <CalendarClock size={14} /> 
-                            {deadline ? new Date(deadline).toLocaleString(language, {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) : t.setDeadline}
-                        </button>
-                        <input 
-                            ref={deadlineInputRef}
-                            type="datetime-local" 
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            value={deadline}
-                            onChange={(e) => setDeadline(e.target.value)}
-                        />
+                    {/* Reliable Deadline Picker */}
+                    <div className="relative group flex items-center bg-slate-50 rounded-full border border-slate-200 focus-within:border-indigo-300 focus-within:bg-indigo-50 transition-colors">
+                        <div className="relative flex items-center">
+                            <button 
+                                type="button"
+                                className={`flex items-center gap-1.5 pl-3 pr-2 py-1.5 text-xs font-bold transition-all ${deadline ? 'text-indigo-700' : 'text-slate-500'}`}
+                            >
+                                <CalendarClock size={14} className={deadline ? "text-indigo-600" : "text-slate-400"} /> 
+                                <span>{deadline ? new Date(deadline).toLocaleString(language, {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) : t.setDeadline}</span>
+                            </button>
+                            
+                            {/* Input Overlay - The Fix */}
+                            <input 
+                                type="datetime-local" 
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                value={deadline}
+                                onChange={(e) => setDeadline(e.target.value)}
+                            />
+                        </div>
+                        
+                        {/* Clear Button */}
+                        {deadline && (
+                            <button 
+                                onClick={() => setDeadline('')}
+                                className="mr-1 p-1 text-slate-400 hover:text-red-500 rounded-full hover:bg-white transition-colors z-20"
+                                title="Clear Deadline"
+                            >
+                                <X size={12} />
+                            </button>
+                        )}
                     </div>
 
-                    {/* Estimated Time Quick Select */}
-                    <div className="flex items-center gap-1 bg-slate-50 rounded-full p-1">
-                        <Hourglass size={14} className="ml-2 text-slate-400"/>
+                    {/* Estimate Time */}
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-full p-1 pl-3">
+                        <Hourglass size={14} className="text-slate-400"/>
                         <select 
-                            className="bg-transparent text-xs font-bold text-slate-600 focus:outline-none p-1 cursor-pointer"
+                            className="bg-transparent text-xs font-bold text-slate-600 focus:outline-none py-1 cursor-pointer pr-2"
                             value={estimatedTime || ''}
                             onChange={(e) => setEstimatedTime(e.target.value ? parseInt(e.target.value) : undefined)}
                         >
@@ -474,6 +491,14 @@ export const TodoList: React.FC = () => {
                             <option value="120">2 {t.hours}</option>
                             <option value="240">4 {t.hours}</option>
                         </select>
+                        {estimatedTime && (
+                             <button 
+                                onClick={() => setEstimatedTime(undefined)}
+                                className="p-1 text-slate-400 hover:text-red-500"
+                             >
+                                 <X size={12} />
+                             </button>
+                        )}
                     </div>
 
                      {/* Priority */}
@@ -482,14 +507,14 @@ export const TodoList: React.FC = () => {
                             <button
                                 key={p}
                                 onClick={() => setNewPriority(p)}
-                                className={`w-5 h-5 rounded-full transition-all flex items-center justify-center ${
+                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center border ${
                                     newPriority === p 
-                                    ? (p === 'high' ? 'bg-rose-500 shadow-rose-200 shadow-sm scale-110' : p === 'medium' ? 'bg-amber-500 shadow-amber-200 shadow-sm scale-110' : 'bg-emerald-500 shadow-emerald-200 shadow-sm scale-110') 
-                                    : 'bg-slate-200 hover:bg-slate-300'
+                                    ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
+                                    : 'bg-white border-slate-200 text-transparent hover:bg-slate-100'
                                 }`}
                                 title={p}
                             >
-                                {newPriority === p && <CheckCircle2 size={10} className="text-white" />}
+                                <CheckCircle2 size={12} strokeWidth={3} className={newPriority === p ? "opacity-100" : "opacity-0"} />
                             </button>
                         ))}
                     </div>
@@ -500,8 +525,10 @@ export const TodoList: React.FC = () => {
             <div className="flex items-center gap-2">
                 <button 
                     onClick={() => setShowInputDetails(!showInputDetails)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                        showInputDetails ? 'bg-slate-800 text-white rotate-90' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-indigo-600'
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border ${
+                        showInputDetails 
+                        ? 'bg-slate-800 text-white border-slate-800 rotate-90' 
+                        : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
                     }`}
                 >
                     <SlidersHorizontal size={18} />
