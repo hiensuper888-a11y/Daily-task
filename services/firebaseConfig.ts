@@ -1,5 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from "firebase/auth";
+import firebase from "firebase/app";
+import "firebase/auth";
 
 // TODO: Thay thế thông tin bên dưới bằng cấu hình từ Firebase Console của bạn
 // Truy cập: https://console.firebase.google.com/ -> Project Settings -> General -> Your apps
@@ -20,10 +20,12 @@ let facebookProvider: any = null;
 try {
   // Chỉ khởi tạo nếu config hợp lệ (ví dụ đơn giản check apiKey)
   if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
-      const app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      googleProvider = new GoogleAuthProvider();
-      facebookProvider = new FacebookAuthProvider();
+      if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+      }
+      auth = firebase.auth();
+      googleProvider = new firebase.auth.GoogleAuthProvider();
+      facebookProvider = new firebase.auth.FacebookAuthProvider();
   } else {
       console.warn("Firebase chưa được cấu hình. Vui lòng cập nhật services/firebaseConfig.ts");
   }

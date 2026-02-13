@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { auth, googleProvider, facebookProvider } from '../services/firebaseConfig';
-import { signInWithPopup } from 'firebase/auth';
 
 export const Profile: React.FC = () => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [profile, setProfile] = useRealtimeStorage<UserProfile>('user_profile', {
     name: '',
     email: '',
@@ -41,10 +40,10 @@ export const Profile: React.FC = () => {
     setIsSyncing(true);
 
     try {
-        // Kiểm tra xem Firebase đã được cấu hình chưa
+        // Check if Firebase is configured properly
         if (auth && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
             const provider = providerName === 'google' ? googleProvider : facebookProvider;
-            const result = await signInWithPopup(auth, provider);
+            const result = await auth.signInWithPopup(provider);
             const user = result.user;
             
             setProfile({
@@ -56,7 +55,7 @@ export const Profile: React.FC = () => {
                 isLoggedIn: true,
             });
         } else {
-            // FALLBACK: Nếu chưa cấu hình Firebase, chạy chế độ giả lập (Demo mode)
+            // FALLBACK: Demo mode if Firebase is not configured
             console.warn("Chạy chế độ Demo login (Chưa config Firebase)");
             setTimeout(() => {
                 setProfile({
@@ -114,9 +113,20 @@ export const Profile: React.FC = () => {
       
       // Simulate network request
       setTimeout(() => {
-          // For demo purposes, we just say it's up to date.
           setUpdateStatus('latest');
       }, 2000);
+  };
+
+  const downloadFile = (blob: Blob, fileName: string) => {
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const exportProfileExcel = () => {
@@ -155,21 +165,8 @@ export const Profile: React.FC = () => {
     downloadFile(blob, `profile-${profile.name.replace(/\s+/g,'_')}.doc`);
   };
 
-  const downloadFile = (blob: Blob, fileName: string) => {
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
   useEffect(() => {
     if (profile.isLoggedIn && isOnline) {
-        // Simulate background sync
         const interval = setInterval(() => {
             setIsSyncing(true);
             setTimeout(() => setIsSyncing(false), 1000);
