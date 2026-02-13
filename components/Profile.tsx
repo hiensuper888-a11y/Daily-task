@@ -5,7 +5,10 @@ import { UserProfile } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { auth, googleProvider, facebookProvider } from '../services/firebaseConfig';
-import { signInWithPopup, signOut } from "firebase/auth";
+import * as firebaseAuth from "firebase/auth";
+
+// Cast to any to avoid "has no exported member" errors
+const { signInWithPopup, signOut } = firebaseAuth as any;
 
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
@@ -41,10 +44,12 @@ export const Profile: React.FC = () => {
     setIsSyncing(true);
 
     try {
+        // Capture auth in local variable to satisfy TypeScript null checks
+        const authInstance = auth;
         // Check if Firebase is configured properly
-        if (auth && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
+        if (authInstance && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
             const provider = providerName === 'google' ? googleProvider : facebookProvider;
-            const result = await signInWithPopup(auth, provider!);
+            const result = await signInWithPopup(authInstance, provider!);
             const user = result.user;
             
             setProfile({
