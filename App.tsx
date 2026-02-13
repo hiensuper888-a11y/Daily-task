@@ -48,23 +48,23 @@ const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="flex h-[100dvh] w-full bg-[#f8fafc] text-slate-800 font-sans overflow-hidden selection:bg-blue-100 selection:text-blue-700">
+    <div className="flex h-[100dvh] w-full bg-[#f1f5f9] text-slate-800 font-sans overflow-hidden selection:bg-indigo-100 selection:text-indigo-700">
       
-      {/* Background Decor */}
+      {/* Background Decor - Improved for new theme */}
       <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/50 rounded-full blur-[100px] opacity-60"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-rose-100/50 rounded-full blur-[100px] opacity-60"></div>
+          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-200/40 rounded-full blur-[120px] opacity-60 mix-blend-multiply"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/40 rounded-full blur-[120px] opacity-60 mix-blend-multiply"></div>
       </div>
 
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className="hidden md:flex flex-col w-72 bg-white/60 backdrop-blur-2xl border-r border-white/50 shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] m-4 my-6 ml-6 rounded-[2rem] h-[calc(100vh-3rem)] transition-all">
+      <aside className="hidden md:flex flex-col w-72 bg-white/70 backdrop-blur-2xl border-r border-white/50 shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] m-4 my-6 ml-6 rounded-[2rem] h-[calc(100vh-3rem)] transition-all">
         <div className="p-8 pb-6">
           <div className="flex flex-col">
             <div className="flex items-center gap-3 text-2xl font-extrabold tracking-tight text-slate-900 group cursor-default">
                {/* Logo */}
                <div className="relative w-10 h-10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[360deg]">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30 rotate-3 group-hover:rotate-6 transition-all duration-300"></div>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center -rotate-3 group-hover:-rotate-0 transition-all duration-300 border border-white/20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/30 rotate-3 group-hover:rotate-6 transition-all duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-cyan-400 to-indigo-500 rounded-xl flex items-center justify-center -rotate-3 group-hover:-rotate-0 transition-all duration-300 border border-white/20">
                       <CheckSquare size={24} className="text-white drop-shadow-md" strokeWidth={2.5} />
                   </div>
                </div>
@@ -82,7 +82,7 @@ const AppContent: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 py-2 overflow-y-auto custom-scrollbar">
-          <NavItem tab="tasks" icon={ListTodo} label={t.tasks} colorClass="text-blue-600" bgClass="bg-blue-50" />
+          <NavItem tab="tasks" icon={ListTodo} label={t.tasks} colorClass="text-indigo-600" bgClass="bg-indigo-50" />
           <NavItem tab="ai" icon={MessageSquare} label={t.ai} colorClass="text-rose-600" bgClass="bg-rose-50" />
           <NavItem tab="reports" icon={BarChart3} label={t.reports} colorClass="text-emerald-600" bgClass="bg-emerald-50" />
           <NavItem tab="studio" icon={Wand2} label={t.studio} colorClass="text-violet-600" bgClass="bg-violet-50" />
@@ -108,7 +108,7 @@ const AppContent: React.FC = () => {
                    <button
                      key={lang.code}
                      onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
-                     className={`w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-slate-50 transition-colors ${language === lang.code ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'}`}
+                     className={`w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-slate-50 transition-colors ${language === lang.code ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-700'}`}
                    >
                      {lang.label}
                    </button>
@@ -118,7 +118,7 @@ const AppContent: React.FC = () => {
            </div>
            
            <div className="text-center mt-2">
-             <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">v1.0.0</span>
+             <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">v1.1.0</span>
            </div>
         </div>
       </aside>
@@ -149,7 +149,7 @@ const AppContent: React.FC = () => {
                  <button
                    key={lang.code}
                    onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
-                   className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 ${language === lang.code ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'}`}
+                   className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 ${language === lang.code ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-700'}`}
                  >
                    {lang.label}
                  </button>
@@ -161,7 +161,7 @@ const AppContent: React.FC = () => {
         {/* Content Container */}
         <div className="flex-1 overflow-hidden relative md:p-6 lg:p-6 h-full">
            {/* Desktop Card Wrapper */}
-           <div className="h-full w-full max-w-[1600px] mx-auto md:bg-white/80 md:backdrop-blur-xl md:rounded-[2.5rem] md:shadow-[0_8px_32px_rgba(0,0,0,0.04)] md:border md:border-white/60 overflow-hidden relative transition-all duration-300">
+           <div className="h-full w-full max-w-[1600px] mx-auto md:bg-white/60 md:backdrop-blur-xl md:rounded-[2.5rem] md:shadow-[0_8px_32px_rgba(0,0,0,0.04)] md:border md:border-white/60 overflow-hidden relative transition-all duration-300">
                {activeTab === 'tasks' ? <TodoList /> : 
                activeTab === 'ai' ? <AiAssistant /> :
                activeTab === 'reports' ? <Reports /> : 
@@ -175,7 +175,7 @@ const AppContent: React.FC = () => {
             onClick={() => setActiveTab('tasks')}
             className={`flex flex-col items-center justify-center p-2 rounded-2xl flex-1 transition-all duration-300 group hover-scale-active ${
               activeTab === 'tasks' 
-                ? 'text-blue-600 bg-blue-50/80' 
+                ? 'text-indigo-600 bg-indigo-50/80' 
                 : 'text-slate-400'
             }`}
           >
