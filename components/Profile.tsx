@@ -24,6 +24,9 @@ const DEFAULT_PROFILE: UserProfile = {
     phoneNumber: ''
 };
 
+// Key for the simulated user database in localStorage
+const SIMULATED_DB_KEY = 'daily_task_users_db';
+
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
   
@@ -58,16 +61,28 @@ export const Profile: React.FC = () => {
   }, [profile, isEditing]);
 
   const handleEmailAuth = async () => {
-    if (!isOnline) return;
+    // In strict offline mode, we allow auth simulation. 
+    // Remove the "!isOnline" check if you want to allow login purely offline.
+    // For now, we keep the original requirement but enable offline logic if Firebase is not set up.
+    
     if (!emailInput || !passwordInput) {
         alert("Please enter email and password.");
         return;
     }
+    
+    if (passwordInput.length < 6) {
+        alert("Password must be at least 6 characters.");
+        return;
+    }
+
     setIsSyncing(true);
 
     try {
-        let user;
-        if (auth && (auth as any).apiKey !== "YOUR_API_KEY_HERE") {
+        let user: any = null;
+        let isSimulated = false;
+
+        // CHECK 1: Try Real Firebase Auth
+        if (auth && (auth as any).apiKey !== "YOUR_API_KEY_HERE" && isOnline) {
              // Real Firebase Auth
             if (authMode === 'register') {
                 const credential = await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
@@ -77,17 +92,50 @@ export const Profile: React.FC = () => {
                 user = credential.user;
             }
         } else {
-            // Simulated Auth (Fallback)
-             // In a real app, you would never do this. This is just to satisfy the offline/demo requirement.
-             // We treat the email as the unique ID.
-             user = {
-                 email: emailInput,
-                 uid: emailInput, // Use email as UID for simulation
-                 displayName: emailInput.split('@')[0],
-                 photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${emailInput}`
-             }
-             // Simulate network delay
-             await new Promise(resolve => setTimeout(resolve, 800));
+            // CHECK 2: Simulated Auth (Local Database)
+            // This runs if Firebase is not configured OR if the app is offline
+            isSimulated = true;
+            
+            // Read "Database"
+            const usersDb = JSON.parse(localStorage.getItem(SIMULATED_DB_KEY) || '{}');
+
+            if (authMode === 'register') {
+                if (usersDb[emailInput]) {
+                    throw new Error("Email already exists.");
+                }
+                
+                // Create User
+                const newUser = {
+                    email: emailInput,
+                    password: passwordInput, // Note: In a real app, never store plain text passwords
+                    uid: `sim_${Date.now()}`,
+                    displayName: emailInput.split('@')[0],
+                    photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${emailInput}`
+                };
+
+                // Save to "Database"
+                usersDb[emailInput] = newUser;
+                localStorage.setItem(SIMULATED_DB_KEY, JSON.stringify(usersDb));
+                
+                user = newUser;
+                alert("Account registered successfully!");
+            } else {
+                // Login
+                const existingUser = usersDb[emailInput];
+                
+                if (!existingUser) {
+                    throw new Error("Account not found. Please register first.");
+                }
+                
+                if (existingUser.password !== passwordInput) {
+                    throw new Error("Incorrect password.");
+                }
+
+                user = existingUser;
+            }
+            
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800));
         }
 
         if (user) {
@@ -125,7 +173,10 @@ export const Profile: React.FC = () => {
 
   // Handle Login and Data Separation
   const loginSocial = async (providerName: 'google' | 'facebook') => {
-    if (!isOnline) return;
+    if (!isOnline) {
+        alert("Social login requires internet connection.");
+        return;
+    }
     setIsSyncing(true);
 
     try {
@@ -162,6 +213,7 @@ export const Profile: React.FC = () => {
             console.warn("Chạy chế độ Demo login (Chưa config Firebase)");
             const demoEmail = providerName === 'google' ? 'demo_google@gmail.com' : 'demo_fb@facebook.com';
             
+            // For Social Demo, we just allow it
             localStorage.setItem(SESSION_KEY, demoEmail);
             window.dispatchEvent(new Event('auth-change'));
 
@@ -218,6 +270,8 @@ export const Profile: React.FC = () => {
     // This updates the RealtimeStorage, which persists it to the specific user's key
     setProfile(editForm);
     setIsEditing(false);
+    // If running in simulated mode, we might want to update the "database" too to sync name changes
+    // But for simplicity, we keep profile data in 'user_profile' key and auth data in 'daily_task_users_db' key separate.
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -633,7 +687,7 @@ export const Profile: React.FC = () => {
                         onChange={(e) => setEmailInput(e.target.value)}
                         placeholder="Email"
                         className="w-full pl-9 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm"
-                        disabled={!isOnline}
+                        // disabled={!isOnline} // Removed disable to allow offline auth simulation
                     />
                  </div>
                  <div className="relative">
@@ -644,12 +698,12 @@ export const Profile: React.FC = () => {
                         onChange={(e) => setPasswordInput(e.target.value)}
                         placeholder={t.password}
                         className="w-full pl-9 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm"
-                        disabled={!isOnline}
+                        // disabled={!isOnline} // Removed disable to allow offline auth simulation
                     />
                  </div>
                  <button 
                     onClick={handleEmailAuth}
-                    disabled={!isOnline || !emailInput || !passwordInput || isSyncing}
+                    disabled={!emailInput || !passwordInput || isSyncing}
                     className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
                  >
                      {authMode === 'login' ? <LogIn size={18}/> : <UserPlus size={18}/>}
