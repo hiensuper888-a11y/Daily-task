@@ -1,0 +1,5 @@
+{
+  "name": "NanoTask & Studio",
+  "description": "A productivity app combining a daily task manager with an AI-powered image editing studio using Gemini 2.5 Flash.",
+  "requestFramePermissions": []
+}
