@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
     define: {
       // This ensures process.env.API_KEY is replaced by the actual string during build
       // Default to empty string if undefined to avoid "process is not defined" errors
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || 'AIzaSyAm3oIyGTPb1-Knso8Rtj58vU4nvyOYxCU')
     },
     build: {
       outDir: 'dist',
