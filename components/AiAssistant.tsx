@@ -53,9 +53,11 @@ export const AiAssistant: React.FC = () => {
             if (selectedModel === 'gemini') {
                 responseText = await chatWithGemini(userMsg.text, historyForApi as any);
             } else if (selectedModel === 'chatgpt') {
+                 // Placeholder for other models if implemented
                  responseText = await chatWithGemini(userMsg.text, historyForApi as any);
                  responseText = "(ChatGPT Mode) " + responseText;
             } else if (selectedModel === 'grok') {
+                 // Placeholder for other models if implemented
                  responseText = await chatWithGemini(userMsg.text, historyForApi as any);
                  responseText = "(Grok Mode) " + responseText;
             }
@@ -71,6 +73,14 @@ export const AiAssistant: React.FC = () => {
             setMessages([...newMessages, aiMsg]);
         } catch (error) {
             console.error(error);
+            const errorMsg: ChatMessage = {
+                id: Date.now().toString(),
+                role: 'model',
+                text: "Sorry, I encountered an error while processing your request.",
+                timestamp: Date.now(),
+                modelUsed: selectedModel
+            };
+            setMessages([...newMessages, errorMsg]);
         } finally {
             setIsLoading(false);
         }
@@ -97,7 +107,7 @@ export const AiAssistant: React.FC = () => {
             `- [Priority: ${t.priority ? t.priority.toUpperCase() : 'MEDIUM'}] ${t.text} (Progress: ${t.progress}%)`
         ).join('\n');
 
-        const prompt = `Please analyze my active tasks:\n\n${taskListStr}\n\nBased on this list, please providing the following:\n1. A clear list of tasks sorted by importance.\n2. A suggested execution order to be most productive.\n3. Specific advice on how to tackle high-priority items effectively.`;
+        const prompt = `Please analyze my active tasks:\n\n${taskListStr}\n\nBased on this list, please provide the following in Markdown format:\n1. **Prioritized List**: A clear list of tasks sorted by importance, explicitly mentioning their priority.\n2. **Execution Plan**: A suggested execution order to be most productive.\n3. **Strategic Advice**: Specific advice on how to tackle high-priority items effectively.`;
         
         handleSendMessage(prompt);
     };
