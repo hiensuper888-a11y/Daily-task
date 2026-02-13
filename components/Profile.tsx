@@ -10,11 +10,8 @@ import * as firebaseAuth from "firebase/auth";
 // Cast to any to avoid "has no exported member" errors
 const { signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } = firebaseAuth as any;
 
-export const Profile: React.FC = () => {
-  const { t } = useLanguage();
-  
-  // This hook automatically switches data based on the SESSION_KEY in localStorage
-  const [profile, setProfile] = useRealtimeStorage<UserProfile>('user_profile', {
+// Define default profile outside component to ensure stable reference
+const DEFAULT_PROFILE: UserProfile = {
     name: '',
     email: '',
     avatar: '',
@@ -25,7 +22,13 @@ export const Profile: React.FC = () => {
     address: '',
     company: '',
     phoneNumber: ''
-  });
+};
+
+export const Profile: React.FC = () => {
+  const { t } = useLanguage();
+  
+  // This hook automatically switches data based on the SESSION_KEY in localStorage
+  const [profile, setProfile] = useRealtimeStorage<UserProfile>('user_profile', DEFAULT_PROFILE);
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -44,10 +47,12 @@ export const Profile: React.FC = () => {
   // Temporary state for editing
   const [editForm, setEditForm] = useState(profile);
 
-  // Sync editForm with profile whenever profile changes (e.g. after login or storage update)
+  // Sync editForm with profile ONLY when NOT editing to prevent overwriting user input
   useEffect(() => {
-    setEditForm(profile);
-  }, [profile]);
+    if (!isEditing) {
+        setEditForm(profile);
+    }
+  }, [profile, isEditing]);
 
   const handleEmailAuth = async () => {
     if (!isOnline) return;
@@ -92,14 +97,16 @@ export const Profile: React.FC = () => {
 
             // 3. UPDATE DATA
             setTimeout(() => {
-                setProfile({
+                const newProfile: UserProfile = {
                     ...profile, // Keep existing fields if they were loaded from storage
                     name: user.displayName || 'User',
                     email: user.email || '',
                     avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
                     provider: 'email',
                     isLoggedIn: true,
-                });
+                };
+                setProfile(newProfile);
+                setEditForm(newProfile); // Force update edit form immediately
                 setIsSyncing(false);
                 setEmailInput('');
                 setPasswordInput('');
@@ -134,14 +141,16 @@ export const Profile: React.FC = () => {
 
             // 3. UPDATE DATA
             setTimeout(() => {
-                setProfile({
+                const newProfile: UserProfile = {
                     ...profile,
                     name: user.displayName || 'User',
                     email: user.email || '',
                     avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
                     provider: providerName,
                     isLoggedIn: true,
-                });
+                };
+                setProfile(newProfile);
+                setEditForm(newProfile);
                 setIsSyncing(false);
             }, 100);
 
@@ -154,7 +163,7 @@ export const Profile: React.FC = () => {
             window.dispatchEvent(new Event('auth-change'));
 
             setTimeout(() => {
-                setProfile({
+                const newProfile: UserProfile = {
                     name: 'Nano User',
                     email: demoEmail,
                     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
@@ -165,7 +174,9 @@ export const Profile: React.FC = () => {
                     address: '123 Street, City',
                     company: 'NanoTech Inc.',
                     phoneNumber: '0123456789'
-                });
+                };
+                setProfile(newProfile);
+                setEditForm(newProfile);
                 setIsSyncing(false);
             }, 1000);
         }
@@ -183,7 +194,8 @@ export const Profile: React.FC = () => {
     }
 
     // 1. Mark current profile as logged out before switching
-    setProfile(prev => ({ ...prev, isLoggedIn: false }));
+    const loggedOutProfile = { ...profile, isLoggedIn: false };
+    setProfile(loggedOutProfile);
 
     setTimeout(() => {
         // 2. CLEAR SESSION: Switch back to guest mode
