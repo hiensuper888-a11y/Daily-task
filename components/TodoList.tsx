@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer } from 'lucide-react';
-import { Task, FilterType, Priority } from '../types';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical } from 'lucide-react';
+import { Task, FilterType, Priority, Subtask } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
@@ -12,8 +12,14 @@ export const TodoList: React.FC = () => {
   
   // Enhanced Input States
   const [deadline, setDeadline] = useState<string>('');
-  const [estimatedTime, setEstimatedTime] = useState<number | undefined>(undefined); // in minutes
+  const [estimatedTime, setEstimatedTime] = useState<number | undefined>(undefined);
   const [showInputDetails, setShowInputDetails] = useState(false);
+
+  // Edit Mode State
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
+  const [editPriority, setEditPriority] = useState<Priority>('medium');
 
   // Filtering & Sorting
   const [filterStatus, setFilterStatus] = useState<FilterType>('all');
@@ -26,13 +32,12 @@ export const TodoList: React.FC = () => {
 
   const { t, language } = useLanguage();
 
-  // Helper: Format Date for Input (YYYY-MM-DDTHH:mm)
+  // Helper: Format Date for Input
   const toLocalISOString = (date: Date) => {
     const pad = (num: number) => num.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
-  // Helper: Format Estimated Time display
   const formatEstimate = (mins: number) => {
       if (mins < 60) return `${mins} ${t.minutes}`;
       const hrs = Math.floor(mins / 60);
@@ -40,7 +45,6 @@ export const TodoList: React.FC = () => {
       return m > 0 ? `${hrs}h ${m}m` : `${hrs} ${t.hours}`;
   };
 
-  // Helper: Format Deadline Display (Relative & Status)
   const formatDeadline = (isoString: string) => {
       const target = new Date(isoString);
       const now = new Date();
@@ -57,7 +61,7 @@ export const TodoList: React.FC = () => {
       let icon = <CalendarClock size={12} />;
 
       if (isOverdue) {
-          text = t.overdue; // Or show specific date
+          text = t.overdue;
           colorClass = 'text-red-600 bg-red-50 border-red-200 font-bold';
           icon = <AlertCircle size={12} />;
       } else if (isSoon) {
@@ -83,10 +87,11 @@ export const TodoList: React.FC = () => {
     setViewDate(newDate);
   };
 
+  // --- TASK MANAGEMENT ---
+
   const addTask = () => {
     if (inputValue.trim() === '') return;
     
-    // Created Date logic
     let createdDate = new Date(viewDate);
     const now = new Date();
     if (isToday(viewDate)) {
@@ -109,20 +114,34 @@ export const TodoList: React.FC = () => {
     };
 
     setTasks([newTask, ...tasks]);
-    
-    // Reset inputs
     setInputValue('');
     setDeadline('');
     setEstimatedTime(undefined);
-    // Don't close details immediately to allow rapid entry
     setNewPriority('medium');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') addTask();
+  const startEditing = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditText(task.text);
+    setEditDeadline(task.deadline || '');
+    setEditPriority(task.priority || 'medium');
   };
 
-  // --- ACTIONS ---
+  const saveEdit = () => {
+    if (editingTaskId) {
+        setTasks(tasks.map(t => 
+            t.id === editingTaskId 
+            ? { ...t, text: editText, deadline: editDeadline || undefined, priority: editPriority } 
+            : t
+        ));
+        setEditingTaskId(null);
+    }
+  };
+
+  const cancelEdit = () => {
+      setEditingTaskId(null);
+  };
+
   const toggleTask = (id: number) => {
     setTasks(tasks.map(task => {
       if (task.id === id) {
@@ -131,12 +150,21 @@ export const TodoList: React.FC = () => {
         return { 
             ...task, 
             completed: newCompleted, 
-            progress: newCompleted ? 100 : 0,
-            subtasks: task.subtasks?.map(s => ({ ...s, completed: newCompleted }))
+            progress: newCompleted ? 100 : (task.subtasks?.length ? calculateProgressFromSubtasks(task.subtasks) : 0),
+            subtasks: newCompleted 
+                ? task.subtasks?.map(s => ({ ...s, completed: true })) 
+                : task.subtasks 
         };
       }
       return task;
     }));
+  };
+
+  // Helper to calculate % based on subtasks
+  const calculateProgressFromSubtasks = (subtasks: Subtask[]) => {
+      if (!subtasks || subtasks.length === 0) return 0;
+      const completed = subtasks.filter(s => s.completed).length;
+      return Math.round((completed / subtasks.length) * 100);
   };
 
   const updateProgress = (id: number, val: string) => {
@@ -147,15 +175,21 @@ export const TodoList: React.FC = () => {
 
   const deleteTask = (id: number) => setTasks(tasks.filter(t => t.id !== id));
 
-  // Subtasks
+  // --- SUBTASKS ---
   const addSubtask = (taskId: number) => {
       const text = subtaskInputs[taskId]?.trim();
       if (!text) return;
       setTasks(tasks.map(t => {
           if (t.id === taskId) {
               const newSub = [...(t.subtasks || []), { id: Date.now(), text, completed: false }];
-              const progress = Math.round((newSub.filter(s => s.completed).length / newSub.length) * 100);
-              return { ...t, subtasks: newSub, progress, completed: progress === 100 };
+              // Auto-update progress
+              const newProgress = calculateProgressFromSubtasks(newSub);
+              return { 
+                  ...t, 
+                  subtasks: newSub, 
+                  progress: newProgress,
+                  completed: newProgress === 100 
+                };
           }
           return t;
       }));
@@ -166,14 +200,28 @@ export const TodoList: React.FC = () => {
       setTasks(tasks.map(t => {
           if (t.id === taskId && t.subtasks) {
               const newSub = t.subtasks.map(s => s.id === subId ? { ...s, completed: !s.completed } : s);
-              const progress = Math.round((newSub.filter(s => s.completed).length / newSub.length) * 100);
-              return { ...t, subtasks: newSub, progress, completed: progress === 100 };
+              const newProgress = calculateProgressFromSubtasks(newSub);
+              
+              if (newProgress === 100 && t.progress < 100) playSuccessSound();
+
+              return { ...t, subtasks: newSub, progress: newProgress, completed: newProgress === 100 };
           }
           return t;
       }));
   };
 
-  // --- FILTERING ---
+  const deleteSubtask = (taskId: number, subId: number) => {
+       setTasks(tasks.map(t => {
+          if (t.id === taskId && t.subtasks) {
+              const newSub = t.subtasks.filter(s => s.id !== subId);
+              const newProgress = newSub.length > 0 ? calculateProgressFromSubtasks(newSub) : (t.completed ? 100 : t.progress);
+              
+              return { ...t, subtasks: newSub, progress: newProgress, completed: newProgress === 100 };
+          }
+          return t;
+      }));
+  };
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter(t => {
@@ -189,12 +237,10 @@ export const TodoList: React.FC = () => {
       })
       .sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        // Priority
         const pMap = { high: 3, medium: 2, low: 1 };
         const pA = pMap[a.priority || 'medium'];
         const pB = pMap[b.priority || 'medium'];
         if (pA !== pB) return pB - pA;
-        // Time
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
   }, [tasks, viewDate, filterStatus, searchQuery]);
@@ -303,13 +349,18 @@ export const TodoList: React.FC = () => {
         ) : (
             <div className="space-y-4">
                 {filteredTasks.map((task) => {
+                    const isEditing = editingTaskId === task.id;
                     const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
                     const isOverdue = deadlineInfo?.isOverdue && !task.completed;
+                    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+                    const completedSubtasks = task.subtasks?.filter(s => s.completed).length || 0;
+                    const totalSubtasks = task.subtasks?.length || 0;
                     
                     return (
                         <div 
                             key={task.id}
-                            className={`group bg-white rounded-2xl p-4 border transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 ${
+                            className={`group bg-white rounded-2xl p-4 border transition-all duration-300 hover:shadow-lg ${
+                                isEditing ? 'border-indigo-500 ring-2 ring-indigo-100 shadow-xl z-10' :
                                 task.completed 
                                 ? 'border-slate-100 opacity-60 bg-slate-50/50' 
                                 : isOverdue 
@@ -326,106 +377,162 @@ export const TodoList: React.FC = () => {
                                 </button>
                                 
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start gap-2">
-                                        <p 
-                                            onClick={() => toggleTask(task.id)}
-                                            className={`text-base font-semibold leading-relaxed cursor-pointer transition-all ${
-                                                task.completed ? 'line-through text-slate-400' : 'text-slate-800'
-                                            }`}
-                                        >
-                                            {task.text}
-                                        </p>
-                                        <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                    
-                                    {/* Task Info Chips */}
-                                    <div className="flex items-center gap-2 mt-3 flex-wrap">
-                                        {/* Priority */}
-                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border flex items-center gap-1.5 ${
-                                            task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                            task.priority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            'bg-amber-50 text-amber-600 border-amber-100'
-                                        }`}>
-                                            <Flag size={10} fill="currentColor" /> {t[task.priority || 'medium']}
-                                        </span>
-
-                                        {/* Assigned Date */}
-                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-slate-50 text-slate-500 border-slate-100" title={new Date(task.createdAt).toLocaleString()}>
-                                            <CalendarDays size={10} />
-                                            {t.assignedDate}: {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric'})}
-                                        </span>
-
-                                        {/* Estimate */}
-                                        {task.estimatedTime && (
-                                            <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-indigo-50 text-indigo-600 border-indigo-100">
-                                                <Hourglass size={10} />
-                                                {formatEstimate(task.estimatedTime)}
-                                            </span>
-                                        )}
-
-                                        {/* Deadline */}
-                                        {deadlineInfo && (
-                                            <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
-                                                {deadlineInfo.icon}
-                                                {deadlineInfo.text}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {!task.completed && (
-                                        <div className="mt-4 flex items-center gap-2 group/slider">
-                                            <div className="relative flex-1 h-1.5 bg-slate-100 rounded-full">
-                                                <div 
-                                                    className={`absolute h-full rounded-full transition-all ${isOverdue ? 'bg-red-500' : 'bg-indigo-500'}`}
-                                                    style={{width: `${task.progress}%`}}
-                                                ></div>
-                                                <input 
-                                                    type="range" 
-                                                    min="0" max="100" 
-                                                    value={task.progress}
-                                                    onChange={(e) => updateProgress(task.id, e.target.value)}
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                />
+                                    {/* Edit Mode vs View Mode */}
+                                    {isEditing ? (
+                                        <div className="space-y-3 animate-fade-in">
+                                            <input 
+                                                value={editText}
+                                                onChange={(e) => setEditText(e.target.value)}
+                                                className="w-full text-base font-semibold text-slate-800 border-b border-indigo-200 focus:border-indigo-500 focus:outline-none bg-transparent pb-1"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                                <div className="relative group">
+                                                    <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-xs font-medium text-slate-600">
+                                                        <CalendarClock size={12}/>
+                                                        {editDeadline ? new Date(editDeadline).toLocaleDateString() : 'No Deadline'}
+                                                    </div>
+                                                    <input 
+                                                        type="datetime-local" 
+                                                        value={editDeadline}
+                                                        onChange={(e) => setEditDeadline(e.target.value)}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                                <select 
+                                                    value={editPriority} 
+                                                    onChange={(e) => setEditPriority(e.target.value as Priority)}
+                                                    className="bg-slate-100 px-2 py-1 rounded text-xs font-medium text-slate-600 border-none focus:ring-0"
+                                                >
+                                                    <option value="low">Low Priority</option>
+                                                    <option value="medium">Medium Priority</option>
+                                                    <option value="high">High Priority</option>
+                                                </select>
                                             </div>
-                                            <span className="text-[10px] font-mono font-bold text-slate-400 w-8 text-right">{task.progress}%</span>
+                                            <div className="flex gap-2 justify-end mt-2">
+                                                <button onClick={cancelEdit} className="p-1 text-slate-400 hover:text-slate-600"><XCircle size={18}/></button>
+                                                <button onClick={saveEdit} className="p-1 text-indigo-500 hover:text-indigo-700"><Save size={18}/></button>
+                                            </div>
                                         </div>
-                                    )}
-
-                                    {/* Subtasks */}
-                                    {(task.subtasks && task.subtasks.length > 0 || subtaskInputs[task.id]) && (
-                                        <div className="mt-3 pt-3 border-t border-slate-50">
-                                            {task.subtasks?.map(sub => (
-                                                <div key={sub.id} className="flex items-center gap-2 mb-2 group/sub">
-                                                    <button onClick={() => toggleSubtask(task.id, sub.id)} className={sub.completed ? 'text-emerald-500' : 'text-slate-300'}>
-                                                        {sub.completed ? <CheckSquare size={14} /> : <Square size={14} />}
+                                    ) : (
+                                        <>
+                                            <div className="flex justify-between items-start gap-2">
+                                                <p 
+                                                    onClick={() => toggleTask(task.id)}
+                                                    className={`text-base font-semibold leading-relaxed cursor-pointer transition-all ${
+                                                        task.completed ? 'line-through text-slate-400' : 'text-slate-800'
+                                                    }`}
+                                                >
+                                                    {task.text}
+                                                </p>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => startEditing(task)} className="text-slate-300 hover:text-indigo-500 p-1">
+                                                        <Edit2 size={14} />
                                                     </button>
-                                                    <span className={`text-xs flex-1 ${sub.completed ? 'line-through text-slate-400' : 'text-slate-600'}`}>{sub.text}</span>
-                                                    <X 
-                                                        size={12} 
-                                                        className="text-slate-300 hover:text-red-500 cursor-pointer opacity-0 group-hover/sub:opacity-100"
-                                                        onClick={() => {
-                                                            const newSub = task.subtasks?.filter(s => s.id !== sub.id);
-                                                            const newProg = newSub?.length ? Math.round((newSub.filter(s => s.completed).length / newSub.length) * 100) : task.progress;
-                                                            setTasks(tasks.map(t => t.id === task.id ? { ...t, subtasks: newSub, progress: newProg } : t));
+                                                    <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 p-1">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Metadata Chips */}
+                                            <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border flex items-center gap-1.5 ${
+                                                    task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                    task.priority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                                }`}>
+                                                    <Flag size={10} fill="currentColor" /> {t[task.priority || 'medium']}
+                                                </span>
+
+                                                {task.estimatedTime && (
+                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-indigo-50 text-indigo-600 border-indigo-100">
+                                                        <Hourglass size={10} />
+                                                        {formatEstimate(task.estimatedTime)}
+                                                    </span>
+                                                )}
+
+                                                {deadlineInfo && (
+                                                    <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
+                                                        {deadlineInfo.icon}
+                                                        {deadlineInfo.text}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Progress Bar (Auto or Manual) */}
+                                            {!task.completed && (
+                                                <div className="mt-4 flex items-center gap-2 group/slider">
+                                                    {hasSubtasks && (
+                                                        <div className="mr-1" title="Progress calculated from subtasks">
+                                                            <Calculator size={12} className="text-indigo-400" />
+                                                        </div>
+                                                    )}
+                                                    <div className="relative flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`absolute h-full rounded-full transition-all duration-500 ${isOverdue ? 'bg-red-500' : 'bg-indigo-500'}`}
+                                                            style={{width: `${task.progress}%`}}
+                                                        ></div>
+                                                        {/* Only allow manual sliding if NO subtasks */}
+                                                        {!hasSubtasks && (
+                                                            <input 
+                                                                type="range" 
+                                                                min="0" max="100" 
+                                                                value={task.progress}
+                                                                onChange={(e) => updateProgress(task.id, e.target.value)}
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 w-8 text-right">{task.progress}%</span>
+                                                </div>
+                                            )}
+
+                                            {/* Subtasks Section */}
+                                            <div className="mt-2">
+                                                {/* Subtasks Header - Shows count and percentage */}
+                                                {(hasSubtasks || isEditing) && (
+                                                    <div className="flex items-center gap-2 mt-4 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 pb-1">
+                                                        <ListChecks size={12} />
+                                                        <span>{t.subtasks}</span>
+                                                        {hasSubtasks && (
+                                                            <span className="ml-auto bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full border border-slate-100">
+                                                                {completedSubtasks}/{totalSubtasks} • {Math.round((completedSubtasks/totalSubtasks)*100)}%
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                {task.subtasks?.map(sub => (
+                                                    <div key={sub.id} className="flex items-center gap-2 mb-2 group/sub pl-1">
+                                                        <div className="text-slate-300">
+                                                            <GripVertical size={12} className="opacity-0 group-hover/sub:opacity-50 cursor-grab" />
+                                                        </div>
+                                                        <button onClick={() => toggleSubtask(task.id, sub.id)} className={sub.completed ? 'text-emerald-500 transition-all scale-105' : 'text-slate-300 hover:text-slate-400 transition-all'}>
+                                                            {sub.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+                                                        </button>
+                                                        <span className={`text-xs flex-1 transition-all ${sub.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{sub.text}</span>
+                                                        <X 
+                                                            size={14} 
+                                                            className="text-slate-300 hover:text-red-500 cursor-pointer opacity-0 group-hover/sub:opacity-100 transition-opacity p-0.5"
+                                                            onClick={() => deleteSubtask(task.id, sub.id)}
+                                                        />
+                                                    </div>
+                                                ))}
+                                                <div className="flex items-center gap-2 mt-2 pl-4">
+                                                    <PlusCircle size={16} className="text-indigo-400" />
+                                                    <input 
+                                                        className="bg-transparent text-xs focus:outline-none w-full placeholder:text-slate-400 font-medium text-slate-700 py-1 border-b border-transparent focus:border-indigo-100 transition-all"
+                                                        placeholder={t.addSubtask}
+                                                        value={subtaskInputs[task.id] || ''}
+                                                        onChange={(e) => setSubtaskInputs({...subtaskInputs, [task.id]: e.target.value})}
+                                                        onKeyDown={(e) => {
+                                                            if(e.key === 'Enter') addSubtask(task.id);
                                                         }}
                                                     />
                                                 </div>
-                                            ))}
-                                            <div className="flex items-center gap-2">
-                                                <PlusCircle size={14} className="text-indigo-400" />
-                                                <input 
-                                                    className="bg-transparent text-xs focus:outline-none w-full placeholder:text-slate-300"
-                                                    placeholder={t.addSubtask}
-                                                    value={subtaskInputs[task.id] || ''}
-                                                    onChange={(e) => setSubtaskInputs({...subtaskInputs, [task.id]: e.target.value})}
-                                                    onKeyDown={(e) => {
-                                                        if(e.key === 'Enter') addSubtask(task.id);
-                                                    }}
-                                                />
                                             </div>
-                                        </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -443,7 +550,7 @@ export const TodoList: React.FC = () => {
             {/* Quick Actions (Expanded) */}
             {showInputDetails && (
                 <div className="flex flex-wrap items-center gap-3 mb-3 animate-fade-in border-b border-slate-100 pb-3">
-                    {/* Reliable Deadline Picker */}
+                    {/* Deadline Picker */}
                     <div className="relative group flex items-center bg-slate-50 rounded-full border border-slate-200 focus-within:border-indigo-300 focus-within:bg-indigo-50 transition-colors">
                         <div className="relative flex items-center">
                             <button 
@@ -454,7 +561,6 @@ export const TodoList: React.FC = () => {
                                 <span>{deadline ? new Date(deadline).toLocaleString(language, {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) : t.setDeadline}</span>
                             </button>
                             
-                            {/* Input Overlay - The Fix */}
                             <input 
                                 type="datetime-local" 
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -463,7 +569,6 @@ export const TodoList: React.FC = () => {
                             />
                         </div>
                         
-                        {/* Clear Button */}
                         {deadline && (
                             <button 
                                 onClick={() => setDeadline('')}
@@ -538,7 +643,9 @@ export const TodoList: React.FC = () => {
                     type="text" 
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') addTask();
+                    }}
                     placeholder={t.addTaskPlaceholder}
                     className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium text-slate-800 placeholder:text-slate-400 h-10 px-2"
                 />
