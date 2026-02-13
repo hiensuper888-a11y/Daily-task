@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Link as LinkIcon, Phone, Lock, LogIn, UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Link as LinkIcon, Phone, Lock, LogIn, UserPlus, Upload } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -46,6 +46,9 @@ export const Profile: React.FC = () => {
 
   // Temporary state for editing
   const [editForm, setEditForm] = useState(profile);
+  
+  // File input ref for avatar upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync editForm with profile ONLY when NOT editing to prevent overwriting user input
   useEffect(() => {
@@ -222,6 +225,21 @@ export const Profile: React.FC = () => {
     setEditForm(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+          alert("Image size should be less than 2MB");
+          return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditForm(prev => ({ ...prev, avatar: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCheckUpdate = () => {
       if (!isOnline) return;
       setUpdateStatus('checking');
@@ -343,17 +361,33 @@ export const Profile: React.FC = () => {
             <div>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 border-b border-slate-100 pb-8">
                     <div className="relative shrink-0 group">
-                        <img 
-                            src={editForm.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} 
-                            alt="Avatar" 
-                            className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-orange-100 shadow-sm object-cover bg-white" 
+                         {/* Hidden File Input */}
+                        <input 
+                            type="file" 
+                            ref={fileInputRef}
+                            onChange={handleAvatarUpload}
+                            accept="image/*"
+                            className="hidden" 
                         />
-                        {isEditing && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                <Camera size={24} className="text-white"/>
-                            </div>
-                        )}
-                        <div className="absolute bottom-1 right-1 bg-white p-1 rounded-full shadow-sm">
+                        
+                        <div 
+                            className={`relative ${isEditing ? 'cursor-pointer' : ''}`}
+                            onClick={() => isEditing && fileInputRef.current?.click()}
+                            title={isEditing ? "Click to change avatar" : ""}
+                        >
+                            <img 
+                                src={editForm.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} 
+                                alt="Avatar" 
+                                className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-orange-100 shadow-sm object-cover bg-white" 
+                            />
+                            {isEditing && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-100 transition-opacity">
+                                    <Camera size={24} className="text-white drop-shadow-md"/>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="absolute bottom-1 right-1 bg-white p-1 rounded-full shadow-sm z-10">
                             {profile.provider === 'facebook' ? (
                                 <Facebook size={20} className="text-[#1877F2]" fill="currentColor"/>
                             ) : profile.provider === 'google' ? (
@@ -396,17 +430,26 @@ export const Profile: React.FC = () => {
                                             />
                                         </div>
                                     </div>
-
+                                    
+                                    {/* Optional: Avatar URL input for backup, but less prominent */}
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Avatar URL</label>
+                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1 flex items-center justify-between">
+                                            <span>Avatar Source</span>
+                                            <span 
+                                                className="text-orange-500 cursor-pointer flex items-center gap-1 hover:underline"
+                                                onClick={() => fileInputRef.current?.click()}
+                                            >
+                                                <Upload size={10} /> Upload Image
+                                            </span>
+                                        </label>
                                         <div className="relative">
                                             <LinkIcon size={16} className="absolute left-3 top-2.5 text-slate-400"/>
                                             <input 
                                                 name="avatar" 
                                                 value={editForm.avatar} 
                                                 onChange={handleInputChange} 
-                                                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm text-slate-600 font-medium"
-                                                placeholder="https://example.com/avatar.jpg"
+                                                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none text-xs text-slate-500 font-medium"
+                                                placeholder="Enter URL or upload image"
                                             />
                                         </div>
                                     </div>
