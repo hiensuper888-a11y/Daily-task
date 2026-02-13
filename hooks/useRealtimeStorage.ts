@@ -1,22 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+// Key used to store the currently logged-in email
+export const SESSION_KEY = 'daily_task_active_session_user';
 
 /**
  * A hook that syncs with localStorage and updates in real-time across tabs.
+ * It automatically prefixes keys with the current user's email to ensure data separation.
  */
 export function useRealtimeStorage<T>(key: string, initialValue: T) {
+  
+  // Helper to determine the prefix (User ID/Email or 'guest')
+  const getStorageKey = useCallback(() => {
+    if (typeof window === 'undefined') return `guest_${key}`;
+    const currentUser = window.localStorage.getItem(SESSION_KEY);
+    const prefix = currentUser ? currentUser.trim() : 'guest';
+    return `${prefix}_${key}`;
+  }, [key]);
+
   // Helper to get value from storage
-  const readValue = (): T => {
+  const readValue = useCallback((): T => {
     if (typeof window === 'undefined') {
       return initialValue;
     }
     try {
-      const item = window.localStorage.getItem(key);
+      const finalKey = getStorageKey();
+      const item = window.localStorage.getItem(finalKey);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
-  };
+  }, [initialValue, getStorageKey, key]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
@@ -26,14 +40,20 @@ export function useRealtimeStorage<T>(key: string, initialValue: T) {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        // Dispatch a custom event so the current tab updates immediately if multiple hooks use same key
+        const finalKey = getStorageKey();
+        window.localStorage.setItem(finalKey, JSON.stringify(valueToStore));
+        // Dispatch custom events
         window.dispatchEvent(new Event('local-storage'));
       }
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
   };
+
+  // Re-read storage when the component mounts or when keys change
+  useEffect(() => {
+    setStoredValue(readValue());
+  }, [readValue]);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -44,12 +64,15 @@ export function useRealtimeStorage<T>(key: string, initialValue: T) {
     window.addEventListener('storage', handleStorageChange);
     // Listen for changes from the same tab (custom event)
     window.addEventListener('local-storage', handleStorageChange);
+    // Listen for auth changes (Login/Logout) to switch data sources immediately
+    window.addEventListener('auth-change', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('local-storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleStorageChange);
     };
-  }, [key]);
+  }, [readValue]);
 
   return [storedValue, setValue] as const;
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
-import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
+import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { auth, googleProvider, facebookProvider } from '../services/firebaseConfig';
 import * as firebaseAuth from "firebase/auth";
@@ -12,6 +12,8 @@ const { signInWithPopup, signOut } = firebaseAuth as any;
 
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
+  
+  // This hook automatically switches data based on the SESSION_KEY in localStorage
   const [profile, setProfile] = useRealtimeStorage<UserProfile>('user_profile', {
     name: '',
     email: '',
@@ -40,34 +42,56 @@ export const Profile: React.FC = () => {
     setEditForm(profile);
   }, [profile]);
 
+  // Handle Login and Data Separation
   const login = async (providerName: 'google' | 'facebook') => {
     if (!isOnline) return;
     setIsSyncing(true);
 
     try {
-        // Capture auth in local variable to satisfy TypeScript null checks
         const authInstance = auth;
-        // Check if Firebase is configured properly
         if (authInstance && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
             const provider = providerName === 'google' ? googleProvider : facebookProvider;
             const result = await signInWithPopup(authInstance, provider!);
             const user = result.user;
             
-            setProfile({
-                ...profile,
-                name: user.displayName || 'User',
-                email: user.email || '',
-                avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
-                provider: providerName,
-                isLoggedIn: true,
-            });
+            // 1. SET SESSION: Save the unique email/ID to separate data
+            const userId = user.email || user.uid;
+            localStorage.setItem(SESSION_KEY, userId);
+            
+            // 2. TRIGGER SWITCH: Notify hooks to switch to the user's data bucket
+            window.dispatchEvent(new Event('auth-change'));
+
+            // 3. UPDATE DATA: Now we are writing to "email_user_profile"
+            // We use a timeout to ensure the hook has switched keys
+            setTimeout(() => {
+                setProfile({
+                    ...profile, // Keep existing fields if they were loaded from storage
+                    name: user.displayName || 'User',
+                    email: user.email || '',
+                    avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
+                    provider: providerName,
+                    isLoggedIn: true,
+                });
+                setIsSyncing(false);
+            }, 100);
+
         } else {
-            // FALLBACK: Demo mode if Firebase is not configured
+            // FALLBACK: Demo mode
             console.warn("Chạy chế độ Demo login (Chưa config Firebase)");
+            
+            // Mock Data
+            const demoEmail = providerName === 'google' ? 'demo_google@gmail.com' : 'demo_fb@facebook.com';
+            
+            // 1. SET SESSION
+            localStorage.setItem(SESSION_KEY, demoEmail);
+            
+            // 2. TRIGGER SWITCH
+            window.dispatchEvent(new Event('auth-change'));
+
             setTimeout(() => {
                 setProfile({
                     name: 'Nano User',
-                    email: providerName === 'google' ? 'user@gmail.com' : 'user@facebook.com',
+                    email: demoEmail,
                     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
                     provider: providerName,
                     isLoggedIn: true,
@@ -76,32 +100,39 @@ export const Profile: React.FC = () => {
                     address: '123 Street, City',
                     company: 'NanoTech Inc.'
                 });
+                setIsSyncing(false);
             }, 1000);
         }
     } catch (error: any) {
         console.error("Login Error:", error);
         alert(`Đăng nhập thất bại: ${error.message}`);
-    } finally {
-        setTimeout(() => setIsSyncing(false), 1500);
+        setIsSyncing(false);
     }
   };
 
   const logout = () => {
+    setIsSyncing(true);
     if (auth) {
         signOut(auth).catch(console.error);
     }
-    setProfile({
-      name: '',
-      email: '',
-      avatar: '',
-      provider: null,
-      isLoggedIn: false,
-      birthYear: '',
-      hometown: '',
-      address: '',
-      company: ''
-    });
-    setIsEditing(false);
+
+    // 1. Mark current profile as logged out before switching
+    setProfile(prev => ({ ...prev, isLoggedIn: false }));
+
+    setTimeout(() => {
+        // 2. CLEAR SESSION: Switch back to guest mode
+        localStorage.removeItem(SESSION_KEY);
+        
+        // 3. TRIGGER SWITCH: Notify hooks to load guest data
+        window.dispatchEvent(new Event('auth-change'));
+        
+        // 4. Reset local UI state
+        setIsEditing(false);
+        setIsSyncing(false);
+        
+        // Reload page to ensure clean state (optional but safer for full reset)
+        // window.location.reload(); 
+    }, 500);
   };
 
   const handleSave = () => {
@@ -198,8 +229,7 @@ export const Profile: React.FC = () => {
   useEffect(() => {
     if (profile.isLoggedIn && isOnline) {
         const interval = setInterval(() => {
-            setIsSyncing(true);
-            setTimeout(() => setIsSyncing(false), 1000);
+            // Background sync simulation
         }, 30000);
         return () => clearInterval(interval);
     }
@@ -228,6 +258,7 @@ export const Profile: React.FC = () => {
       </div>
 
       <div className="flex-1 p-6 flex flex-col items-center justify-start overflow-y-auto custom-scrollbar pb-24">
+        {/* Check direct session key for initial render flicker prevention, but rely on profile.isLoggedIn for logic */}
         {profile.isLoggedIn ? (
           <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 flex flex-col animate-fade-in space-y-8">
             
