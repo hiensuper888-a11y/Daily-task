@@ -25,6 +25,7 @@
   "license": "MIT",
   "dependencies": {
     "@google/genai": "*",
+    "firebase": "^10.8.0",
     "lucide-react": "^0.344.0",
     "pptxgenjs": "^3.12.0",
     "react": "^18.2.0",

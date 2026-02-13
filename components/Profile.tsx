@@ -4,6 +4,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { auth, googleProvider, facebookProvider } from '../services/firebaseConfig';
+import { signInWithPopup } from 'firebase/auth';
 
 export const Profile: React.FC = () => {
   const { t, language } = useLanguage();
@@ -34,26 +36,54 @@ export const Profile: React.FC = () => {
     setEditForm(profile);
   }, [profile]);
 
-  const login = (provider: 'google' | 'facebook') => {
+  const login = async (providerName: 'google' | 'facebook') => {
     if (!isOnline) return;
     setIsSyncing(true);
-    setTimeout(() => {
-      setProfile({
-        name: 'Nano User',
-        email: provider === 'google' ? 'user@gmail.com' : 'user@facebook.com',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
-        provider: provider,
-        isLoggedIn: true,
-        birthYear: '1995',
-        hometown: 'Hanoi, Vietnam',
-        address: '123 Street, City',
-        company: 'NanoTech Inc.'
-      });
-      setIsSyncing(false);
-    }, 1500);
+
+    try {
+        // Kiểm tra xem Firebase đã được cấu hình chưa
+        if (auth && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
+            const provider = providerName === 'google' ? googleProvider : facebookProvider;
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            
+            setProfile({
+                ...profile,
+                name: user.displayName || 'User',
+                email: user.email || '',
+                avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
+                provider: providerName,
+                isLoggedIn: true,
+            });
+        } else {
+            // FALLBACK: Nếu chưa cấu hình Firebase, chạy chế độ giả lập (Demo mode)
+            console.warn("Chạy chế độ Demo login (Chưa config Firebase)");
+            setTimeout(() => {
+                setProfile({
+                    name: 'Nano User',
+                    email: providerName === 'google' ? 'user@gmail.com' : 'user@facebook.com',
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
+                    provider: providerName,
+                    isLoggedIn: true,
+                    birthYear: '1995',
+                    hometown: 'Hanoi, Vietnam',
+                    address: '123 Street, City',
+                    company: 'NanoTech Inc.'
+                });
+            }, 1000);
+        }
+    } catch (error: any) {
+        console.error("Login Error:", error);
+        alert(`Đăng nhập thất bại: ${error.message}`);
+    } finally {
+        setTimeout(() => setIsSyncing(false), 1500);
+    }
   };
 
   const logout = () => {
+    if (auth) {
+        auth.signOut().catch(console.error);
+    }
     setProfile({
       name: '',
       email: '',
@@ -85,7 +115,6 @@ export const Profile: React.FC = () => {
       // Simulate network request
       setTimeout(() => {
           // For demo purposes, we just say it's up to date.
-          // In a real electron app, you would use ipcRenderer.send('check-for-update') here.
           setUpdateStatus('latest');
       }, 2000);
   };
@@ -187,8 +216,26 @@ export const Profile: React.FC = () => {
                     <div className="text-center sm:text-left flex-1 w-full">
                         {isEditing ? (
                             <div className="space-y-3">
-                                <input name="name" value={editForm.name} onChange={handleInputChange} className="w-full text-xl font-bold border-b border-slate-200 focus:border-orange-500 focus:outline-none py-1" placeholder="Name" />
-                                <p className="text-slate-400 text-sm flex items-center justify-center sm:justify-start gap-2"><Mail size={14}/> {profile.email}</p>
+                                <label className="block text-xs font-bold text-slate-400 uppercase">Tên hiển thị</label>
+                                <input 
+                                    name="name" 
+                                    value={editForm.name} 
+                                    onChange={handleInputChange} 
+                                    className="w-full text-xl font-bold border-b border-slate-200 focus:border-orange-500 focus:outline-none py-1 bg-slate-50 rounded px-2" 
+                                    placeholder="Name" 
+                                />
+                                
+                                <label className="block text-xs font-bold text-slate-400 uppercase mt-2">Email</label>
+                                <div className="relative">
+                                    <Mail size={16} className="absolute left-2 top-2.5 text-slate-400"/>
+                                    <input 
+                                        name="email" 
+                                        value={editForm.email} 
+                                        onChange={handleInputChange} 
+                                        className="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:outline-none text-sm text-slate-600"
+                                        placeholder="Email"
+                                    />
+                                </div>
                             </div>
                         ) : (
                             <div>
