@@ -12,6 +12,7 @@ export interface Task {
   completed: boolean;
   progress: number;
   createdAt: string; // Used as "Assigned Date"
+  completedAt?: string; // Exact time when task was marked as done
   deadline?: string; // ISO String for Deadline
   estimatedTime?: number; // In minutes
   archived?: boolean;

@@ -19,6 +19,8 @@ export const TodoList: React.FC = () => {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [editDeadline, setEditDeadline] = useState('');
+  const [editCreatedAt, setEditCreatedAt] = useState('');
+  const [editCompletedAt, setEditCompletedAt] = useState('');
   const [editPriority, setEditPriority] = useState<Priority>('medium');
 
   // Filtering & Sorting
@@ -32,10 +34,18 @@ export const TodoList: React.FC = () => {
 
   const { t, language } = useLanguage();
 
-  // Helper: Format Date for Input
+  // Helper: Format Date for Input (datetime-local expects YYYY-MM-DDTHH:mm)
   const toLocalISOString = (date: Date) => {
     const pad = (num: number) => num.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  // Helper safely convert ISO string to input format
+  const safeDateToInput = (isoString?: string) => {
+      if (!isoString) return '';
+      try {
+          return toLocalISOString(new Date(isoString));
+      } catch (e) { return ''; }
   };
 
   const formatEstimate = (mins: number) => {
@@ -123,7 +133,9 @@ export const TodoList: React.FC = () => {
   const startEditing = (task: Task) => {
     setEditingTaskId(task.id);
     setEditText(task.text);
-    setEditDeadline(task.deadline || '');
+    setEditDeadline(task.deadline ? safeDateToInput(task.deadline) : '');
+    setEditCreatedAt(safeDateToInput(task.createdAt));
+    setEditCompletedAt(task.completedAt ? safeDateToInput(task.completedAt) : '');
     setEditPriority(task.priority || 'medium');
   };
 
@@ -131,7 +143,14 @@ export const TodoList: React.FC = () => {
     if (editingTaskId) {
         setTasks(tasks.map(t => 
             t.id === editingTaskId 
-            ? { ...t, text: editText, deadline: editDeadline || undefined, priority: editPriority } 
+            ? { 
+                ...t, 
+                text: editText, 
+                deadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
+                createdAt: editCreatedAt ? new Date(editCreatedAt).toISOString() : t.createdAt,
+                completedAt: editCompletedAt ? new Date(editCompletedAt).toISOString() : t.completedAt,
+                priority: editPriority 
+              } 
             : t
         ));
         setEditingTaskId(null);
@@ -147,9 +166,14 @@ export const TodoList: React.FC = () => {
       if (task.id === id) {
         const newCompleted = !task.completed;
         if (newCompleted) playSuccessSound();
+        
+        // Capture exact completion time when checked
+        const completionTime = newCompleted ? new Date().toISOString() : undefined;
+        
         return { 
             ...task, 
             completed: newCompleted, 
+            completedAt: completionTime,
             progress: newCompleted ? 100 : (task.subtasks?.length ? calculateProgressFromSubtasks(task.subtasks) : 0),
             subtasks: newCompleted 
                 ? task.subtasks?.map(s => ({ ...s, completed: true })) 
@@ -169,7 +193,17 @@ export const TodoList: React.FC = () => {
 
   const updateProgress = (id: number, val: string) => {
     const progress = parseInt(val, 10);
-    setTasks(tasks.map(t => t.id === id ? { ...t, progress, completed: progress === 100 } : t));
+    const isCompleted = progress === 100;
+    
+    setTasks(tasks.map(t => {
+        if (t.id === id) {
+            // If dragging to 100%, set completedAt if not already set
+            const newCompletedAt = isCompleted ? (t.completedAt || new Date().toISOString()) : undefined;
+            return { ...t, progress, completed: isCompleted, completedAt: newCompletedAt };
+        }
+        return t;
+    }));
+    
     if (progress === 100) playSuccessSound();
   };
 
@@ -202,9 +236,16 @@ export const TodoList: React.FC = () => {
               const newSub = t.subtasks.map(s => s.id === subId ? { ...s, completed: !s.completed } : s);
               const newProgress = calculateProgressFromSubtasks(newSub);
               
-              if (newProgress === 100 && t.progress < 100) playSuccessSound();
+              const isCompleted = newProgress === 100;
+              if (isCompleted && t.progress < 100) playSuccessSound();
 
-              return { ...t, subtasks: newSub, progress: newProgress, completed: newProgress === 100 };
+              return { 
+                  ...t, 
+                  subtasks: newSub, 
+                  progress: newProgress, 
+                  completed: isCompleted,
+                  completedAt: isCompleted ? (t.completedAt || new Date().toISOString()) : undefined 
+                };
           }
           return t;
       }));
@@ -386,11 +427,28 @@ export const TodoList: React.FC = () => {
                                                 className="w-full text-base font-semibold text-slate-800 border-b border-indigo-200 focus:border-indigo-500 focus:outline-none bg-transparent pb-1"
                                                 autoFocus
                                             />
-                                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                            
+                                            {/* Date Editing Grid */}
+                                            <div className="grid grid-cols-2 gap-3 mt-2">
                                                 <div className="relative group">
-                                                    <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-xs font-medium text-slate-600">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Assigned</label>
+                                                    <div className="flex items-center gap-1 bg-slate-100 px-2 py-1.5 rounded text-xs font-medium text-slate-600 border border-transparent focus-within:border-indigo-300">
+                                                        <CalendarDays size={12}/>
+                                                        {editCreatedAt ? new Date(editCreatedAt).toLocaleString() : 'Set Date'}
+                                                    </div>
+                                                    <input 
+                                                        type="datetime-local" 
+                                                        value={editCreatedAt}
+                                                        onChange={(e) => setEditCreatedAt(e.target.value)}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </div>
+
+                                                <div className="relative group">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Deadline</label>
+                                                    <div className="flex items-center gap-1 bg-slate-100 px-2 py-1.5 rounded text-xs font-medium text-slate-600 border border-transparent focus-within:border-indigo-300">
                                                         <CalendarClock size={12}/>
-                                                        {editDeadline ? new Date(editDeadline).toLocaleDateString() : 'No Deadline'}
+                                                        {editDeadline ? new Date(editDeadline).toLocaleString() : 'No Deadline'}
                                                     </div>
                                                     <input 
                                                         type="datetime-local" 
@@ -399,19 +457,40 @@ export const TodoList: React.FC = () => {
                                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                                     />
                                                 </div>
+                                            </div>
+
+                                            {/* Completed At Editing (Only if completed) */}
+                                            {task.completed && (
+                                                <div className="relative group mt-1">
+                                                     <label className="text-[10px] uppercase font-bold text-emerald-500 block mb-1">Completed At</label>
+                                                     <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1.5 rounded text-xs font-medium text-emerald-700 border border-transparent focus-within:border-emerald-300">
+                                                        <CheckCircle2 size={12}/>
+                                                        {editCompletedAt ? new Date(editCompletedAt).toLocaleString() : 'Not set'}
+                                                    </div>
+                                                    <input 
+                                                        type="datetime-local" 
+                                                        value={editCompletedAt}
+                                                        onChange={(e) => setEditCompletedAt(e.target.value)}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
                                                 <select 
                                                     value={editPriority} 
                                                     onChange={(e) => setEditPriority(e.target.value as Priority)}
-                                                    className="bg-slate-100 px-2 py-1 rounded text-xs font-medium text-slate-600 border-none focus:ring-0"
+                                                    className="bg-slate-50 px-2 py-1 rounded text-xs font-medium text-slate-600 border border-slate-200 focus:ring-0"
                                                 >
                                                     <option value="low">Low Priority</option>
                                                     <option value="medium">Medium Priority</option>
                                                     <option value="high">High Priority</option>
                                                 </select>
-                                            </div>
-                                            <div className="flex gap-2 justify-end mt-2">
-                                                <button onClick={cancelEdit} className="p-1 text-slate-400 hover:text-slate-600"><XCircle size={18}/></button>
-                                                <button onClick={saveEdit} className="p-1 text-indigo-500 hover:text-indigo-700"><Save size={18}/></button>
+
+                                                <div className="flex gap-2">
+                                                    <button onClick={cancelEdit} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><XCircle size={18}/></button>
+                                                    <button onClick={saveEdit} className="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-full transition-colors"><Save size={18}/></button>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
@@ -437,6 +516,7 @@ export const TodoList: React.FC = () => {
                                             
                                             {/* Metadata Chips */}
                                             <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                                {/* Priority */}
                                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border flex items-center gap-1.5 ${
                                                     task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                                                     task.priority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
@@ -445,17 +525,25 @@ export const TodoList: React.FC = () => {
                                                     <Flag size={10} fill="currentColor" /> {t[task.priority || 'medium']}
                                                 </span>
 
-                                                {task.estimatedTime && (
-                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-indigo-50 text-indigo-600 border-indigo-100">
-                                                        <Hourglass size={10} />
-                                                        {formatEstimate(task.estimatedTime)}
-                                                    </span>
-                                                )}
+                                                {/* Assigned Date (Created At) */}
+                                                <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-slate-50 text-slate-500 border-slate-100" title={`Assigned: ${new Date(task.createdAt).toLocaleString()}`}>
+                                                    <CalendarDays size={10} />
+                                                    {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric', hour:'2-digit', minute:'2-digit'})}
+                                                </span>
 
+                                                {/* Deadline */}
                                                 {deadlineInfo && (
                                                     <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
                                                         {deadlineInfo.icon}
                                                         {deadlineInfo.text}
+                                                    </span>
+                                                )}
+
+                                                {/* Completed At Timestamp (Only if done) */}
+                                                {task.completed && task.completedAt && (
+                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-md border bg-emerald-50 text-emerald-600 border-emerald-100 animate-fade-in" title={`Finished: ${new Date(task.completedAt).toLocaleString()}`}>
+                                                        <CheckCircle2 size={10} />
+                                                        {new Date(task.completedAt).toLocaleTimeString(language, {hour:'2-digit', minute:'2-digit'})}
                                                     </span>
                                                 )}
                                             </div>
