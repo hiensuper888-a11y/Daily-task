@@ -92,8 +92,12 @@ export const AiAssistant: React.FC = () => {
             return;
         }
 
-        const taskListStr = activeTasks.map(t => `- ${t.text} (Priority: ${t.priority || 'Medium'})`).join('\n');
-        const prompt = `${t.aiAdvice}\n${taskListStr}\n\nPlease help me prioritize them and suggest a plan.`;
+        // Format tasks with Priority for the AI
+        const taskListStr = activeTasks.map(t => 
+            `- [Priority: ${t.priority ? t.priority.toUpperCase() : 'MEDIUM'}] ${t.text} (Progress: ${t.progress}%)`
+        ).join('\n');
+
+        const prompt = `Please analyze my active tasks:\n\n${taskListStr}\n\nBased on this list, please providing the following:\n1. A clear list of tasks sorted by importance.\n2. A suggested execution order to be most productive.\n3. Specific advice on how to tackle high-priority items effectively.`;
         
         handleSendMessage(prompt);
     };
