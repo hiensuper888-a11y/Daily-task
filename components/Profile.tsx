@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2 } from 'lucide-react';
+import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
@@ -30,7 +30,8 @@ export const Profile: React.FC = () => {
   
   // Update state
   const APP_VERSION = "1.0.0";
-  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'latest' | 'available'>('idle');
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'latest' | 'available' | 'downloading'>('idle');
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // Temporary state for editing
   const [editForm, setEditForm] = useState(profile);
@@ -119,8 +120,31 @@ export const Profile: React.FC = () => {
       
       // Simulate network request
       setTimeout(() => {
-          setUpdateStatus('latest');
-      }, 2000);
+          // Demo: Always find an update if we are on 1.0.0 for demonstration
+          if (APP_VERSION === "1.0.0") {
+              setUpdateStatus('available');
+          } else {
+              setUpdateStatus('latest');
+          }
+      }, 1500);
+  };
+
+  const handleDownloadUpdate = () => {
+    setUpdateStatus('downloading');
+    setDownloadProgress(0);
+    
+    // Simulate download progress
+    const interval = setInterval(() => {
+      setDownloadProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          alert("Update v1.1.0 ready to install. Restarting app...");
+          window.location.reload();
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 300);
   };
 
   const downloadFile = (blob: Blob, fileName: string) => {
@@ -141,10 +165,10 @@ export const Profile: React.FC = () => {
         `"${profile.name}"`, 
         profile.email, 
         profile.provider, 
-        profile.birthYear, 
-        `"${profile.hometown}"`, 
-        `"${profile.address}"`, 
-        `"${profile.company}"`
+        profile.birthYear || '', 
+        `"${profile.hometown || ''}"`, 
+        `"${profile.address || ''}"`, 
+        `"${profile.company || ''}"`
     ];
     const csvContent = "\uFEFF" + [headers, row].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -159,11 +183,11 @@ export const Profile: React.FC = () => {
         <h1 style="color: #f97316;">${t.profile} - ${profile.name}</h1>
         <table border="1" style="border-collapse:collapse;width:100%; margin-top: 20px;">
           <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Email</td><td style="padding:10px;">${profile.email}</td></tr>
-          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.birthYear}</td><td style="padding:10px;">${profile.birthYear}</td></tr>
-          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.hometown}</td><td style="padding:10px;">${profile.hometown}</td></tr>
-          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.address}</td><td style="padding:10px;">${profile.address}</td></tr>
-          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.company}</td><td style="padding:10px;">${profile.company}</td></tr>
-          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Provider</td><td style="padding:10px;">${profile.provider}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.birthYear}</td><td style="padding:10px;">${profile.birthYear || ''}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.hometown}</td><td style="padding:10px;">${profile.hometown || ''}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.address}</td><td style="padding:10px;">${profile.address || ''}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">${t.company}</td><td style="padding:10px;">${profile.company || ''}</td></tr>
+          <tr><td style="background:#fff7ed; padding:10px; font-weight:bold;">Provider</td><td style="padding:10px;">${profile.provider || ''}</td></tr>
         </table>
       </body></html>
     `;
@@ -180,6 +204,13 @@ export const Profile: React.FC = () => {
         return () => clearInterval(interval);
     }
   }, [profile.isLoggedIn, isOnline]);
+
+  const profileFields = [
+    { label: t.birthYear, key: 'birthYear' as keyof UserProfile, icon: Calendar },
+    { label: t.hometown, key: 'hometown' as keyof UserProfile, icon: MapPin },
+    { label: t.address, key: 'address' as keyof UserProfile, icon: Home },
+    { label: t.company, key: 'company' as keyof UserProfile, icon: Briefcase }
+  ];
 
   return (
     <div className="flex flex-col h-full bg-slate-50/50">
@@ -262,23 +293,26 @@ export const Profile: React.FC = () => {
 
                 {/* Editable Fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-8">
-                    {[
-                        { label: t.birthYear, key: 'birthYear', type: 'text' },
-                        { label: t.hometown, key: 'hometown', type: 'text' },
-                        { label: t.address, key: 'address', type: 'text' },
-                        { label: t.company, key: 'company', type: 'text' }
-                    ].map((field) => (
-                        <div key={field.key} className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{field.label}</label>
+                    {profileFields.map((field) => (
+                        <div key={field.key} className="space-y-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <field.icon size={12} />
+                                {field.label}
+                            </label>
                             {isEditing ? (
-                                <input 
-                                    name={field.key} 
-                                    value={(editForm as any)[field.key]} 
-                                    onChange={handleInputChange} 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:outline-none transition-all"
-                                />
+                                <div className="relative">
+                                    <input 
+                                        name={field.key} 
+                                        value={(editForm[field.key] as string) || ''} 
+                                        onChange={handleInputChange} 
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:outline-none transition-all text-slate-700 font-medium"
+                                        placeholder={field.label}
+                                    />
+                                </div>
                             ) : (
-                                <p className="text-slate-800 font-medium border-b border-transparent py-2">{(profile as any)[field.key] || '---'}</p>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-700 font-medium min-h-[48px] flex items-center">
+                                    {(profile[field.key] as string) || <span className="text-slate-300 italic">--</span>}
+                                </div>
                             )}
                         </div>
                     ))}
@@ -314,14 +348,17 @@ export const Profile: React.FC = () => {
             </div>
 
             {/* App Info & Updates Section */}
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <div className={`p-6 rounded-2xl border transition-all duration-300 ${updateStatus === 'available' ? 'bg-blue-50 border-blue-200 ring-4 ring-blue-50' : 'bg-slate-50 border-slate-100'}`}>
                 <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                    <Info size={16} className="text-blue-500"/> {t.appInfo}
+                    <Info size={16} className={updateStatus === 'available' ? 'text-blue-600' : 'text-blue-500'}/> {t.appInfo}
                 </h3>
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-wide">{t.version}</p>
-                        <p className="text-lg font-bold text-slate-800">v{APP_VERSION}</p>
+                        <p className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            v{APP_VERSION}
+                            {updateStatus === 'available' && <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">Update available</span>}
+                        </p>
                     </div>
                     <div className="text-right">
                          {updateStatus === 'checking' ? (
@@ -333,9 +370,28 @@ export const Profile: React.FC = () => {
                                 <CheckCircle2 size={12}/> {t.upToDate}
                             </span>
                          ) : updateStatus === 'available' ? (
-                             <button className="text-xs font-bold text-white flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full shadow-sm transition-all">
-                                 <Download size={12}/> {t.downloadUpdate}
-                             </button>
+                             <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] text-blue-600 font-bold mb-1">v1.1.0 available</span>
+                                <button 
+                                    onClick={handleDownloadUpdate}
+                                    className="text-xs font-bold text-white flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full shadow-lg shadow-blue-200 transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <Download size={14}/> {t.downloadUpdate}
+                                </button>
+                             </div>
+                         ) : updateStatus === 'downloading' ? (
+                             <div className="w-32">
+                                <div className="flex justify-between text-[10px] font-bold text-blue-600 mb-1">
+                                    <span>Downloading...</span>
+                                    <span>{downloadProgress}%</span>
+                                </div>
+                                <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-blue-600 transition-all duration-300"
+                                        style={{ width: `${downloadProgress}%` }}
+                                    ></div>
+                                </div>
+                             </div>
                          ) : (
                              <button 
                                 onClick={handleCheckUpdate}
@@ -353,6 +409,17 @@ export const Profile: React.FC = () => {
                          {!isOnline && <p className="text-[10px] text-red-400 mt-1 font-medium">{t.offlineUpdate}</p>}
                     </div>
                 </div>
+                {updateStatus === 'available' && (
+                    <div className="mt-4 p-3 bg-white/80 rounded-lg text-xs text-slate-600 border border-blue-100 flex gap-2">
+                        <AlertCircle size={14} className="text-blue-500 shrink-0 mt-0.5" />
+                        <div>
+                            <span className="font-bold block text-slate-700">What's New in v1.1.0:</span>
+                            • Improved AI performance and response speed.<br/>
+                            • Fixed minor UI glitches in dark mode.<br/>
+                            • Enhanced offline data synchronization.
+                        </div>
+                    </div>
+                )}
             </div>
 
           </div>

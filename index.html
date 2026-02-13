@@ -12,17 +12,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --glass-border: rgba(255, 255, 255, 0.4);
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+      }
+
       body {
         font-family: 'Plus Jakarta Sans', sans-serif;
         background-color: #f8fafc;
         -webkit-tap-highlight-color: transparent;
         user-select: none; /* Desktop app feel */
+        overflow: hidden; /* Prevent body scroll, handle in app */
       }
 
       /* Custom Scrollbar */
-      .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+      .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
       
       /* Range Slider Styling */
       input[type=range]::-webkit-slider-thumb {
@@ -34,10 +42,11 @@
         border: 2px solid #2563eb;
         margin-top: -6px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        transition: all 0.2s;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
       input[type=range]:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
+        transform: scale(1.2);
+        box-shadow: 0 4px 8px rgba(37,99,235,0.2);
       }
       input[type=range]::-webkit-slider-runnable-track {
         height: 4px;
@@ -45,12 +54,26 @@
       }
 
       /* Animations */
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+      @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(15px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
       }
       .animate-fade-in {
-        animation: fadeIn 0.4s ease-out forwards;
+        animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      
+      .glass {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+      }
+
+      .hover-scale-active {
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .hover-scale-active:active {
+        transform: scale(0.96);
       }
       
       /* Safe area padding */
