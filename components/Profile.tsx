@@ -5,6 +5,7 @@ import { UserProfile } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { auth, googleProvider, facebookProvider } from '../services/firebaseConfig';
+import { signInWithPopup, signOut } from "firebase/auth";
 
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
@@ -43,7 +44,7 @@ export const Profile: React.FC = () => {
         // Check if Firebase is configured properly
         if (auth && ((providerName === 'google' && googleProvider) || (providerName === 'facebook' && facebookProvider))) {
             const provider = providerName === 'google' ? googleProvider : facebookProvider;
-            const result = await auth.signInWithPopup(provider);
+            const result = await signInWithPopup(auth, provider!);
             const user = result.user;
             
             setProfile({
@@ -81,7 +82,7 @@ export const Profile: React.FC = () => {
 
   const logout = () => {
     if (auth) {
-        auth.signOut().catch(console.error);
+        signOut(auth).catch(console.error);
     }
     setProfile({
       name: '',

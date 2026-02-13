@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, CheckCircle, Circle, Calendar, ListFilter, Archive, TrendingUp, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Flag, AlertCircle, ArrowDown, ArrowUp, Minus } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Circle, Calendar, ListFilter, Archive, TrendingUp, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Flag, AlertCircle, ArrowDown, ArrowUp, Minus, ArrowUpDown } from 'lucide-react';
 import { Task, Subtask, FilterType, Priority } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,6 +11,7 @@ export const TodoList: React.FC = () => {
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [sortBy, setSortBy] = useState<'priority' | 'date'>('priority');
   
   // State for subtask input [taskId]: value
   const [subtaskInputs, setSubtaskInputs] = useState<Record<number, string>>({});
@@ -235,16 +236,21 @@ export const TodoList: React.FC = () => {
 
   const visibleTasks = tasksForSelectedDate.filter(t => !t.archived);
   
-  // Sorting: Active first, then by priority (High > Medium > Low), then by time
+  // Sorting: Active first, then by priority (High > Medium > Low) or date depending on sort mode, then by time
   visibleTasks.sort((a, b) => {
-      if (a.completed === b.completed) {
+      if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+      }
+
+      if (sortBy === 'priority') {
           const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, undefined: 0 };
           const pA = priorityOrder[a.priority || 'undefined'];
           const pB = priorityOrder[b.priority || 'undefined'];
-          if (pA !== pB) return pB - pA;
-          return b.id - a.id;
+          if (pA !== pB) return pB - pA; // Descending priority
       }
-      return a.completed ? 1 : -1;
+
+      // Default fallback: Newest first (by ID which is timestamp)
+      return b.id - a.id;
   });
 
   const totalTasks = visibleTasks.length;
@@ -357,22 +363,34 @@ export const TodoList: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters and Sort */}
       <div className="px-4 sm:px-6 pt-2 pb-2 shrink-0 bg-white/50 backdrop-blur-sm border-b border-slate-100 sticky top-[76px] md:top-0 z-10">
-        <div className="flex space-x-2 max-w-4xl mx-auto w-full">
-          {(['all', 'active', 'completed'] as FilterType[]).map((f) => (
-             <button 
-             key={f}
-             onClick={() => setFilter(f)}
-             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all capitalize ${
-               filter === f 
-               ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200' 
-               : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-             }`}
-           >
-             {f === 'all' ? t.all : f === 'active' ? t.active : t.completed}
-           </button>
-          ))}
+        <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
+            <div className="flex space-x-2">
+            {(['all', 'active', 'completed'] as FilterType[]).map((f) => (
+                <button 
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all capitalize ${
+                filter === f 
+                ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200' 
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                }`}
+            >
+                {f === 'all' ? t.all : f === 'active' ? t.active : t.completed}
+            </button>
+            ))}
+            </div>
+
+            {/* Sort Toggle */}
+            <button 
+                onClick={() => setSortBy(prev => prev === 'priority' ? 'date' : 'priority')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all shadow-sm group"
+            >
+                <ArrowUpDown size={12} className="text-slate-400 group-hover:text-blue-500"/>
+                <span className="hidden sm:inline text-slate-500">{t.sortBy}:</span>
+                <span className="text-blue-600 font-bold">{sortBy === 'priority' ? t.sortPriority : t.sortDate}</span>
+            </button>
         </div>
       </div>
 

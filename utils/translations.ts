@@ -110,6 +110,9 @@ export const translations = {
     updateAvailable: "New version available!",
     downloadUpdate: "Download Update",
     offlineUpdate: "Connect to internet to check updates.",
+    sortBy: "Sort by",
+    sortPriority: "Priority",
+    sortDate: "Date",
   },
   vi: {
     appTitle: "Daily Task",
@@ -220,6 +223,9 @@ export const translations = {
     updateAvailable: "Có bản cập nhật mới!",
     downloadUpdate: "Tải bản cập nhật",
     offlineUpdate: "Kết nối mạng để kiểm tra.",
+    sortBy: "Sắp xếp",
+    sortPriority: "Ưu tiên",
+    sortDate: "Ngày",
   },
   zh: {
     appTitle: "Daily Task",
@@ -330,6 +336,9 @@ export const translations = {
     updateAvailable: "有新版本可用！",
     downloadUpdate: "下载更新",
     offlineUpdate: "连接网络以检查更新。",
+    sortBy: "排序",
+    sortPriority: "优先级",
+    sortDate: "日期",
   },
   ja: {
     appTitle: "Daily Task",
@@ -440,6 +449,9 @@ export const translations = {
     updateAvailable: "新しいバージョンがあります！",
     downloadUpdate: "更新をダウンロード",
     offlineUpdate: "更新を確認するにはインターネットに接続してください。",
+    sortBy: "並び替え",
+    sortPriority: "優先度",
+    sortDate: "日付",
   },
   fr: {
     appTitle: "Daily Task",
@@ -550,6 +562,9 @@ export const translations = {
     updateAvailable: "Nouvelle version disponible !",
     downloadUpdate: "Télécharger",
     offlineUpdate: "Connectez-vous pour vérifier.",
+    sortBy: "Trier par",
+    sortPriority: "Priorité",
+    sortDate: "Date",
   },
   ko: {
     appTitle: "Daily Task",
@@ -660,6 +675,9 @@ export const translations = {
     updateAvailable: "새 버전을 사용할 수 있습니다!",
     downloadUpdate: "업데이트 다운로드",
     offlineUpdate: "업데이트를 확인하려면 인터넷에 연결하세요.",
+    sortBy: "정렬",
+    sortPriority: "우선순위",
+    sortDate: "날짜",
   },
   de: {
     appTitle: "Daily Task",
@@ -770,6 +788,9 @@ export const translations = {
     updateAvailable: "Neues Update verfügbar!",
     downloadUpdate: "Update laden",
     offlineUpdate: "Verbinden Sie sich mit dem Internet.",
+    sortBy: "Sortieren nach",
+    sortPriority: "Priorität",
+    sortDate: "Datum",
   },
   es: {
     appTitle: "Daily Task",
@@ -880,6 +901,9 @@ export const translations = {
     updateAvailable: "¡Nueva versión disponible!",
     downloadUpdate: "Descargar",
     offlineUpdate: "Conéctate para buscar actualizaciones.",
+    sortBy: "Ordenar por",
+    sortPriority: "Prioridad",
+    sortDate: "Fecha",
   },
   ru: {
     appTitle: "Daily Task",
@@ -990,6 +1014,9 @@ export const translations = {
     updateAvailable: "Есть обновление!",
     downloadUpdate: "Скачать",
     offlineUpdate: "Нужен интернет для проверки.",
+    sortBy: "Сортировка",
+    sortPriority: "Приоритет",
+    sortDate: "Дата",
   },
   hi: {
     appTitle: "Daily Task",
@@ -1100,6 +1127,9 @@ export const translations = {
     updateAvailable: "नया संस्करण उपलब्ध है!",
     downloadUpdate: "अपडेट डाउनलोड करें",
     offlineUpdate: "जाँच करने के लिए इंटरनेट से कनेक्ट करें।",
+    sortBy: "क्रमबद्ध करें",
+    sortPriority: "प्राथमिकता",
+    sortDate: "दिनांक",
   }
 };
 
