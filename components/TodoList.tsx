@@ -238,7 +238,7 @@ export const TodoList: React.FC = () => {
   // Sorting: Active first, then by priority (High > Medium > Low), then by time
   visibleTasks.sort((a, b) => {
       if (a.completed === b.completed) {
-          const priorityOrder = { high: 3, medium: 2, low: 1, undefined: 0 };
+          const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, undefined: 0 };
           const pA = priorityOrder[a.priority || 'undefined'];
           const pB = priorityOrder[b.priority || 'undefined'];
           if (pA !== pB) return pB - pA;
