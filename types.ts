@@ -11,7 +11,9 @@ export interface Task {
   text: string;
   completed: boolean;
   progress: number;
-  createdAt: string;
+  createdAt: string; // Used as "Assigned Date"
+  deadline?: string; // ISO String for Deadline
+  estimatedTime?: number; // In minutes
   archived?: boolean;
   subtasks?: Subtask[];
   priority?: Priority;

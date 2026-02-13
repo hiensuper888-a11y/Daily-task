@@ -13,7 +13,7 @@ const enTranslations = {
   items: "items",
   greatJob: "Great job!",
   keepGoing: "Keep going!",
-  addTaskPlaceholder: "Add a new task...",
+  addTaskPlaceholder: "What needs to be done?",
   all: "All",
   active: "Active",
   completed: "Completed",
@@ -123,6 +123,14 @@ const enTranslations = {
   sortBy: "Sort by",
   sortPriority: "Priority",
   sortDate: "Date",
+  deadline: "Deadline",
+  assignedDate: "Assigned",
+  estimatedTime: "Est. Time",
+  minutes: "mins",
+  hours: "hrs",
+  setDeadline: "Set Deadline",
+  setEstimate: "Set Estimate",
+  overdue: "Overdue",
 };
 
 const viTranslations = {
@@ -138,7 +146,7 @@ const viTranslations = {
   items: "việc",
   greatJob: "Tuyệt vời!",
   keepGoing: "Cố lên!",
-  addTaskPlaceholder: "Thêm công việc mới...",
+  addTaskPlaceholder: "Bạn cần làm gì?",
   all: "Tất cả",
   active: "Đang làm",
   completed: "Đã xong",
@@ -248,6 +256,14 @@ const viTranslations = {
   sortBy: "Sắp xếp",
   sortPriority: "Ưu tiên",
   sortDate: "Ngày",
+  deadline: "Hạn chót",
+  assignedDate: "Ngày giao",
+  estimatedTime: "Dự kiến",
+  minutes: "phút",
+  hours: "giờ",
+  setDeadline: "Chọn hạn chót",
+  setEstimate: "Chọn thời gian",
+  overdue: "Quá hạn",
 };
 
 export const translations = {
