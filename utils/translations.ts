@@ -129,6 +129,7 @@ const enTranslations = {
   minutes: "mins",
   hours: "hrs",
   setDeadline: "Set Deadline",
+  setAssignedDate: "Set Start Date",
   setEstimate: "Set Estimate",
   overdue: "Overdue",
 };
@@ -262,6 +263,7 @@ const viTranslations = {
   minutes: "phút",
   hours: "giờ",
   setDeadline: "Chọn hạn chót",
+  setAssignedDate: "Ngày giao việc",
   setEstimate: "Chọn thời gian",
   overdue: "Quá hạn",
 };

@@ -22,7 +22,7 @@ export const AiAssistant: React.FC = () => {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, isLoading]);
 
     const handleSendMessage = async (text?: string) => {
         if (!isOnline) return;
@@ -49,15 +49,12 @@ export const AiAssistant: React.FC = () => {
             }));
 
             let responseText = "";
-            
             if (selectedModel === 'gemini') {
                 responseText = await chatWithGemini(userMsg.text, historyForApi as any);
             } else if (selectedModel === 'chatgpt') {
-                 // Placeholder for other models if implemented
                  responseText = await chatWithGemini(userMsg.text, historyForApi as any);
                  responseText = "(ChatGPT Mode) " + responseText;
             } else if (selectedModel === 'grok') {
-                 // Placeholder for other models if implemented
                  responseText = await chatWithGemini(userMsg.text, historyForApi as any);
                  responseText = "(Grok Mode) " + responseText;
             }
@@ -102,7 +99,6 @@ export const AiAssistant: React.FC = () => {
             return;
         }
 
-        // Format tasks with Priority for the AI
         const taskListStr = activeTasks.map(t => 
             `- [Priority: ${t.priority ? t.priority.toUpperCase() : 'MEDIUM'}] ${t.text} (Progress: ${t.progress}%)`
         ).join('\n');
@@ -136,7 +132,7 @@ export const AiAssistant: React.FC = () => {
         <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent relative">
              {/* Header */}
             <div className="relative overflow-hidden bg-gradient-to-r from-rose-500 to-pink-600 p-6 md:p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10">
-                <div className="absolute right-0 bottom-0 opacity-10 p-4"><Bot size={120} /></div>
+                <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><Bot size={120} /></div>
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -155,7 +151,7 @@ export const AiAssistant: React.FC = () => {
                                     disabled={!isOnline}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
                                         selectedModel === m 
-                                        ? 'bg-white text-rose-600 shadow-sm' 
+                                        ? 'bg-white text-rose-600 shadow-sm scale-105' 
                                         : 'text-rose-100 hover:bg-white/10'
                                     } ${!isOnline ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
@@ -169,15 +165,15 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6 pb-28 md:pb-8">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6 pb-32 md:pb-10">
                 {!isOnline && (
-                    <div className="bg-slate-800 text-white p-3 rounded-full text-xs font-bold flex items-center justify-center gap-2 mx-auto max-w-sm shadow-xl">
+                    <div className="bg-slate-800 text-white p-3 rounded-full text-xs font-bold flex items-center justify-center gap-2 mx-auto max-w-sm shadow-xl animate-scale-in">
                         <WifiOff size={16} /> Internet connection required for AI.
                     </div>
                 )}
                 {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-6 min-h-[300px]">
-                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center animate-bounce duration-1000 shadow-xl shadow-rose-100">
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-6 min-h-[300px] animate-fade-in">
+                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center animate-bounce shadow-xl shadow-rose-100 ring-4 ring-rose-50">
                             <Sparkles size={48} className="text-rose-400" />
                         </div>
                         <div className="text-center space-y-2">
@@ -188,7 +184,7 @@ export const AiAssistant: React.FC = () => {
                              <button 
                                 onClick={handleAnalyzeTasks}
                                 disabled={!isOnline}
-                                className={`mt-2 px-6 py-3 rounded-full text-sm font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg ${
+                                className={`mt-2 px-6 py-3 rounded-full text-sm font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:-translate-y-1 ${
                                     isOnline 
                                     ? 'bg-white text-rose-600 border border-rose-100 hover:bg-rose-50' 
                                     : 'bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -199,10 +195,11 @@ export const AiAssistant: React.FC = () => {
                         )}
                     </div>
                 ) : (
-                    messages.map((msg) => (
+                    messages.map((msg, index) => (
                         <div 
                             key={msg.id} 
-                            className={`flex gap-4 max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} group`}
+                            className={`flex gap-4 max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} group animate-scale-in`}
+                            style={{ animationDelay: '0ms' }}
                         >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-md ${
                                 msg.role === 'user' 
@@ -211,7 +208,7 @@ export const AiAssistant: React.FC = () => {
                             }`}>
                                 {msg.role === 'user' ? <User size={18}/> : <Bot size={20}/>}
                             </div>
-                            <div className={`p-5 rounded-[1.5rem] text-sm leading-relaxed shadow-sm whitespace-pre-wrap relative ${
+                            <div className={`p-5 rounded-[1.5rem] text-sm leading-relaxed shadow-sm whitespace-pre-wrap relative transition-all hover:shadow-md ${
                                 msg.role === 'user' 
                                 ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-200' 
                                 : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]'
@@ -227,14 +224,14 @@ export const AiAssistant: React.FC = () => {
                     ))
                 )}
                 {isLoading && (
-                    <div className="flex gap-4 mr-auto max-w-[80%] animate-pulse">
-                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-rose-50">
+                    <div className="flex gap-4 mr-auto max-w-[80%] animate-fade-in">
+                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-rose-50 shadow-sm">
                             <Bot size={20} className="text-rose-300"/>
                         </div>
-                        <div className="p-5 rounded-[1.5rem] bg-white border border-slate-100 rounded-tl-none shadow-sm flex items-center gap-2 h-14">
+                        <div className="p-4 px-6 rounded-[1.5rem] bg-white border border-slate-100 rounded-tl-none shadow-sm flex items-center gap-1.5 h-14">
                             <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
                         </div>
                     </div>
                 )}
@@ -242,8 +239,8 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 md:p-6 bg-gradient-to-t from-white via-white/90 to-transparent z-10 sticky bottom-0 md:relative md:rounded-b-[2.5rem]">
-                <div className="flex items-end gap-3 max-w-4xl mx-auto bg-white p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100">
+            <div className="p-4 md:p-6 bg-gradient-to-t from-white via-white/80 to-transparent z-10 sticky bottom-0 md:relative md:rounded-b-[2.5rem]">
+                <div className="flex items-end gap-3 max-w-4xl mx-auto bg-white/80 backdrop-blur-xl p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white ring-1 ring-slate-100">
                      <button 
                         onClick={clearChat}
                         className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors w-12 h-12 flex items-center justify-center"
@@ -261,7 +258,7 @@ export const AiAssistant: React.FC = () => {
                             <ListChecks size={22} />
                         </button>
                     )}
-                    <div className="flex-1 bg-slate-50 hover:bg-slate-100 transition-colors rounded-[1.5rem] flex items-center px-2">
+                    <div className="flex-1 bg-slate-50 hover:bg-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-rose-100 transition-all rounded-[1.5rem] flex items-center px-2 border border-transparent focus-within:border-rose-200">
                         <textarea
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
@@ -283,7 +280,7 @@ export const AiAssistant: React.FC = () => {
                         className={`p-3 rounded-full transition-all shadow-md w-12 h-12 flex items-center justify-center ${
                             !inputValue.trim() || isLoading || !isOnline
                             ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                            : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:scale-105 active:scale-95'
+                            : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:scale-110 active:scale-95 shadow-rose-200'
                         }`}
                     >
                         {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
