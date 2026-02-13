@@ -1,5 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Chat } from "@google/genai";
 
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
@@ -48,4 +49,31 @@ export const editImageWithGemini = async (
     console.error("Gemini API Error:", error);
     throw error;
   }
+};
+
+/**
+ * Chats with Gemini.
+ * @param message The user message.
+ * @param history The chat history.
+ * @returns The text response.
+ */
+export const chatWithGemini = async (
+  message: string,
+  history: { role: 'user' | 'model', parts: [{ text: string }] }[]
+): Promise<string> => {
+    try {
+        const chat: Chat = ai.chats.create({
+            model: 'gemini-3-flash-preview',
+            history: history,
+            config: {
+                systemInstruction: "You are a helpful and friendly AI assistant inside a productivity app called 'Daily Task'. Keep answers concise and relevant."
+            }
+        });
+        
+        const response = await chat.sendMessage({ message: message });
+        return response.text || "";
+    } catch (error) {
+        console.error("Chat API Error:", error);
+        return "Sorry, I am having trouble connecting to the AI service right now.";
+    }
 };

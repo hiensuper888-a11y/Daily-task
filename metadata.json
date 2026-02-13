@@ -1,5 +1,5 @@
 {
-  "name": "NanoTask & Studio",
-  "description": "A productivity app combining a daily task manager with an AI-powered image editing studio using Gemini 2.5 Flash.",
+  "name": "Daily Task",
+  "description": "A daily productivity app by Mr.Hien combining task management and AI tools.",
   "requestFramePermissions": []
 }

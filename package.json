@@ -1,23 +1,67 @@
 {
-  "name": "nanotask-&-studio",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "daily-task-web",
+  "version": "1.0.0",
+  "description": "Daily Task App by Mr.Hien",
+  "main": "main.js",
+  "homepage": ".",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "electron": "concurrently \"npm run dev\" \"electron .\"",
+    "electron:pack": "npm run build && electron-builder build --dir",
+    "electron:dist": "npm run build && electron-builder build --win"
   },
+  "keywords": [
+    "productivity",
+    "todo",
+    "ai",
+    "react"
+  ],
+  "author": {
+    "name": "Mr.Hien",
+    "email": "contact@example.com"
+  },
+  "license": "MIT",
   "dependencies": {
-    "react-dom": "^19.2.4",
-    "react": "^19.2.4",
-    "lucide-react": "^0.563.0",
-    "@google/genai": "^1.41.0"
+    "@google/genai": "^0.1.0",
+    "lucide-react": "^0.344.0",
+    "pptxgenjs": "^3.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.0",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.0",
+    "typescript": "^5.2.0",
+    "vite": "^5.1.0"
+  },
+  "build": {
+    "appId": "com.mrhien.dailytask",
+    "productName": "Daily Task",
+    "copyright": "Copyright © 2024 Mr.Hien",
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/icon.png" 
+    }
   }
 }
