@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Mail, Save, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Phone, Lock, LogIn, UserPlus, Eye, EyeOff, Fingerprint, LayoutDashboard, Sparkles, ShieldCheck } from 'lucide-react';
+import { User, LogOut, Cloud, RefreshCw, Mail, Save, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Phone, Lock, LogIn, UserPlus, Eye, EyeOff, Fingerprint, LayoutDashboard, Sparkles, ShieldCheck, Building2, UserSquare } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -25,7 +25,9 @@ const DEFAULT_PROFILE: UserProfile = {
     hometown: '',
     address: '',
     company: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    jobTitle: '',
+    department: ''
 };
 
 export const Profile: React.FC = () => {
@@ -83,7 +85,7 @@ export const Profile: React.FC = () => {
     const userId = user.uid;
     localStorage.setItem(SESSION_KEY, userId);
     window.dispatchEvent(new Event('auth-change'));
-    const newProfile: UserProfile = { uid: user.uid, name: user.displayName || user.email?.split('@')[0] || 'User', email: user.email || '', avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`, provider: provider as any, isLoggedIn: true, birthYear: '', hometown: '', address: '', company: '', phoneNumber: '' };
+    const newProfile: UserProfile = { uid: user.uid, name: user.displayName || user.email?.split('@')[0] || 'User', email: user.email || '', avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`, provider: provider as any, isLoggedIn: true, birthYear: '', hometown: '', address: '', company: '', phoneNumber: '', jobTitle: '', department: '' };
     const existingProfileStr = localStorage.getItem(`${userId}_user_profile`);
     let finalProfile = newProfile;
     if (existingProfileStr) { try { finalProfile = { ...JSON.parse(existingProfileStr), ...newProfile, uid: user.uid }; } catch (e) {} }
@@ -99,15 +101,15 @@ export const Profile: React.FC = () => {
   // --- NEW UI DESIGN ---
 
   const renderLoginScreen = () => (
-    <div className="w-full max-w-sm mx-auto animate-scale-in pt-10 px-4">
-        <div className="glass-modern bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-8 border border-white/60 relative overflow-hidden group hover:shadow-indigo-500/20 transition-all duration-500">
+    <div className="w-full h-full flex flex-col items-center justify-center p-4">
+        <div className="glass-modal rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl animate-scale-in relative border border-white/60 overflow-hidden">
              {/* Decorative Background Elements */}
              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-bl-[100px] -z-10 opacity-60"></div>
              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-100 to-orange-100 rounded-tr-[80px] -z-10 opacity-60"></div>
 
              <div className="relative z-10">
                 <div className="text-center mb-8">
-                     <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-300/50 transform group-hover:scale-110 transition-transform duration-500">
+                     <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-300/50 transform hover:scale-110 transition-transform duration-500">
                          <Sparkles className="text-white" size={32} />
                      </div>
                      <h2 className="text-2xl font-black text-slate-800 tracking-tight">{authMode === 'login' ? t.welcomeBack : t.createAccount}</h2>
@@ -169,10 +171,10 @@ export const Profile: React.FC = () => {
   );
 
   const renderProfileScreen = () => (
-    <div className="w-full max-w-5xl mx-auto animate-fade-in pb-10">
+    <div className="w-full max-w-5xl mx-auto animate-fade-in pb-28 pt-4 px-4">
         {/* Header Card */}
-        <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-slate-200/50 mb-6 flex flex-col md:flex-row items-center gap-8 border border-white relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-32 bg-gradient-to-br from-indigo-50 to-pink-50 rounded-full blur-3xl -z-0 opacity-60"></div>
+        <div className="glass-panel rounded-[2.5rem] p-6 md:p-10 mb-6 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+             <div className="absolute top-0 right-0 p-32 bg-gradient-to-br from-indigo-50 to-pink-50 rounded-full blur-3xl -z-10 opacity-60"></div>
              
              <div className="relative group">
                  <div className="w-32 h-32 rounded-[2rem] p-1.5 bg-white shadow-lg relative z-10 border border-slate-100">
@@ -217,6 +219,8 @@ export const Profile: React.FC = () => {
 
             <InfoCard title={t.work} icon={Briefcase} color="blue">
                  <InfoRow icon={Briefcase} label={t.company} name="company" value={editForm.company} isEditing={isEditing} onChange={handleInputChange} />
+                 <InfoRow icon={UserSquare} label={t.jobTitle} name="jobTitle" value={editForm.jobTitle} isEditing={isEditing} onChange={handleInputChange} />
+                 <InfoRow icon={Building2} label={t.department} name="department" value={editForm.department} isEditing={isEditing} onChange={handleInputChange} />
                  <InfoRow icon={MapPin} label={t.hometown} name="hometown" value={editForm.hometown} isEditing={isEditing} onChange={handleInputChange} />
                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.statusLabel}</span>
@@ -231,7 +235,7 @@ export const Profile: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50 overflow-y-auto custom-scrollbar p-6">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto custom-scrollbar">
        {profile.isLoggedIn ? renderProfileScreen() : renderLoginScreen()}
     </div>
   );
@@ -244,7 +248,7 @@ const InfoCard = ({ title, icon: Icon, color, children }: any) => {
         blue: 'bg-blue-50 text-blue-600'
     };
     return (
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+        <div className="glass-card rounded-[2rem] p-8 hover:shadow-lg transition-shadow">
             <div className="flex items-center gap-3 mb-6">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClasses[color as keyof typeof colorClasses]}`}>
                     <Icon size={20} />

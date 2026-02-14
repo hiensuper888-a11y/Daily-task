@@ -7,7 +7,7 @@ import {
   Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
   Paperclip, FileText, Loader2,
-  MoreVertical, Sparkles, Flag, GripVertical
+  MoreVertical, Sparkles, Flag, GripVertical, MessageSquare, Star, Crown
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -163,12 +163,18 @@ const TaskItem = React.memo(({
                                 {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                         )}
+                        {/* Rating Display */}
+                        {task.leaderRating && task.leaderRating > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] bg-yellow-50 text-yellow-600 border border-yellow-200">
+                                <Star size={8} fill="currentColor"/> {task.leaderRating}
+                            </span>
+                        )}
                     </div>
                     
                     <p className={`text-[15px] font-semibold leading-snug transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-400' : 'text-slate-800'}`}>{task.text}</p>
                     
                     {/* Bottom Metadata Row */}
-                    {(subtasksCount > 0 || attachmentsCount > 0 || assignedMember) && (
+                    {(subtasksCount > 0 || attachmentsCount > 0 || assignedMember || task.leaderFeedback) && (
                         <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-slate-200/50">
                             {subtasksCount > 0 && (
                                 <div className="flex items-center gap-1.5 flex-1 max-w-[100px]" title="Subtasks progress">
@@ -179,6 +185,7 @@ const TaskItem = React.memo(({
                                 </div>
                             )}
                             {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400"><Paperclip size={10}/> {attachmentsCount}</span>}
+                            {task.leaderFeedback && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500"><MessageSquare size={10}/></span>}
                             {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto" alt="assignee" title={assignedMember.name}/>}
                         </div>
                     )}
@@ -800,6 +807,58 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                          </div>
                     </div>
                  )}
+
+                 {/* Leader Evaluation Section */}
+                 {activeGroup && (
+                    <div className="space-y-3 pt-4 border-t border-slate-100">
+                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Crown size={16} className="text-amber-500"/> {t.leaderEvaluation}</label>
+                        {isLeader ? (
+                            // Leader View: Editable
+                            <div className="space-y-3 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-[10px] font-bold text-amber-600 uppercase">{t.rating}</span>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button 
+                                                key={star} 
+                                                onClick={() => setEditingTask({...editingTask, leaderRating: star})}
+                                                className={`transition-transform hover:scale-110 ${editingTask.leaderRating && editingTask.leaderRating >= star ? 'text-amber-500' : 'text-slate-300'}`}
+                                            >
+                                                <Star size={20} fill="currentColor" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <textarea 
+                                    rows={3} 
+                                    placeholder={t.leaderFeedbackPlaceholder} 
+                                    value={editingTask.leaderFeedback || ''} 
+                                    onChange={(e) => setEditingTask({...editingTask, leaderFeedback: e.target.value})} 
+                                    className="w-full p-3 bg-white border border-amber-200 rounded-xl text-sm text-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-200 outline-none resize-none transition-all placeholder:text-slate-400"
+                                />
+                            </div>
+                        ) : (
+                            // Member View: Read Only
+                            (editingTask.leaderFeedback || editingTask.leaderRating) ? (
+                                <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 space-y-2">
+                                    {editingTask.leaderRating && (
+                                        <div className="flex gap-1 text-amber-500 mb-1">
+                                            {Array.from({length: 5}).map((_, i) => (
+                                                <Star key={i} size={16} fill={i < (editingTask.leaderRating || 0) ? "currentColor" : "none"} className={i < (editingTask.leaderRating || 0) ? "" : "text-slate-300"} />
+                                            ))}
+                                        </div>
+                                    )}
+                                    {editingTask.leaderFeedback && (
+                                        <p className="text-sm font-medium text-slate-700 italic">"{editingTask.leaderFeedback}"</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic pl-1">{t.noData}</p>
+                            )
+                        )}
+                    </div>
+                 )}
+
             </div>
             <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-8 border-t border-slate-100 rounded-b-[2.5rem] flex gap-4">
               <button onClick={(e) => deleteTask(editingTask.id, e)} className="p-4 rounded-xl text-rose-500 font-bold bg-rose-50 hover:bg-rose-100 transition-all"><Trash2 size={24}/></button>
@@ -1027,7 +1086,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
               <button 
                 onClick={addTask} 
-                disabled={!inputValue.trim()} 
+                disabled={!inputValue.trim() || !inputValue} 
                 className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${inputValue.trim() ? (activeGroup ? 'bg-emerald-500 text-white hover:scale-110 hover:bg-emerald-400' : 'bg-indigo-600 text-white hover:scale-110 hover:bg-indigo-500') : 'bg-slate-100 text-slate-300'}`}
               >
                 <Plus size={22} strokeWidth={3} />

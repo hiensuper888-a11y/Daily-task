@@ -16,6 +16,7 @@ const AiAssistant = React.lazy(() => import('./components/AiAssistant').then(mod
 const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'zh', label: '中文', flag: '🇨🇳' },
 ];
 
 const LoadingFallback = () => (

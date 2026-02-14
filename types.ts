@@ -45,6 +45,10 @@ export interface Task {
   completionNote?: string; // Note added when finishing
   createdBy?: string; // User ID of creator
   
+  // Leader Evaluation
+  leaderFeedback?: string; // Comment from leader
+  leaderRating?: number; // 1-5 stars or similar
+  
   // New features
   attachments?: Attachment[];
   comments?: Comment[];
@@ -77,7 +81,7 @@ export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'de
 
 export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 
-export type Language = 'vi' | 'en';
+export type Language = 'vi' | 'en' | 'zh';
 
 export type SortOption = 'manual' | 'priority' | 'date_new' | 'date_old' | 'deadline';
 
@@ -93,6 +97,9 @@ export interface UserProfile {
   address?: string;
   company?: string;
   phoneNumber?: string;
+  // New fields
+  jobTitle?: string;   // Chức vụ
+  department?: string; // Bộ phận
 }
 
 export interface DailyReflection {
