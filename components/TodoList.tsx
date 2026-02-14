@@ -18,13 +18,13 @@ interface TodoListProps {
 
 const PriorityBadge = ({ priority }: { priority: Priority }) => {
     const configs = {
-      high: { color: 'bg-rose-100 text-rose-700', icon: <Flame size={12} fill="currentColor" />, label: 'High' },
-      medium: { color: 'bg-amber-100 text-amber-700', icon: <Zap size={12} fill="currentColor" />, label: 'Medium' },
-      low: { color: 'bg-emerald-100 text-emerald-700', icon: <CheckCircle size={12} />, label: 'Low' }
+      high: { color: 'bg-rose-100 text-rose-700 ring-rose-500/20', icon: <Flame size={10} fill="currentColor" />, label: 'High' },
+      medium: { color: 'bg-amber-100 text-amber-700 ring-amber-500/20', icon: <Zap size={10} fill="currentColor" />, label: 'Medium' },
+      low: { color: 'bg-emerald-100 text-emerald-700 ring-emerald-500/20', icon: <CheckCircle size={10} />, label: 'Low' }
     };
     const config = configs[priority] || configs.medium;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider ${config.color} border border-transparent`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${config.color} ring-1`}>
         {config.icon}
         {config.label}
       </span>
@@ -129,7 +129,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const files = e.target.files;
     if (!files) return;
 
-    // Use Array.from and let TypeScript infer the type, or cast if necessary in strict mode
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -299,15 +298,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
         // 4. Special Group Filters (Bypass Date Filter to show all pending items)
         if (filterStatus === 'assigned_to_me') {
-            // Show tasks assigned to current user that are NOT completed, regardless of date
             return t.assignedTo === currentUserId && !t.completed;
         }
         if (filterStatus === 'delegated') {
-             // Show tasks assigned to others that are NOT completed, regardless of date
             return t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
         }
 
-        // 5. Date Filter (For 'All', 'Active', 'Completed')
+        // 5. Date Filter
         const tDate = new Date(t.createdAt);
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
@@ -352,23 +349,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const headerStyle = useMemo(() => {
     const customBg = currentMember?.headerBackground;
     if (customBg) {
-        // If it's a URL or base64, wrap in url() if not already
         const isImage = customBg.startsWith('data:') || customBg.startsWith('http');
         const bgValue = isImage ? `url(${customBg})` : customBg;
         return { 
             background: bgValue,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            textShadow: '0 2px 10px rgba(0,0,0,0.5)' // Ensure text readability
+            textShadow: '0 2px 10px rgba(0,0,0,0.5)'
         };
     }
-    // Default gradient
     return {};
   }, [currentMember]);
   
   const headerClasses = useMemo(() => {
-    if (currentMember?.headerBackground) return "px-6 pt-6 pb-4 lg:px-8 lg:pt-10 lg:pb-8 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl";
-    return "px-6 pt-6 pb-4 lg:px-8 lg:pt-10 lg:pb-8 relative z-10 shrink-0 transition-all duration-500";
+    if (currentMember?.headerBackground) return "pt-8 pb-4 px-6 lg:px-8 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[2.5rem] lg:rounded-b-none mb-2";
+    return "pt-8 pb-4 px-6 lg:px-8 relative z-10 shrink-0 transition-all duration-500 rounded-b-[2.5rem] lg:rounded-b-none mb-2";
   }, [currentMember]);
 
   return (
@@ -377,7 +372,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
         <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-          <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col bg-white/90">
+          <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col bg-white/95">
               <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 pb-4 flex items-center justify-between border-b border-slate-100">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
@@ -502,34 +497,36 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         {/* Overlay for readability if image set */}
         {currentMember?.headerBackground && <div className="absolute inset-0 bg-black/40 z-[-1]"></div>}
         
-        <div className="flex flex-col gap-6 lg:gap-10">
+        <div className="flex flex-col gap-6 lg:gap-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
             <div className="animate-slide-right w-full lg:w-auto">
-              <div className={`inline-flex items-center gap-2.5 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-3 lg:mb-5 shadow-sm border ${activeGroup ? (currentMember?.headerBackground ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-emerald-600 text-white border-emerald-500') : 'bg-indigo-600 text-white border-indigo-500'}`}>
+              <div className={`inline-flex items-center gap-2.5 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 lg:mb-3 shadow-sm border ${activeGroup ? (currentMember?.headerBackground ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-emerald-600 text-white border-emerald-500') : 'bg-indigo-600 text-white border-indigo-500'}`}>
                 {activeGroup ? <Users size={12} strokeWidth={3}/> : <User size={12} strokeWidth={3}/>}
                 {activeGroup ? 'Dự án Nhóm' : 'Không gian Cá nhân'}
               </div>
-              <h1 className={`text-3xl lg:text-5xl font-black tracking-tighter transition-all duration-700 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>
+              <h1 className={`text-4xl lg:text-5xl font-black tracking-tighter transition-all duration-700 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>
                 {filterStatus === 'archived' ? 'Kho lưu trữ' : (activeGroup ? activeGroup.name : "Việc cần làm")}
               </h1>
             </div>
             
             <button 
               onClick={() => setShowCalendar(true)}
-              className={`flex items-center gap-3 backdrop-blur-md p-3 px-4 rounded-2xl border shadow-sm hover:shadow-md transition-all group w-full lg:w-auto justify-between lg:justify-center lg:flex-col lg:items-center lg:p-4 lg:rounded-3xl ${
-                currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white hover:bg-white/30' : 'bg-white/80 border-white'
+              className={`flex items-center gap-3 backdrop-blur-md p-2 pl-4 pr-2 rounded-full border shadow-sm hover:shadow-md transition-all group w-full lg:w-auto justify-between lg:justify-center ${
+                currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white hover:bg-white/30' : 'bg-white/60 border-white hover:bg-white'
               }`}
             >
-              <div className="text-left lg:text-center">
-                  <span className={`text-[10px] font-black uppercase tracking-widest block transition-colors ${currentMember?.headerBackground ? 'text-white/70 group-hover:text-white' : 'text-slate-400 group-hover:text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { month: 'short' })}</span>
-                  <span className={`text-2xl lg:text-3xl font-black leading-none ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>{viewDate.getDate()}</span>
+              <div className="text-left flex items-center gap-2">
+                  <span className={`text-[10px] font-black uppercase tracking-widest block transition-colors ${currentMember?.headerBackground ? 'text-white/70 group-hover:text-white' : 'text-slate-400 group-hover:text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { month: 'long' })}</span>
+                  <span className={`text-2xl font-black leading-none ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>{viewDate.getDate()}</span>
               </div>
-              <CalendarIcon size={20} className={`${currentMember?.headerBackground ? 'text-white/70' : 'text-slate-300'} lg:hidden`}/>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${currentMember?.headerBackground ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                 <CalendarIcon size={18} />
+              </div>
             </button>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 animate-fade-in">
-             <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-2 scrollbar-none flex-1 -mx-6 px-6 lg:mx-0 lg:px-0 mask-image-gradient">
+             <div className="flex items-center gap-2 overflow-x-auto pb-4 pt-2 scrollbar-none flex-1 -mx-6 px-6 lg:mx-0 lg:px-0 mask-image-gradient">
               {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me', 'delegated'] : []), 'archived'] as FilterType[]).map(f => {
                 const isActive = filterStatus === f;
                 return (
@@ -537,19 +534,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     key={f} 
                     onClick={() => setFilterStatus(f)} 
                     className={`
-                      relative px-6 py-3 rounded-[1.2rem] text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all duration-300 cubic-bezier(0.34, 1.56, 0.64, 1)
+                      relative px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300
                       ${isActive 
                         ? (activeGroup 
-                            ? 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/30 scale-105 ring-2 ring-emerald-500/20 ring-offset-2 ring-offset-slate-50' 
-                            : 'bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-lg shadow-indigo-500/30 scale-105 ring-2 ring-indigo-500/20 ring-offset-2 ring-offset-slate-50') 
+                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-105' 
+                            : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105') 
                         : (currentMember?.headerBackground 
                             ? 'bg-white/20 text-white hover:bg-white/30 border border-white/20' 
-                            : 'bg-white text-slate-500 hover:text-slate-800 hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 scale-100')
+                            : 'bg-white/60 text-slate-500 hover:text-slate-800 hover:bg-white border border-transparent hover:border-slate-100 scale-100')
                       }
                     `}
                   >
                     {f === 'archived' ? 'Kho lưu trữ' : t[f]}
-                    {isActive && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-50"></span>}
                   </button>
                 );
               })}
@@ -561,7 +557,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     placeholder="Tìm kiếm..." 
                     value={searchQuery} 
                     onChange={(e) => setSearchQuery(e.target.value)} 
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 transition-all shadow-sm ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 transition-all shadow-sm ${
                         currentMember?.headerBackground 
                         ? 'bg-white/20 border border-white/30 text-white placeholder:text-white/50 focus:ring-white/50 focus:bg-white/30' 
                         : 'bg-white/60 border border-white text-slate-800 placeholder:text-slate-400 focus:ring-indigo-100'
@@ -573,13 +569,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       </div>
 
       {/* Task List Container */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-8 pb-48 custom-scrollbar space-y-3 relative z-0">
+      <div className="flex-1 overflow-y-auto px-4 lg:px-8 pb-48 custom-scrollbar space-y-3 relative z-0 pt-2">
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-300 animate-scale-in">
-            <div className="w-20 h-20 bg-white/40 rounded-[2rem] flex items-center justify-center mb-4 shadow-sm border border-white">
-              <Archive size={32} className="text-slate-300" />
+            <div className="w-24 h-24 bg-white/40 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-sm border border-white">
+              <Archive size={40} className="text-slate-300" />
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
               {filterStatus === 'archived' ? 'Chưa có mục lưu trữ' : 'Danh sách trống'}
             </p>
           </div>
@@ -594,43 +590,43 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
               <div 
                 key={task.id} 
                 onClick={() => setEditingTask(task)}
-                className={`group bg-white/90 backdrop-blur-sm rounded-2xl p-4 border transition-all duration-300 cursor-pointer ${
-                  task.completed ? 'opacity-60 scale-[0.99] border-transparent' : 'shadow-sm border-white hover:shadow-lg hover:bg-white hover:-translate-y-0.5'
+                className={`group bg-white/80 backdrop-blur-sm rounded-[1.5rem] p-4 border transition-all duration-300 cursor-pointer ${
+                  task.completed ? 'opacity-60 grayscale-[0.5] border-transparent shadow-none bg-slate-50/50' : 'shadow-sm border-white hover:shadow-lg hover:bg-white hover:-translate-y-0.5'
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-start gap-4">
                   <button onClick={(e) => handleToggleClick(task, e)} className={`mt-0.5 transition-all btn-press ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-500'}`}>
-                    {task.completed ? <CheckCircle2 size={26} strokeWidth={2.5} /> : <Circle size={26} strokeWidth={2.5} />}
+                    {task.completed ? <CheckCircle2 size={24} strokeWidth={2.5} fill="currentColor" className="text-emerald-100" /> : <Circle size={24} strokeWidth={2.5} />}
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="space-y-1.5">
-                        <p className={`text-base font-bold tracking-tight transition-all leading-snug ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                        <p className={`text-[15px] font-semibold tracking-tight transition-all leading-snug ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                           {task.text}
                         </p>
                         
                         <div className="flex flex-wrap items-center gap-2">
                           <PriorityBadge priority={task.priority || 'medium'} />
                           {deadlineInfo && (
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${deadlineInfo.colorClass}`}>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold ${deadlineInfo.colorClass}`}>
                               {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                           )}
                            {subtasksCount > 0 && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500">
                                   <ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}
                               </span>
                           )}
                           {assignedMember && (
-                              <div className="flex items-center gap-1">
-                                  <img src={assignedMember.avatar} className="w-4 h-4 rounded-full border border-white" alt="assignee"/>
+                              <div className="flex items-center gap-1 pl-1">
+                                  <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm" alt="assignee"/>
                               </div>
                           )}
                         </div>
                     </div>
                   </div>
                    {!task.completed && (
-                       <button onClick={(e) => deleteTask(task.id, e)} className="text-slate-200 hover:text-rose-400 p-2 -mr-2 transition-colors">
+                       <button onClick={(e) => deleteTask(task.id, e)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all">
                            <Trash2 size={16} />
                        </button>
                    )}
@@ -641,21 +637,20 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       </div>
 
       {/* QUICK ADD BAR - FLOATING CAPSULE */}
-      <div className="absolute bottom-20 lg:bottom-10 left-0 right-0 px-4 z-30 pointer-events-none pb-safe">
-        <div className="max-w-2xl mx-auto pointer-events-auto">
-          <div className={`glass-modern rounded-[2rem] shadow-2xl transition-all duration-300 overflow-hidden ${
-            showInputDetails ? 'p-6 translate-y-[-10px]' : 'p-2 pr-3'
+      <div className="absolute bottom-24 lg:bottom-10 left-0 right-0 px-4 z-30 pointer-events-none pb-safe pt-4">
+        <div className="max-w-xl mx-auto pointer-events-auto">
+          <div className={`glass-modern rounded-[2.5rem] shadow-2xl transition-all duration-300 overflow-hidden ring-1 ring-white/50 ${
+            showInputDetails ? 'p-6 translate-y-[-10px] bg-white/95' : 'p-2 pr-3 bg-white/80'
           }`}>
             {showInputDetails && (
               <div className="grid grid-cols-2 gap-4 mb-4 animate-fade-in">
-                  {/* Simplified input details for cleaner mobile view */}
                   <div className="col-span-2 space-y-1">
                       <label className="text-[10px] font-bold text-slate-400 uppercase">Hạn chót</label>
-                      <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full p-3 bg-white/50 rounded-xl text-xs font-bold outline-none border border-slate-100" />
+                      <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-xs font-bold outline-none border border-slate-200 focus:border-indigo-500 transition-colors" />
                   </div>
                   <div className="col-span-2 flex gap-2">
                        {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                        <button key={p} onClick={() => setNewPriority(p)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${newPriority === p ? 'bg-slate-800 text-white' : 'bg-white text-slate-400'}`}>{p}</button>
+                        <button key={p} onClick={() => setNewPriority(p)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${newPriority === p ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>{p}</button>
                       ))}
                   </div>
               </div>
@@ -664,7 +659,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setShowInputDetails(!showInputDetails)} 
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-800 text-white rotate-180' : 'text-slate-400 hover:bg-slate-100'}`}
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-800 text-white rotate-180' : 'text-slate-400 hover:bg-slate-100'}`}
               >
                 <SlidersHorizontal size={18} />
               </button>
@@ -674,18 +669,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onChange={e => setInputValue(e.target.value)} 
                 onKeyDown={e => e.key === 'Enter' && addTask()} 
                 placeholder="Thêm việc mới..." 
-                className="flex-1 bg-transparent border-none focus:ring-0 text-base font-bold text-slate-800 h-10 placeholder:text-slate-400 placeholder:font-medium" 
+                className="flex-1 bg-transparent border-none focus:ring-0 text-base font-bold text-slate-800 h-10 placeholder:text-slate-400 placeholder:font-semibold" 
               />
               <button 
                 onClick={addTask} 
                 disabled={!inputValue.trim()} 
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${
                   inputValue.trim() 
                   ? (activeGroup ? 'bg-emerald-600' : 'bg-indigo-600') + ' text-white shadow-lg scale-105 active:scale-95' 
                   : 'bg-slate-100 text-slate-300'
                 }`}
               >
-                <Plus size={20} strokeWidth={3} />
+                <Plus size={22} strokeWidth={3} />
               </button>
             </div>
           </div>

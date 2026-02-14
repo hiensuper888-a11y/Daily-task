@@ -139,15 +139,17 @@ export const AiAssistant: React.FC = () => {
                 <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><Bot size={120} /></div>
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
-                            <MessageSquare size={28} className="text-rose-200" />
+                        <h1 className="text-2xl font-black flex items-center gap-3 tracking-tight">
+                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                                <MessageSquare size={20} className="text-white" />
+                            </div>
                             {t.aiHeader}
                         </h1>
-                        <p className="text-rose-100 text-sm mt-1 font-medium opacity-90">{t.aiSubHeader}</p>
+                        <p className="text-rose-100 text-sm mt-2 font-medium opacity-90">{t.aiSubHeader}</p>
                     </div>
 
                     <div className="flex gap-2 self-start md:self-auto flex-wrap">
-                        <div className="bg-white/20 backdrop-blur-md p-1.5 rounded-xl flex gap-1 border border-white/20">
+                        <div className="bg-white/10 backdrop-blur-md p-1 rounded-xl flex gap-1 border border-white/20">
                             {(['gemini', 'chatgpt', 'grok'] as AiModel[]).map((m) => (
                                 <button
                                     key={m}
@@ -155,7 +157,7 @@ export const AiAssistant: React.FC = () => {
                                     disabled={!isOnline}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
                                         selectedModel === m 
-                                        ? 'bg-white text-rose-600 shadow-sm scale-105' 
+                                        ? 'bg-white text-rose-600 shadow-sm' 
                                         : 'text-rose-100 hover:bg-white/10'
                                     } ${!isOnline ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
@@ -177,12 +179,12 @@ export const AiAssistant: React.FC = () => {
                 )}
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-6 min-h-[300px] animate-fade-in">
-                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center animate-bounce shadow-xl shadow-rose-100 ring-4 ring-rose-50">
+                        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center animate-float shadow-xl shadow-rose-100/50 ring-4 ring-white border border-rose-50">
                             <Sparkles size={48} className="text-rose-400" />
                         </div>
                         <div className="text-center space-y-2">
-                             <p className="text-lg font-bold text-slate-500">{t.welcomeAi}</p>
-                             <p className="text-sm text-slate-400">Hỏi tôi bất cứ điều gì hoặc yêu cầu phân tích công việc.</p>
+                             <p className="text-lg font-bold text-slate-700">{t.welcomeAi}</p>
+                             <p className="text-sm text-slate-400 font-medium">Hỏi tôi bất cứ điều gì hoặc yêu cầu phân tích công việc.</p>
                         </div>
                         {tasks.length > 0 && (
                              <button 
@@ -205,17 +207,17 @@ export const AiAssistant: React.FC = () => {
                             className={`flex gap-4 max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} group animate-scale-in`}
                             style={{ animationDelay: '0ms' }}
                         >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-md ${
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm border-2 border-white ${
                                 msg.role === 'user' 
-                                ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' 
-                                : 'bg-white text-rose-500 border border-rose-100'
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-rose-500 text-white'
                             }`}>
-                                {msg.role === 'user' ? <User size={18}/> : <Bot size={20}/>}
+                                {msg.role === 'user' ? <User size={14}/> : <Bot size={16}/>}
                             </div>
-                            <div className={`p-5 rounded-[1.5rem] text-sm leading-relaxed shadow-sm whitespace-pre-wrap relative transition-all hover:shadow-md ${
+                            <div className={`p-5 rounded-[1.5rem] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap relative transition-all hover:shadow-md ${
                                 msg.role === 'user' 
-                                ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-200' 
-                                : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]'
+                                ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-tr-none shadow-indigo-200' 
+                                : 'bg-white border border-white text-slate-700 rounded-tl-none shadow-slate-200/50'
                             }`}>
                                 {msg.modelUsed && msg.role === 'model' && (
                                     <div className="text-[10px] uppercase font-bold text-rose-400 mb-2 opacity-80 tracking-wider flex items-center gap-1.5 border-b border-rose-50 pb-2">
@@ -229,10 +231,10 @@ export const AiAssistant: React.FC = () => {
                 )}
                 {isLoading && (
                     <div className="flex gap-4 mr-auto max-w-[80%] animate-fade-in">
-                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-rose-50 shadow-sm">
-                            <Bot size={20} className="text-rose-300"/>
+                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 border border-rose-100 shadow-sm">
+                            <Bot size={16} className="text-rose-400"/>
                         </div>
-                        <div className="p-4 px-6 rounded-[1.5rem] bg-white border border-slate-100 rounded-tl-none shadow-sm flex items-center gap-1.5 h-14">
+                        <div className="p-4 px-6 rounded-[1.5rem] bg-white border border-white rounded-tl-none shadow-sm flex items-center gap-1.5 h-14">
                             <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
                             <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
@@ -244,7 +246,7 @@ export const AiAssistant: React.FC = () => {
 
             {/* Input Area */}
             <div className="p-4 md:p-6 bg-gradient-to-t from-white via-white/80 to-transparent z-10 sticky bottom-0 md:relative md:rounded-b-[2.5rem]">
-                <div className="flex items-end gap-3 max-w-4xl mx-auto bg-white/80 backdrop-blur-xl p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white ring-1 ring-slate-100">
+                <div className="flex items-end gap-3 max-w-4xl mx-auto bg-white/80 backdrop-blur-xl p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white ring-1 ring-slate-100/50">
                      <button 
                         onClick={clearChat}
                         className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors w-12 h-12 flex items-center justify-center"
@@ -274,7 +276,7 @@ export const AiAssistant: React.FC = () => {
                             }}
                             disabled={!isOnline}
                             placeholder={isOnline ? t.typeMessage : "Offline mode - Chat disabled"}
-                            className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[52px] resize-none text-sm text-slate-700 placeholder:text-slate-400 disabled:text-slate-400 disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[52px] resize-none text-[15px] font-medium text-slate-700 placeholder:text-slate-400 disabled:text-slate-400 disabled:cursor-not-allowed"
                             rows={1}
                         />
                     </div>

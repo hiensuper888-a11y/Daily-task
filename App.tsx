@@ -291,7 +291,6 @@ const AppContent: React.FC = () => {
   const handleLeaveGroup = () => {
       if (!activeGroup) return;
       if (confirm(`Bạn có chắc chắn muốn rời nhóm "${activeGroup.name}"?`)) {
-          // Safety check: ensure members exists
           const updatedMembers = (activeGroup.members || []).filter(m => m.id !== currentUserId);
           const updatedGroup = { ...activeGroup, members: updatedMembers };
           saveGlobalGroup(updatedGroup);
@@ -346,7 +345,6 @@ const AppContent: React.FC = () => {
       if(confirm("Xóa thành viên này khỏi nhóm?")) {
           const updatedGroup = {
               ...activeGroup,
-              // Safety check: ensure members exists
               members: (activeGroup.members || []).filter(m => m.id !== memberId)
           };
           setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
@@ -356,7 +354,6 @@ const AppContent: React.FC = () => {
 
   const handleUpdateMemberInfo = (memberId: string) => {
       if (!activeGroup) return;
-      // Safety check: ensure members exists
       const updatedMembers = (activeGroup.members || []).map(m => {
           if (m.id === memberId) {
               return { ...m, customTitle: editMemberTitle, note: editMemberNote };
@@ -409,14 +406,14 @@ const AppContent: React.FC = () => {
   const NavItem = ({ tab, icon: Icon, label }: any) => (
     <button
       onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 font-bold group mb-2 btn-press ${
+      className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group mb-1 btn-press ${
         activeTab === tab && activeGroupId === null
-          ? `bg-indigo-600 text-white shadow-lg shadow-indigo-500/30` 
-          : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800'
+          ? `bg-indigo-600 text-white shadow-lg shadow-indigo-500/20` 
+          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-800'
       }`}
     >
-      <div className="flex items-center gap-3">
-        <Icon size={20} strokeWidth={2.5} className={`${activeTab === tab && activeGroupId === null ? 'text-white' : 'text-slate-400 group-hover:text-indigo-500 transition-colors'}`} />
+      <div className="flex items-center gap-3.5">
+        <Icon size={20} strokeWidth={activeTab === tab ? 2.5 : 2} className={`${activeTab === tab && activeGroupId === null ? 'text-white' : 'text-slate-400 group-hover:text-indigo-500 transition-colors'}`} />
         <span className="text-[14px] tracking-tight">{label}</span>
       </div>
       {activeTab === tab && activeGroupId === null && <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse"></div>}
@@ -444,11 +441,11 @@ const AppContent: React.FC = () => {
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
       
       {/* SIDEBAR - VISIBLE ON LARGE SCREENS (LG +) */}
-      <aside className="hidden lg:flex flex-col w-72 m-4 mr-0 rounded-[2rem] bg-white/80 backdrop-blur-2xl border border-white/60 shrink-0 z-20 relative shadow-xl shadow-slate-200/50">
+      <aside className="hidden lg:flex flex-col w-72 m-4 mr-0 rounded-[2.5rem] bg-white/60 backdrop-blur-xl border border-white/40 shrink-0 z-20 relative shadow-xl shadow-slate-200/50 transition-all">
         <div className="p-6 pb-2">
           <div className="flex items-center gap-4 mb-8 px-2 cursor-pointer btn-press">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 transition-all duration-500 ${activeGroupId ? 'bg-gradient-to-br from-emerald-500 to-teal-600 rotate-3' : 'bg-gradient-to-br from-indigo-600 to-violet-600 -rotate-3'}`}>
-                <CheckSquare size={24} strokeWidth={3} />
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 transition-all duration-500 ${activeGroupId ? 'bg-gradient-to-br from-emerald-500 to-teal-600 rotate-3' : 'bg-gradient-to-br from-indigo-600 to-violet-600 -rotate-3'}`}>
+                <CheckSquare size={22} strokeWidth={3} />
             </div>
             <div className="flex flex-col">
                 <span className="text-xl font-black tracking-tighter text-slate-800 leading-none">Daily Task</span>
@@ -480,10 +477,10 @@ const AppContent: React.FC = () => {
                   <div key={group.id} className="relative group/item">
                     <button
                         onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 btn-press border ${
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 btn-press border ${
                             activeGroupId === group.id
-                            ? `bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/30` 
-                            : 'bg-white/50 text-slate-600 border-transparent hover:bg-white hover:border-white'
+                            ? `bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/20` 
+                            : 'bg-white/40 text-slate-600 border-transparent hover:bg-white hover:border-white hover:shadow-sm'
                         }`}
                     >
                         {group.avatar ? (
@@ -509,7 +506,7 @@ const AppContent: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-4 bg-white/40 backdrop-blur-md rounded-b-[2rem] border-t border-white/50">
+        <div className="p-4 bg-white/40 backdrop-blur-md rounded-b-[2.5rem] border-t border-white/50">
            <button onClick={() => setShowLangMenu(!showLangMenu)} className="w-full flex items-center justify-between px-4 py-3 bg-white/80 hover:bg-white rounded-xl text-xs font-bold text-slate-600 transition-all border border-white shadow-sm group">
              <span className="flex items-center gap-2"><Globe size={14} className="text-indigo-500 group-hover:rotate-12 transition-transform" /> {languages.find(l => l.code === language)?.label}</span>
              <ChevronRight size={14} className="opacity-30 group-hover:translate-x-0.5 transition-transform" />
@@ -529,7 +526,7 @@ const AppContent: React.FC = () => {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col relative h-full overflow-hidden z-10">
         <div className="flex-1 overflow-hidden relative p-0 lg:p-4 h-full flex flex-col">
-           <div className={`flex-1 w-full mx-auto bg-white/60 backdrop-blur-3xl lg:rounded-[2.5rem] border-0 lg:border border-white/60 transition-all duration-700 shadow-none lg:shadow-2xl lg:shadow-slate-200/50 relative overflow-hidden flex flex-col ${activeGroupId ? 'lg:border-emerald-100/50' : ''}`}>
+           <div className={`flex-1 w-full mx-auto bg-white/60 backdrop-blur-3xl lg:rounded-[3rem] border-0 lg:border border-white/60 transition-all duration-700 shadow-none lg:shadow-2xl lg:shadow-slate-200/50 relative overflow-hidden flex flex-col ${activeGroupId ? 'lg:border-emerald-100/50' : ''}`}>
                <div className="flex-1 overflow-hidden animate-fade-in h-full">
                    <Suspense fallback={<LoadingFallback />}>
                        {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
@@ -542,12 +539,12 @@ const AppContent: React.FC = () => {
         </div>
 
         {/* BOTTOM NAVIGATION - MOBILE/TABLET ONLY (HIDDEN ON LG) */}
-        <div className="lg:hidden absolute bottom-0 left-0 right-0 z-30 pb-safe">
-            <div className="glass-dock px-6 py-2 flex justify-between items-center">
+        <div className="lg:hidden absolute bottom-5 left-4 right-4 z-30 pb-safe">
+            <div className="glass-dock px-3 py-2 rounded-[2rem] flex justify-between items-center shadow-2xl border border-white/50">
               {[
                   { id: 'tasks', icon: activeGroupId ? Users : Home },
                   { id: 'ai', icon: MessageSquare },
-                  { id: 'studio', icon: Wand2 }, // Added Studio to mobile nav
+                  { id: 'studio', icon: Wand2 },
                   { id: 'reports', icon: BarChart3 },
                   { id: 'profile', icon: UserCircle2 }
               ].map((item) => (
@@ -565,11 +562,10 @@ const AppContent: React.FC = () => {
                             setActiveGroupId(null); // Switch to personal tab
                         }
                     }} 
-                    className={`p-3 rounded-2xl transition-all btn-press flex flex-col items-center gap-1 ${activeTab === item.id ? (activeGroupId ? 'text-emerald-600' : 'text-indigo-600') : 'text-slate-400'}`}
+                    className={`p-3 rounded-2xl transition-all btn-press flex flex-col items-center gap-1 relative overflow-hidden ${activeTab === item.id ? (activeGroupId ? 'text-emerald-600 bg-emerald-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:text-slate-600'}`}
                   >
-                    <div className="relative">
+                    <div className="relative z-10">
                         <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                        {activeTab === item.id && <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${activeGroupId ? 'bg-emerald-600' : 'bg-indigo-600'}`}></div>}
                     </div>
                   </button>
               ))}
