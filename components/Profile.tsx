@@ -147,29 +147,72 @@ export const Profile: React.FC = () => {
   };
 
   const loginSuccess = (user: any, provider: string) => {
+    // PRESERVE GUEST DATA
+    const guestTasks = localStorage.getItem('guest_daily_tasks');
+    const guestReflections = localStorage.getItem('guest_reflections');
+    const guestChat = localStorage.getItem('guest_ai_chat_history');
+
     // 1. Set Session Key
     const userId = user.email || user.uid;
     localStorage.setItem(SESSION_KEY, userId);
+
+    // 2. MIGRATE DATA IF NEW ACCOUNT EMPTY
+    // We check if the target account data exists. If not, we copy the guest data over.
+    // This ensures a seamless transition from Guest -> Registered User.
+    if (guestTasks && !localStorage.getItem(`${userId}_daily_tasks`)) {
+        localStorage.setItem(`${userId}_daily_tasks`, guestTasks);
+    }
+    if (guestReflections && !localStorage.getItem(`${userId}_reflections`)) {
+        localStorage.setItem(`${userId}_reflections`, guestReflections);
+    }
+    if (guestChat && !localStorage.getItem(`${userId}_ai_chat_history`)) {
+        localStorage.setItem(`${userId}_ai_chat_history`, guestChat);
+    }
     
-    // 2. Trigger Event for other hooks
+    // 3. Trigger Event for other hooks
     window.dispatchEvent(new Event('auth-change'));
 
-    // 3. Update Profile State
+    // 4. Update Profile State
+    // Create new profile object
+    const newProfile: UserProfile = {
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
+        provider: provider as any,
+        isLoggedIn: true,
+        // Preserve existing profile data if we are logging back in, 
+        // OR initialize default empty strings if it's a fresh account (managed by storage retrieval usually, but here we set explicit defaults for safety)
+        birthYear: '',
+        hometown: '',
+        address: '',
+        company: '',
+        phoneNumber: ''
+    };
+
+    // If there is an existing profile in storage for this user, we might want to merge, 
+    // but typically the Auth provider data is authoritative for identity fields.
+    const existingProfileStr = localStorage.getItem(`${userId}_user_profile`);
+    let finalProfile = newProfile;
+
+    if (existingProfileStr) {
+        try {
+            const existing = JSON.parse(existingProfileStr);
+            finalProfile = { ...existing, ...newProfile, birthYear: existing.birthYear, hometown: existing.hometown, address: existing.address, company: existing.company, phoneNumber: existing.phoneNumber };
+        } catch (e) { /* ignore */ }
+    }
+
+    // Immediate Write
+    localStorage.setItem(`${userId}_user_profile`, JSON.stringify(finalProfile));
+
     setTimeout(() => {
-        const newProfile: UserProfile = {
-            ...profile,
-            name: user.displayName || user.email?.split('@')[0] || 'User',
-            email: user.email || '',
-            avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
-            provider: provider as any,
-            isLoggedIn: true,
-        };
-        setProfile(newProfile);
-        setEditForm(newProfile);
+        setProfile(finalProfile);
+        setEditForm(finalProfile);
         setIsSyncing(false);
         setEmailInput('');
         setPasswordInput('');
-    }, 100);
+        // Ensure all components re-render with new data
+        window.dispatchEvent(new Event('local-storage'));
+    }, 50);
   };
 
   const logout = () => {
@@ -178,8 +221,8 @@ export const Profile: React.FC = () => {
         signOut(auth).catch(console.error);
     }
 
-    const loggedOutProfile = { ...profile, isLoggedIn: false };
-    setProfile(loggedOutProfile);
+    // Reset local profile state to default guest
+    setProfile(DEFAULT_PROFILE);
 
     setTimeout(() => {
         localStorage.removeItem(SESSION_KEY);
