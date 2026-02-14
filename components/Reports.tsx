@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users } from 'lucide-react';
 import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
@@ -31,8 +31,8 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   
   // If Group View: Use group specific keys and isGlobal=true
   // If Personal View: Use generic keys and isGlobal=false (user specific)
-  const taskStorageKey = isGroupView ? `group_${activeGroup?.id}_tasks` : 'daily_tasks';
-  const reflectionStorageKey = isGroupView ? `group_${activeGroup?.id}_reflections` : 'reflections';
+  const taskStorageKey = isGroupView && activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
+  const reflectionStorageKey = isGroupView && activeGroup ? `group_${activeGroup.id}_reflections` : 'reflections';
   const isGlobalStorage = isGroupView;
 
   const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobalStorage);
@@ -47,7 +47,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   
   const { t, language } = useLanguage();
 
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const now = new Date();
     
     let start = new Date(now);
@@ -74,12 +74,12 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
        }
     }
     return { start, end };
-  };
+  }, [period, customStart, customEnd]);
 
   const currentReflectionKey = useMemo(() => {
      const { end } = getDateRange();
      return end.toISOString().split('T')[0];
-  }, [period, customEnd, customStart]); 
+  }, [getDateRange]); 
 
   const handleReflectionChange = (field: 'evaluation' | 'improvement', value: string) => {
      setReflections(prev => ({
@@ -146,7 +146,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
         currentPoints,
         prevPoints
     };
-  }, [tasks, period, customStart, customEnd]);
+  }, [tasks, getDateRange]);
 
   const diff = chartData.currentScore - chartData.prevScore;
   const isPositive = diff >= 0;
