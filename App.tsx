@@ -83,6 +83,7 @@ const AppContent: React.FC = () => {
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [foundUsers, setFoundUsers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false); // Track if search was performed
   const [copiedCode, setCopiedCode] = useState(false);
   const [showQr, setShowQr] = useState(false);
   
@@ -115,14 +116,30 @@ const AppContent: React.FC = () => {
   }, []);
 
   // Sync Groups from Global DB (Simulation of Real-time updates from other users)
+  // Also removes groups locally if they were deleted globally (kicked or group deleted)
   useEffect(() => {
       const interval = setInterval(() => {
           const globalGroups = getGlobalGroups();
-          if (globalGroups.length === 0) return;
-
+          
           setMyGroups(prevMyGroups => {
-              let hasChanges = false;
-              const newGroups = prevMyGroups.map(localGroup => {
+              if (prevMyGroups.length === 0) return prevMyGroups;
+
+              // 1. Filter out groups that no longer exist in global DB OR user is removed from global group
+              const validGroups = prevMyGroups.filter(localGroup => {
+                  const globalMatch = globalGroups.find(gg => gg.id === localGroup.id);
+                  // If group exists globally, check if I am still a member
+                  if (globalMatch) {
+                      const amIMember = globalMatch.members.some(m => m.id === currentUserId);
+                      return amIMember;
+                  }
+                  // If group doesn't exist globally, assume it was deleted (mock consistency)
+                  return false;
+              });
+
+              // 2. Update data for valid groups
+              let hasChanges = validGroups.length !== prevMyGroups.length;
+              
+              const newGroups = validGroups.map(localGroup => {
                   const globalMatch = globalGroups.find(gg => gg.id === localGroup.id);
                   if (globalMatch && JSON.stringify(globalMatch) !== JSON.stringify(localGroup)) {
                       hasChanges = true;
@@ -130,11 +147,12 @@ const AppContent: React.FC = () => {
                   }
                   return localGroup;
               });
+
               return hasChanges ? newGroups : prevMyGroups;
           });
       }, 3000); // Check every 3 seconds
       return () => clearInterval(interval);
-  }, [setMyGroups]);
+  }, [setMyGroups, currentUserId]);
 
   // Check for join code in URL
   useEffect(() => {
@@ -218,6 +236,7 @@ const AppContent: React.FC = () => {
       if(existing) {
           alert("Bạn đã là thành viên của nhóm này!");
           setActiveGroupId(existing.id);
+          setActiveTab('tasks');
           setShowJoinModal(false);
           return;
       }
@@ -231,26 +250,29 @@ const AppContent: React.FC = () => {
           return;
       }
 
-      // 3. Add self to group
-      const newMember: GroupMember = {
-          id: currentUserId,
-          name: userProfile.name || 'Thành viên mới',
-          avatar: userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`,
-          role: 'member',
-          joinedAt: Date.now(),
-          customTitle: 'Thành viên',
-          note: ''
-      };
-
-      const updatedGroup = { ...targetGroup, members: [...targetGroup.members, newMember] };
+      // 3. Add self to group (Check if already exists in global to be safe)
+      let updatedGroup = targetGroup;
+      const isAlreadyMember = targetGroup.members.some(m => m.id === currentUserId);
       
-      // 4. Update Global
-      saveGlobalGroup(updatedGroup);
+      if (!isAlreadyMember) {
+          const newMember: GroupMember = {
+              id: currentUserId,
+              name: userProfile.name || 'Thành viên mới',
+              avatar: userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`,
+              role: 'member',
+              joinedAt: Date.now(),
+              customTitle: 'Thành viên',
+              note: ''
+          };
+          updatedGroup = { ...targetGroup, members: [...targetGroup.members, newMember] };
+          saveGlobalGroup(updatedGroup);
+      }
 
       // 5. Update Local
       setMyGroups([...myGroups, updatedGroup]);
       
       setActiveGroupId(updatedGroup.id);
+      setActiveTab('tasks');
       setShowJoinModal(false);
       alert(`Đã tham gia nhóm "${updatedGroup.name}" thành công!`);
   };
@@ -275,9 +297,29 @@ const AppContent: React.FC = () => {
       }
   };
 
+  const handleLeaveGroup = () => {
+      if (!activeGroup) return;
+      if (confirm(`Bạn có chắc chắn muốn rời nhóm "${activeGroup.name}"?`)) {
+          // 1. Remove self from group members
+          const updatedMembers = activeGroup.members.filter(m => m.id !== currentUserId);
+          const updatedGroup = { ...activeGroup, members: updatedMembers };
+          
+          // 2. Update Global (Mock Backend)
+          saveGlobalGroup(updatedGroup);
+
+          // 3. Update Local: Remove this group entirely from my list
+          setMyGroups(prev => prev.filter(g => g.id !== activeGroup.id));
+          
+          setActiveGroupId(null);
+          setShowSettingsModal(false);
+          setActiveTab('tasks');
+      }
+  };
+
   const handleSearchUsers = async () => {
       if (!memberSearchQuery.trim()) return;
       setIsSearching(true);
+      setHasSearched(true);
       try {
           const results = await searchUsers(memberSearchQuery);
           const existingMemberIds = activeGroup?.members.map(m => m.id) || [];
@@ -582,6 +624,12 @@ const AppContent: React.FC = () => {
                               </button>
                           </div>
                           
+                          {hasSearched && foundUsers.length === 0 && !isSearching && (
+                              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center text-slate-400 text-sm font-medium">
+                                  Không tìm thấy người dùng nào.
+                              </div>
+                          )}
+
                           {foundUsers.length > 0 && (
                               <div className="bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
                                   {foundUsers.map(user => (
@@ -685,9 +733,15 @@ const AppContent: React.FC = () => {
 
                       {/* Danger Zone */}
                       <div className="pt-6 border-t border-slate-100">
-                          <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
-                              <Trash2 size={18}/> Xóa nhóm vĩnh viễn
-                          </button>
+                          {activeGroup.leaderId === currentUserId ? (
+                              <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
+                                  <Trash2 size={18}/> Xóa nhóm vĩnh viễn
+                              </button>
+                          ) : (
+                              <button onClick={handleLeaveGroup} className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+                                  <LogOut size={18}/> Rời nhóm
+                              </button>
+                          )}
                       </div>
 
                   </div>
