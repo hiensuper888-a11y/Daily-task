@@ -88,12 +88,12 @@ export const TodoList: React.FC = () => {
       const isSoon = diffHrs > 0 && diffHrs < 24;
 
       let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-      let colorClass = 'text-slate-500 bg-slate-50/50 border-slate-200';
+      let colorClass = 'text-slate-500 bg-slate-100/50 border-slate-200';
       let icon = <CalendarClock size={12} />;
 
       if (isOverdue) {
           text = t.overdue;
-          colorClass = 'text-rose-600 bg-rose-50 border-rose-200 font-bold animate-pulse';
+          colorClass = 'text-rose-600 bg-rose-50 border-rose-200 font-bold';
           icon = <AlertCircle size={12} />;
       } else if (isSoon) {
           const hrsLeft = Math.ceil(diffHrs);
@@ -343,31 +343,30 @@ export const TodoList: React.FC = () => {
         <div className="flex flex-col gap-6">
             <div className="flex justify-between items-start animate-fade-in">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm">{t.todoHeader}</h1>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t.todoHeader}</h1>
                     <p className="text-slate-500 font-medium text-sm mt-1 flex items-center gap-2">
-                        <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full text-xs font-bold border border-indigo-100">
+                        <span className="bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-md text-xs font-bold">
                            {stats.completed} / {stats.total} {t.items}
                         </span>
                         <span>•</span>
                         <span className="text-slate-400">{stats.progress}% {t.done}</span>
                     </p>
                 </div>
-                {/* Animated Circular Progress */}
-                <div className="relative w-16 h-16 group cursor-pointer hover:scale-110 transition-transform">
-                     <div className="absolute inset-0 bg-indigo-500 rounded-full opacity-10 blur-xl group-hover:opacity-20 transition-opacity"></div>
-                     <svg className="w-full h-full -rotate-90 drop-shadow-md" viewBox="0 0 36 36">
-                        <path className="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
-                        <path className="text-indigo-600 transition-all duration-1000 ease-out" strokeDasharray={`${stats.progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                {/* Clean Progress Ring */}
+                <div className="relative w-14 h-14 group cursor-pointer hover:scale-105 transition-transform">
+                     <svg className="w-full h-full -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
+                        <path className="text-slate-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                        <path className="text-indigo-600 transition-all duration-1000 ease-out" strokeDasharray={`${stats.progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                     </svg>
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-indigo-600">
+                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-indigo-700">
                         {stats.progress}%
                     </div>
                 </div>
             </div>
 
             <div className="flex flex-col gap-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
-                <div className="bg-white/60 backdrop-blur-md rounded-2xl p-2 shadow-sm border border-white flex items-center justify-between ring-1 ring-slate-100">
-                    <button onClick={() => navigateDate(-1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-none hover:shadow-sm">
+                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-1.5 shadow-sm border border-slate-200 flex items-center justify-between">
+                    <button onClick={() => navigateDate(-1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
                         <ChevronLeft size={20} />
                     </button>
                     
@@ -380,16 +379,15 @@ export const TodoList: React.FC = () => {
                             }}
                             value={toLocalISOString(viewDate).split('T')[0]}
                         />
-                        <span className="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest mb-0.5 opacity-80 group-hover:opacity-100">
+                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5 group-hover:text-indigo-500 transition-colors">
                             {isToday(viewDate) ? t.today : viewDate.toLocaleDateString(language, { weekday: 'long' })}
                         </span>
-                        <span className="text-lg font-bold text-slate-800 flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
+                        <span className="text-base font-bold text-slate-800 flex items-center gap-2">
                             {viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long', year: 'numeric' })}
-                            <CalendarIcon size={14} className="text-slate-300 group-hover:text-indigo-400 group-hover:-translate-y-0.5 transition-transform"/>
                         </span>
                     </div>
 
-                    <button onClick={() => navigateDate(1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-none hover:shadow-sm">
+                    <button onClick={() => navigateDate(1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
                         <ChevronRight size={20} />
                     </button>
                 </div>
@@ -401,8 +399,8 @@ export const TodoList: React.FC = () => {
                             onClick={() => setFilterStatus(f)}
                             className={`px-4 py-2 rounded-xl text-xs font-bold capitalize whitespace-nowrap transition-all ${
                                 filterStatus === f 
-                                ? 'bg-slate-800 text-white shadow-lg shadow-slate-200 scale-105' 
-                                : 'bg-white/50 text-slate-500 border border-transparent hover:bg-white hover:border-slate-100'
+                                ? 'bg-slate-800 text-white shadow-md' 
+                                : 'bg-white/60 text-slate-500 border border-transparent hover:bg-white hover:border-slate-100'
                             }`}
                         >
                             {t[f]}
@@ -413,15 +411,13 @@ export const TodoList: React.FC = () => {
                     <div className="relative">
                         <button 
                             onClick={() => setShowSortMenu(!showSortMenu)}
-                            className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 ${showSortMenu ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white/50 text-slate-400 border-transparent hover:bg-white hover:text-slate-600'}`}
+                            className={`p-2 rounded-xl transition-all flex items-center gap-1.5 ${showSortMenu ? 'bg-indigo-100 text-indigo-700' : 'bg-white/60 text-slate-400 hover:bg-white hover:text-slate-600'}`}
                             title={t.sortBy}
                         >
                             <ArrowUpDown size={16} />
-                            {sortBy === 'priority' && <span className="text-[10px] font-bold">{t.sortPriority}</span>}
-                            {sortBy === 'deadline' && <span className="text-[10px] font-bold">{t.deadline}</span>}
                         </button>
                         {showSortMenu && (
-                            <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 p-1 z-30 min-w-[120px] animate-fade-in">
+                            <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 p-1 z-30 min-w-[140px] animate-fade-in">
                                 {[
                                     { id: 'priority', icon: ArrowDownWideNarrow, label: t.sortPriority },
                                     { id: 'deadline', icon: Clock, label: t.deadline },
@@ -434,7 +430,7 @@ export const TodoList: React.FC = () => {
                                             sortBy === opt.id ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                     >
-                                        <opt.icon size={12} /> {opt.label}
+                                        <opt.icon size={14} /> {opt.label}
                                     </button>
                                 ))}
                             </div>
@@ -447,10 +443,10 @@ export const TodoList: React.FC = () => {
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                         <input 
                             type="text" 
-                            placeholder="Search..." 
+                            placeholder="Search tasks..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-white/50 border border-transparent hover:border-slate-100 rounded-xl text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all"
+                            className="w-full pl-9 pr-3 py-2 bg-white/60 border border-transparent hover:border-slate-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-400"
                         />
                     </div>
                 </div>
@@ -459,16 +455,16 @@ export const TodoList: React.FC = () => {
       </div>
 
       {/* --- TASK LIST --- */}
-      <div className="flex-1 overflow-y-auto px-6 pb-40 custom-scrollbar z-0">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-40 custom-scrollbar z-0">
         {filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-400 animate-scale-in">
-                <div className="w-24 h-24 bg-gradient-to-br from-slate-50 to-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-50">
-                    <Archive size={36} className="text-slate-300" />
+                <div className="w-20 h-20 bg-slate-100/80 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                    <Archive size={32} className="text-slate-300" />
                 </div>
-                <p className="text-sm font-medium opacity-60">{t.emptyTasks}</p>
+                <p className="text-sm font-bold text-slate-500">{t.emptyTasks}</p>
             </div>
         ) : (
-            <div className="space-y-4 pb-4">
+            <div className="space-y-3 pb-4">
                 {filteredTasks.map((task, index) => {
                     const isEditing = editingTaskId === task.id;
                     const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
@@ -477,42 +473,39 @@ export const TodoList: React.FC = () => {
                     const completedSubtasks = task.subtasks?.filter(s => s.completed).length || 0;
                     const totalSubtasks = task.subtasks?.length || 0;
                     
-                    // Priority visual properties
-                    const priorityColor = task.priority === 'high' ? 'rose' : task.priority === 'low' ? 'emerald' : 'amber';
-                    const priorityBg = task.priority === 'high' ? 'bg-rose-50' : task.priority === 'low' ? 'bg-emerald-50' : 'bg-amber-50';
-                    const priorityBorder = task.priority === 'high' ? 'border-rose-100' : task.priority === 'low' ? 'border-emerald-100' : 'border-amber-100';
+                    const priorityColors = {
+                        high: 'bg-rose-500',
+                        medium: 'bg-amber-400',
+                        low: 'bg-emerald-400'
+                    };
 
                     return (
                         <div 
                             key={task.id}
                             style={{ animationDelay: `${index * 0.05}s` }}
-                            className={`animate-fade-in group relative bg-white/80 backdrop-blur-sm rounded-2xl p-0 border transition-all duration-300 overflow-hidden ${
-                                isEditing ? 'border-indigo-500 ring-4 ring-indigo-50 shadow-xl z-20 scale-[1.02]' :
+                            className={`animate-fade-in group relative bg-white/90 backdrop-blur-md rounded-2xl p-0 border transition-all duration-300 ${
+                                isEditing ? 'border-indigo-500 shadow-xl z-20 scale-[1.01]' :
                                 task.completed 
-                                ? 'border-slate-100 opacity-70 bg-slate-50/50 hover:opacity-100' 
+                                ? 'border-transparent opacity-60 hover:opacity-100' 
                                 : isOverdue 
-                                    ? 'border-red-200 bg-red-50/10 shadow-red-100' 
-                                    : `border-white hover:${priorityBorder} hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] hover:-translate-y-0.5`
+                                    ? 'border-rose-200 bg-rose-50/30' 
+                                    : 'border-white hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5'
                             } shadow-sm`}
                         >
-                            {/* Priority Strip */}
-                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                                task.priority === 'high' ? 'bg-rose-500' :
-                                task.priority === 'low' ? 'bg-emerald-500' :
-                                'bg-amber-500'
-                            }`}></div>
+                            {/* Visual Priority Indicator */}
+                            <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${priorityColors[task.priority || 'medium']} opacity-80`}></div>
 
-                            <div className="p-4 pl-6">
+                            <div className="p-4 pl-5">
                                 <div className="flex items-start gap-3 relative z-10">
                                     <button 
                                         onClick={() => toggleTask(task.id)}
-                                        className={`mt-1 shrink-0 transition-all duration-300 ${
+                                        className={`mt-0.5 shrink-0 transition-all duration-300 ${
                                             task.completed 
                                             ? 'text-emerald-500 scale-110' 
-                                            : 'text-slate-300 hover:text-indigo-500 hover:scale-110'
+                                            : 'text-slate-300 hover:text-indigo-600 hover:scale-110'
                                         }`}
                                     >
-                                        {task.completed ? <CheckCircle2 size={24} className="fill-emerald-50 drop-shadow-sm" /> : <Circle size={24} strokeWidth={2} />}
+                                        {task.completed ? <CheckCircle2 size={22} className="fill-emerald-50" /> : <Circle size={22} strokeWidth={2.5} />}
                                     </button>
                                     
                                     <div className="flex-1 min-w-0">
@@ -602,47 +595,39 @@ export const TodoList: React.FC = () => {
                                                 <div className="flex justify-between items-start gap-2">
                                                     <p 
                                                         onClick={() => toggleTask(task.id)}
-                                                        className={`text-base font-semibold leading-relaxed cursor-pointer transition-all ${
-                                                            task.completed ? 'line-through text-slate-400' : 'text-slate-800'
+                                                        className={`text-[15px] font-semibold leading-snug cursor-pointer transition-all ${
+                                                            task.completed ? 'line-through text-slate-400' : 'text-slate-700'
                                                         }`}
                                                     >
                                                         {task.text}
                                                     </p>
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-200">
-                                                        <button onClick={() => startEditing(task)} className="text-slate-300 hover:text-indigo-500 p-2 hover:bg-indigo-50 rounded-xl transition-colors">
-                                                            <Edit2 size={16} />
+                                                        <button onClick={() => startEditing(task)} className="text-slate-300 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded-lg transition-colors">
+                                                            <Edit2 size={15} />
                                                         </button>
-                                                        <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 rounded-xl transition-colors">
-                                                            <Trash2 size={16} />
+                                                        <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                                                            <Trash2 size={15} />
                                                         </button>
                                                     </div>
                                                 </div>
                                                 
                                                 {/* Metadata Chips */}
-                                                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg border flex items-center gap-1.5 ${
-                                                        task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                                        task.priority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                        'bg-amber-50 text-amber-600 border-amber-100'
-                                                    }`}>
-                                                        <Flag size={10} fill="currentColor" /> {t[task.priority || 'medium']}
-                                                    </span>
-
+                                                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                                                     {/* Start Date Chip */}
-                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-slate-50/50 text-slate-500 border-slate-100" title={`Created: ${formatDisplayDate(task.createdAt)}`}>
+                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500" title={`Created: ${formatDisplayDate(task.createdAt)}`}>
                                                         <CalendarDays size={10} />
                                                         {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric'})}
                                                     </span>
 
                                                     {task.estimatedTime && (
-                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-violet-50 text-violet-600 border-violet-100" title="Estimated Time">
+                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-violet-50 text-violet-600" title="Estimated Time">
                                                             <Hourglass size={10} />
                                                             {formatEstimate(task.estimatedTime)}
                                                         </span>
                                                     )}
 
                                                     {deadlineInfo && (
-                                                        <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-sm ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
+                                                        <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
                                                             {deadlineInfo.icon}
                                                             {deadlineInfo.text}
                                                         </span>
@@ -651,19 +636,14 @@ export const TodoList: React.FC = () => {
 
                                                 {/* Progress Bar (Auto or Manual) */}
                                                 {!task.completed && (
-                                                    <div className="mt-4 flex items-center gap-2 group/slider">
-                                                        {hasSubtasks && (
-                                                            <div className="mr-1" title="Progress calculated from subtasks">
-                                                                <Calculator size={12} className="text-indigo-400" />
-                                                            </div>
-                                                        )}
+                                                    <div className="mt-3 flex items-center gap-2 group/slider">
                                                         <div className="relative flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                                             <div 
-                                                                className={`absolute h-full rounded-full transition-all duration-500 relative overflow-hidden ${isOverdue ? 'bg-red-500' : 'bg-gradient-to-r from-indigo-400 to-purple-500'}`}
+                                                                className={`absolute h-full rounded-full transition-all duration-500 relative overflow-hidden ${isOverdue ? 'bg-rose-500' : 'bg-indigo-500'}`}
                                                                 style={{width: `${task.progress}%`}}
                                                             >
                                                                 {/* Shimmer Effect */}
-                                                                <div className="absolute inset-0 animate-shimmer"></div>
+                                                                <div className="absolute inset-0 animate-shimmer opacity-40"></div>
                                                             </div>
                                                             {!hasSubtasks && (
                                                                 <input 
@@ -680,28 +660,28 @@ export const TodoList: React.FC = () => {
                                                 )}
 
                                                 {/* Subtasks Section */}
-                                                <div className="mt-2">
+                                                <div className="mt-1">
                                                     {(hasSubtasks || isEditing) && (
-                                                        <div className="flex items-center gap-2 mt-4 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 pb-1">
+                                                        <div className="flex items-center gap-2 mt-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                                             <ListChecks size={12} />
                                                             <span>{t.subtasks}</span>
                                                             {hasSubtasks && (
-                                                                <span className="ml-auto bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full border border-slate-100">
-                                                                    {completedSubtasks}/{totalSubtasks} • {Math.round((completedSubtasks/totalSubtasks)*100)}%
+                                                                <span className="ml-auto bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px]">
+                                                                    {completedSubtasks}/{totalSubtasks}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     )}
                                                     
                                                     {task.subtasks?.map(sub => (
-                                                        <div key={sub.id} className="flex items-center gap-2 mb-2 group/sub pl-1">
+                                                        <div key={sub.id} className="flex items-center gap-2 mb-1.5 group/sub pl-1">
                                                             <div className="text-slate-300">
                                                                 <GripVertical size={12} className="opacity-0 group-hover/sub:opacity-50 cursor-grab" />
                                                             </div>
                                                             <button onClick={() => toggleSubtask(task.id, sub.id)} className={sub.completed ? 'text-emerald-500 transition-all scale-105' : 'text-slate-300 hover:text-slate-400 transition-all'}>
-                                                                {sub.completed ? <CheckSquare size={16} /> : <Square size={16} />}
+                                                                {sub.completed ? <CheckSquare size={14} /> : <Square size={14} />}
                                                             </button>
-                                                            <span className={`text-xs flex-1 transition-all ${sub.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{sub.text}</span>
+                                                            <span className={`text-xs flex-1 transition-all ${sub.completed ? 'line-through text-slate-400' : 'text-slate-600 font-medium'}`}>{sub.text}</span>
                                                             <X 
                                                                 size={14} 
                                                                 className="text-slate-300 hover:text-red-500 cursor-pointer opacity-0 group-hover/sub:opacity-100 transition-opacity p-0.5"
@@ -709,8 +689,8 @@ export const TodoList: React.FC = () => {
                                                             />
                                                         </div>
                                                     ))}
-                                                    <div className="flex items-center gap-2 mt-2 pl-4 opacity-50 focus-within:opacity-100 transition-opacity">
-                                                        <PlusCircle size={16} className="text-indigo-400" />
+                                                    <div className="flex items-center gap-2 mt-2 pl-4 opacity-50 focus-within:opacity-100 transition-opacity group-hover:opacity-80">
+                                                        <PlusCircle size={14} className="text-indigo-400" />
                                                         <input 
                                                             className="bg-transparent text-xs focus:outline-none w-full placeholder:text-slate-400 font-medium text-slate-700 py-1 border-b border-transparent focus:border-indigo-100 transition-all"
                                                             placeholder={t.addSubtask}
@@ -734,135 +714,136 @@ export const TodoList: React.FC = () => {
         )}
       </div>
 
-      {/* --- SMART INPUT BAR --- */}
-      <div className="absolute bottom-4 left-0 right-0 px-4 z-30">
-        <div className={`max-w-3xl mx-auto glass rounded-[2rem] transition-all duration-300 ${showInputDetails ? 'p-4 rounded-[1.5rem] shadow-2xl' : 'p-2 shadow-xl'}`}>
-            
-            {showInputDetails && (
-                <div className="flex flex-wrap items-center gap-3 mb-3 animate-fade-in border-b border-white/50 pb-3">
-                    {/* Assigned Date Picker */}
-                    <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${assignedDate ? 'bg-indigo-50 border-indigo-200' : 'bg-white/50 border-white focus-within:border-indigo-300'}`}>
-                        <div className="relative flex items-center">
-                            <button 
-                                type="button"
-                                className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${assignedDate ? 'text-indigo-700' : 'text-slate-500'}`}
-                            >
-                                <CalendarDays size={14} className={assignedDate ? "text-indigo-600" : "text-slate-400"} /> 
-                                <span>{assignedDate ? formatDisplayDate(assignedDate) : t.setAssignedDate || 'Start Date'}</span>
-                            </button>
-                            {/* Improved Date Picker Input */}
-                            <input 
-                                type="datetime-local" 
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                value={assignedDate}
-                                onChange={(e) => setAssignedDate(e.target.value)}
-                            />
+      {/* --- FLOATING INPUT BAR --- */}
+      <div className="absolute bottom-6 left-0 right-0 px-4 md:px-6 z-30 pointer-events-none">
+        <div className="max-w-3xl mx-auto pointer-events-auto">
+            <div className={`glass rounded-[2rem] transition-all duration-300 border border-white/50 bg-white/80 backdrop-blur-xl ${showInputDetails ? 'p-4 shadow-2xl ring-1 ring-indigo-500/10' : 'p-2 shadow-xl shadow-indigo-900/10'}`}>
+                
+                {showInputDetails && (
+                    <div className="flex flex-wrap items-center gap-3 mb-4 animate-fade-in border-b border-slate-100 pb-4">
+                        {/* Assigned Date Picker */}
+                        <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${assignedDate ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
+                            <div className="relative flex items-center">
+                                <button 
+                                    type="button"
+                                    className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${assignedDate ? 'text-indigo-700' : 'text-slate-500'}`}
+                                >
+                                    <CalendarDays size={14} className={assignedDate ? "text-indigo-600" : "text-slate-400"} /> 
+                                    <span>{assignedDate ? formatDisplayDate(assignedDate) : t.setAssignedDate || 'Start Date'}</span>
+                                </button>
+                                <input 
+                                    type="datetime-local" 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    value={assignedDate}
+                                    onChange={(e) => setAssignedDate(e.target.value)}
+                                />
+                            </div>
+                            {assignedDate && (
+                                <button onClick={() => setAssignedDate('')} className="pr-2 pl-1 text-indigo-400 hover:text-red-500 relative z-20">
+                                    <X size={12} />
+                                </button>
+                            )}
                         </div>
-                        {assignedDate && (
-                            <button onClick={() => setAssignedDate('')} className="pr-2 pl-1 text-indigo-400 hover:text-red-500 relative z-20">
-                                <X size={12} />
-                            </button>
-                        )}
-                    </div>
 
-                    {/* Deadline Picker */}
-                    <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${deadline ? 'bg-orange-50 border-orange-200' : 'bg-white/50 border-white focus-within:border-indigo-300'}`}>
-                        <div className="relative flex items-center">
-                            <button 
-                                type="button"
-                                className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${deadline ? 'text-orange-700' : 'text-slate-500'}`}
-                            >
-                                <CalendarClock size={14} className={deadline ? "text-orange-600" : "text-slate-400"} /> 
-                                <span>{deadline ? formatDisplayDate(deadline) : t.setDeadline}</span>
-                            </button>
-                            <input 
-                                type="datetime-local" 
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                value={deadline}
-                                onChange={(e) => setDeadline(e.target.value)}
-                            />
+                        {/* Deadline Picker */}
+                        <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${deadline ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
+                            <div className="relative flex items-center">
+                                <button 
+                                    type="button"
+                                    className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${deadline ? 'text-orange-700' : 'text-slate-500'}`}
+                                >
+                                    <CalendarClock size={14} className={deadline ? "text-orange-600" : "text-slate-400"} /> 
+                                    <span>{deadline ? formatDisplayDate(deadline) : t.setDeadline}</span>
+                                </button>
+                                <input 
+                                    type="datetime-local" 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    value={deadline}
+                                    onChange={(e) => setDeadline(e.target.value)}
+                                />
+                            </div>
+                            {deadline && (
+                                <button onClick={() => setDeadline('')} className="pr-2 pl-1 text-orange-400 hover:text-red-500 relative z-20">
+                                    <X size={12} />
+                                </button>
+                            )}
                         </div>
-                        {deadline && (
-                            <button onClick={() => setDeadline('')} className="pr-2 pl-1 text-orange-400 hover:text-red-500 relative z-20">
-                                <X size={12} />
-                            </button>
-                        )}
-                    </div>
 
-                    {/* Estimate Time */}
-                    <div className={`flex items-center gap-1 border rounded-xl p-1 pl-3 transition-colors ${estimatedTime ? 'bg-violet-50 border-violet-200' : 'bg-white/50 border-white'}`}>
-                        <Hourglass size={14} className={estimatedTime ? "text-violet-500" : "text-slate-400"}/>
-                        <select 
-                            className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${estimatedTime ? 'text-violet-700' : 'text-slate-600'}`}
-                            value={estimatedTime || ''}
-                            onChange={(e) => setEstimatedTime(e.target.value ? parseInt(e.target.value) : undefined)}
-                        >
-                            <option value="">{t.setEstimate}</option>
-                            <option value="15">15 {t.minutes}</option>
-                            <option value="30">30 {t.minutes}</option>
-                            <option value="45">45 {t.minutes}</option>
-                            <option value="60">1 {t.hours}</option>
-                            <option value="120">2 {t.hours}</option>
-                            <option value="240">4 {t.hours}</option>
-                        </select>
-                        {estimatedTime && (
-                             <button onClick={() => setEstimatedTime(undefined)} className="p-1 text-violet-400 hover:text-red-500"><X size={12} /></button>
-                        )}
-                    </div>
-
-                     {/* Priority Selector */}
-                     <div className="flex gap-1 ml-auto">
-                        {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                            <button
-                                key={p}
-                                onClick={() => setNewPriority(p)}
-                                className={`w-8 h-8 rounded-full transition-all flex items-center justify-center border shadow-sm ${
-                                    newPriority === p 
-                                    ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
-                                    : 'bg-white border-white text-slate-300 hover:text-slate-500 hover:bg-slate-100'
-                                }`}
-                                title={t[p] || p}
+                        {/* Estimate Time */}
+                        <div className={`flex items-center gap-1 border rounded-xl p-1 pl-3 transition-colors ${estimatedTime ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                            <Hourglass size={14} className={estimatedTime ? "text-violet-500" : "text-slate-400"}/>
+                            <select 
+                                className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${estimatedTime ? 'text-violet-700' : 'text-slate-600'}`}
+                                value={estimatedTime || ''}
+                                onChange={(e) => setEstimatedTime(e.target.value ? parseInt(e.target.value) : undefined)}
                             >
-                                <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : "currentColor"} />
-                            </button>
-                        ))}
+                                <option value="">{t.setEstimate}</option>
+                                <option value="15">15 {t.minutes}</option>
+                                <option value="30">30 {t.minutes}</option>
+                                <option value="45">45 {t.minutes}</option>
+                                <option value="60">1 {t.hours}</option>
+                                <option value="120">2 {t.hours}</option>
+                                <option value="240">4 {t.hours}</option>
+                            </select>
+                            {estimatedTime && (
+                                <button onClick={() => setEstimatedTime(undefined)} className="p-1 text-violet-400 hover:text-red-500"><X size={12} /></button>
+                            )}
+                        </div>
+
+                        {/* Priority Selector */}
+                        <div className="flex gap-1 ml-auto">
+                            {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setNewPriority(p)}
+                                    className={`w-8 h-8 rounded-full transition-all flex items-center justify-center border shadow-sm ${
+                                        newPriority === p 
+                                        ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
+                                        : 'bg-white border-slate-100 text-slate-300 hover:text-slate-500 hover:bg-slate-50'
+                                    }`}
+                                    title={t[p] || p}
+                                >
+                                    <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : "currentColor"} />
+                                </button>
+                            ))}
+                        </div>
                     </div>
+                )}
+
+                {/* Input Row */}
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setShowInputDetails(!showInputDetails)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border ${
+                            showInputDetails 
+                            ? 'bg-indigo-600 text-white border-indigo-600 rotate-90 shadow-md' 
+                            : 'bg-slate-100 text-slate-500 border-transparent hover:bg-indigo-50 hover:text-indigo-600'
+                        }`}
+                    >
+                        <SlidersHorizontal size={18} />
+                    </button>
+
+                    <input 
+                        type="text" 
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
+                        placeholder={t.addTaskPlaceholder}
+                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 h-10 px-2"
+                    />
+
+                    <button 
+                        onClick={addTask}
+                        disabled={!inputValue.trim()}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                            inputValue.trim() 
+                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 hover:bg-indigo-700 active:scale-95' 
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                    >
+                        <Plus size={22} strokeWidth={2.5} />
+                    </button>
                 </div>
-            )}
-
-            {/* Input Row */}
-            <div className="flex items-center gap-2">
-                <button 
-                    onClick={() => setShowInputDetails(!showInputDetails)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border ${
-                        showInputDetails 
-                        ? 'bg-slate-800 text-white border-slate-800 rotate-90 shadow-lg' 
-                        : 'bg-white/50 text-slate-500 border-white hover:border-indigo-300 hover:text-indigo-600 hover:bg-white'
-                    }`}
-                >
-                    <SlidersHorizontal size={18} />
-                </button>
-
-                <input 
-                    type="text" 
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
-                    placeholder={t.addTaskPlaceholder}
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 h-10 px-2"
-                />
-
-                <button 
-                    onClick={addTask}
-                    disabled={!inputValue.trim()}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                        inputValue.trim() 
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-110 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:scale-95' 
-                        : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                    }`}
-                >
-                    <Plus size={22} strokeWidth={2.5} />
-                </button>
             </div>
         </div>
       </div>

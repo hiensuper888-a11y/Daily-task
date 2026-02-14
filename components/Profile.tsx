@@ -8,7 +8,7 @@ import { auth, googleProvider, facebookProvider, isFirebaseConfigured } from '..
 import * as firebaseAuth from "firebase/auth";
 
 // Cast to any to avoid "has no exported member" errors
-const { signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } = firebaseAuth as any;
+const { signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } = firebaseAuth as any;
 
 const DEFAULT_PROFILE: UserProfile = {
     name: '',
@@ -235,9 +235,39 @@ export const Profile: React.FC = () => {
 
   // --- PROFILE MANAGEMENT ---
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // 1. Optimistic Update (Local)
     setProfile(editForm);
     setIsEditing(false);
+
+    // 2. Persist to Auth Provider (Firebase or Simulated DB)
+    try {
+        if (isFirebaseConfigured() && auth && auth.currentUser) {
+            // Update Firebase Auth Profile (DisplayName & PhotoURL)
+            await updateProfile(auth.currentUser, {
+                displayName: editForm.name,
+                photoURL: editForm.avatar
+            });
+        } else {
+            // Update Simulated DB
+            const usersDbStr = localStorage.getItem(SIMULATED_DB_KEY);
+            if (usersDbStr) {
+                const usersDb = JSON.parse(usersDbStr);
+                // Find the user by email or basic match logic for demo
+                const currentEmail = profile.email;
+                if (currentEmail && usersDb[currentEmail]) {
+                    usersDb[currentEmail] = {
+                        ...usersDb[currentEmail],
+                        displayName: editForm.name,
+                        photoURL: editForm.avatar,
+                    };
+                    localStorage.setItem(SIMULATED_DB_KEY, JSON.stringify(usersDb));
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Failed to update remote profile:", error);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
