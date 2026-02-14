@@ -167,7 +167,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       comments: []
     };
 
-    setTasks([newTask, ...tasks]);
+    setTasks(prev => [newTask, ...prev]);
     setInputValue('');
     setDeadline('');
     setAssignedDate('');
@@ -178,7 +178,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const updateTask = () => {
     if (!editingTask) return;
-    setTasks(tasks.map(t => t.id === editingTask.id ? editingTask : t));
+    setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
     setEditingTask(null);
   };
 
@@ -196,7 +196,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const toggleTask = (id: number, forceState?: boolean, note?: string) => {
-    setTasks(tasks.map(task => {
+    setTasks(prev => prev.map(task => {
       if (task.id === id) {
         const newCompleted = forceState !== undefined ? forceState : !task.completed;
         if (newCompleted) playSuccessSound();
@@ -248,18 +248,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const archiveTask = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setTasks(tasks.map(t => t.id === id ? { ...t, archived: true } : t));
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: true } : t));
   };
 
   const restoreTask = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setTasks(tasks.map(t => t.id === id ? { ...t, archived: false } : t));
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: false } : t));
   };
 
   const deleteTask = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (confirm("Xóa công việc này vĩnh viễn?")) {
-      setTasks(tasks.filter(t => t.id !== id));
+      setTasks(prev => prev.filter(t => t.id !== id));
       if (editingTask?.id === id) setEditingTask(null);
     }
   };

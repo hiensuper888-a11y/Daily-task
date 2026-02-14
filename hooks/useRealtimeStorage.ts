@@ -31,19 +31,23 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  const setValue = (value: T | ((val: T) => T)) => {
+  // Wrap setValue in useCallback to maintain stable reference
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        const finalKey = getStorageKey();
-        window.localStorage.setItem(finalKey, JSON.stringify(valueToStore));
-        window.dispatchEvent(new Event('local-storage'));
-      }
+      setStoredValue(prev => {
+        const valueToStore = value instanceof Function ? value(prev) : value;
+        
+        if (typeof window !== 'undefined') {
+          const finalKey = getStorageKey();
+          window.localStorage.setItem(finalKey, JSON.stringify(valueToStore));
+          window.dispatchEvent(new Event('local-storage'));
+        }
+        return valueToStore;
+      });
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
-  };
+  }, [key, getStorageKey]);
 
   // Sync when key changes or external updates happen
   useEffect(() => {
@@ -67,7 +71,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
       window.removeEventListener('auth-change', handleSync);
       clearInterval(interval);
     };
-  }, [readValue, getStorageKey]); // Re-run when key definition changes
+  }, [readValue]); 
 
   return [storedValue, setValue] as const;
 }
