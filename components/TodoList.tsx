@@ -3,7 +3,6 @@ import {
   Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, 
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, 
-  RotateCcw, Paperclip, FileText, 
   Clock, Edit3, Flame, Zap, CheckCircle, 
   PlusCircle, CheckSquare, Square, ListChecks,
   Users, User
@@ -126,7 +125,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file: File) => {
+    // Use Array.from and let TypeScript infer the type, or cast if necessary in strict mode
+    Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         let type: 'image' | 'video' | 'file' = 'file';
@@ -295,9 +295,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
         // 4. Special Group Filters (Bypass Date Filter to show all pending items)
         if (filterStatus === 'assigned_to_me') {
+            // Show tasks assigned to current user that are NOT completed, regardless of date
             return t.assignedTo === currentUserId && !t.completed;
         }
         if (filterStatus === 'delegated') {
+             // Show tasks assigned to others that are NOT completed, regardless of date
             return t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
         }
 
@@ -349,7 +351,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {editingTask && (
         <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
           <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col bg-white/90">
-             {/* ... Edit Modal Content (Same as previous, just ensure proper classes) ... */}
               <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 pb-4 flex items-center justify-between border-b border-slate-100">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">

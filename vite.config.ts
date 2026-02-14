@@ -4,23 +4,27 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
-  // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '');
   
   return {
     plugins: [react()],
-    base: './', // Use relative paths
+    base: './', // Use relative paths for flexible deployment
     define: {
-      // This ensures process.env.API_KEY is replaced by the actual string during build
-      // Default to empty string if undefined to avoid "process is not defined" errors
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || 'AIzaSyAm3oIyGTPb1-Knso8Rtj58vU4nvyOYxCU')
+      // Safely replace process.env.API_KEY with the string value during build
+      // Using JSON.stringify ensures it's wrapped in quotes
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+      // Prevent "process is not defined" error in browser
+      'process.env': {} 
     },
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      sourcemap: false,
+      chunkSizeWarningLimit: 1000,
     },
     server: {
       port: 3000,
+      host: true // Expose to network for testing
     }
   };
 });
