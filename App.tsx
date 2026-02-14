@@ -53,6 +53,21 @@ const AppContent: React.FC = () => {
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   
+  // State to track local storage changes for forcing updates
+  const [storageVersion, setStorageVersion] = useState(0);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setStorageVersion(prev => prev + 1);
+    };
+    window.addEventListener('local-storage', handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('local-storage', handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   // Logic tổng hợp task từ tất cả project để thông báo deadline
   // Sử dụng SESSION_KEY để lấy đúng prefix ID của user đang đăng nhập
   const allCurrentTasks = useMemo(() => {
@@ -77,7 +92,7 @@ const AppContent: React.FC = () => {
     });
 
     return all;
-  }, [personalTasks, myGroups, currentUserId]); // Re-run if user changes or groups update
+  }, [personalTasks, myGroups, currentUserId, storageVersion]); // Add storageVersion dependency
 
   const { notifications, dismissNotification } = useDeadlineNotifications(allCurrentTasks);
 

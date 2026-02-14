@@ -53,10 +53,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
-  // Sửa lỗi timezone: Tính toán offset để hiển thị đúng giờ địa phương trong input datetime-local
+  // Fix timezone issue for datetime-local input
   const toLocalISOString = (date: Date) => {
     if (!date || isNaN(date.getTime())) return '';
-    const tzOffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+    const tzOffset = date.getTimezoneOffset() * 60000; 
     const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
     return localISOTime;
   };
@@ -121,7 +121,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       };
       reader.readAsDataURL(file);
     });
-    // Reset value để cho phép upload lại cùng file nếu cần
     if (e.target) e.target.value = '';
   };
 
