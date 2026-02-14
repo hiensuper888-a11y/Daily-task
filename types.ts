@@ -55,6 +55,9 @@ export interface GroupMember {
   avatar: string;
   role: 'leader' | 'member';
   joinedAt: number;
+  // New features for member management
+  customTitle?: string; // Chức danh (VD: Designer, Developer)
+  note?: string;        // Ghi chú công việc
 }
 
 export interface Group {

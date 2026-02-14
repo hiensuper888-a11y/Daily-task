@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight, Activity, Search, AlertCircle, LogIn, Check } from 'lucide-react';
-import { AppTab, Language, Group, UserProfile, Task } from './types';
+import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight, Activity, Search, AlertCircle, LogIn, Check, QrCode, Edit2, Save } from 'lucide-react';
+import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
@@ -47,7 +47,8 @@ const AppContent: React.FC = () => {
   // Modals
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false); // New modal for group settings
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Create Group State
   const [newGroupName, setNewGroupName] = useState('');
@@ -58,17 +59,22 @@ const AppContent: React.FC = () => {
   const [foundUsers, setFoundUsers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  
+  // Edit Member State
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editMemberTitle, setEditMemberTitle] = useState('');
+  const [editMemberNote, setEditMemberNote] = useState('');
 
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'Người dùng', email: 'guest', avatar: '', provider: null, isLoggedIn: false });
   
-  // FIX: Use SESSION_KEY to get the actual unique ID (UID) used by authentication and TodoList.
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
   
   const activeGroup = myGroups.find(g => g.id === activeGroupId) || null;
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   
-  // State to track local storage changes for forcing updates
+  // State to track local storage changes
   const [storageVersion, setStorageVersion] = useState(0);
 
   useEffect(() => {
@@ -81,6 +87,18 @@ const AppContent: React.FC = () => {
       window.removeEventListener('local-storage', handleStorageChange);
       window.removeEventListener('storage', handleStorageChange);
     };
+  }, []);
+
+  // Check for join code in URL
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('joinCode');
+      if (code) {
+          setJoinCodeInput(code);
+          setShowJoinModal(true);
+          // Optional: Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+      }
   }, []);
 
   // Logic tổng hợp task
@@ -124,7 +142,9 @@ const AppContent: React.FC = () => {
               name: userProfile.name || 'Người dùng',
               avatar: userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`,
               role: 'leader',
-              joinedAt: Date.now()
+              joinedAt: Date.now(),
+              customTitle: 'Trưởng nhóm',
+              note: 'Quản trị viên'
           }],
           joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           createdAt: Date.now()
@@ -137,6 +157,25 @@ const AppContent: React.FC = () => {
       setActiveTab('tasks');
   };
 
+  const handleJoinGroup = () => {
+      // In a real app, this would query Firebase for the group by code.
+      // Here, we can only simulate joining if the user has the group data (shared storage simulation or pure mock).
+      // Since this is a local-first mock without a real backend for sharing, we will alert.
+      if(!joinCodeInput) return;
+      
+      // Check if user is already in a group with this code (local check)
+      const existing = myGroups.find(g => g.joinCode === joinCodeInput);
+      if(existing) {
+          alert("Bạn đã là thành viên của nhóm này!");
+          setActiveGroupId(existing.id);
+          setShowJoinModal(false);
+          return;
+      }
+      
+      alert("Trong bản demo này, mã tham gia chỉ hoạt động để chia sẻ ID. Chức năng tham gia yêu cầu Backend thực tế (Firebase) để tìm nhóm của người khác.");
+      setShowJoinModal(false);
+  };
+
   const handleDeleteGroup = () => {
       if (!activeGroup) return;
       if (activeGroup.leaderId !== currentUserId) {
@@ -144,16 +183,11 @@ const AppContent: React.FC = () => {
           return;
       }
       if (confirm(`Bạn có chắc chắn muốn xóa nhóm "${activeGroup.name}"? Hành động này không thể hoàn tác.`)) {
-          // 1. Clear Active ID first to prevent render errors
           const groupId = activeGroup.id;
           setActiveGroupId(null);
           setShowSettingsModal(false);
           setActiveTab('tasks');
-
-          // 2. Remove tasks
           localStorage.removeItem(`group_${groupId}_tasks`);
-
-          // 3. Remove group from list
           setTimeout(() => {
              setMyGroups(prev => prev.filter(g => g.id !== groupId));
           }, 50);
@@ -165,7 +199,6 @@ const AppContent: React.FC = () => {
       setIsSearching(true);
       try {
           const results = await searchUsers(memberSearchQuery);
-          // Filter out users already in the group
           const existingMemberIds = activeGroup?.members.map(m => m.id) || [];
           setFoundUsers(results.filter((u: any) => !existingMemberIds.includes(u.uid)));
       } catch (error) {
@@ -177,26 +210,27 @@ const AppContent: React.FC = () => {
 
   const handleAddMember = (user: any) => {
       if (!activeGroup) return;
-      const newMember = {
+      const newMember: GroupMember = {
           id: user.uid,
           name: user.name,
           avatar: user.avatar,
-          role: 'member' as const,
-          joinedAt: Date.now()
+          role: 'member',
+          joinedAt: Date.now(),
+          customTitle: 'Thành viên',
+          note: ''
       };
       const updatedGroup = {
           ...activeGroup,
           members: [...activeGroup.members, newMember]
       };
       setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
-      // Remove from search results
       setFoundUsers(foundUsers.filter(u => u.uid !== user.uid));
   };
 
   const handleRemoveMember = (memberId: string) => {
       if (!activeGroup) return;
       if (activeGroup.leaderId !== currentUserId) return;
-      if (memberId === activeGroup.leaderId) return; // Cannot remove leader
+      if (memberId === activeGroup.leaderId) return;
 
       if(confirm("Xóa thành viên này khỏi nhóm?")) {
           const updatedGroup = {
@@ -205,6 +239,24 @@ const AppContent: React.FC = () => {
           };
           setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
       }
+  };
+
+  const handleUpdateMemberInfo = (memberId: string) => {
+      if (!activeGroup) return;
+      const updatedMembers = activeGroup.members.map(m => {
+          if (m.id === memberId) {
+              return { ...m, customTitle: editMemberTitle, note: editMemberNote };
+          }
+          return m;
+      });
+      setMyGroups(myGroups.map(g => g.id === activeGroup.id ? { ...g, members: updatedMembers } : g));
+      setEditingMemberId(null);
+  };
+
+  const startEditingMember = (member: GroupMember) => {
+      setEditingMemberId(member.id);
+      setEditMemberTitle(member.customTitle || '');
+      setEditMemberNote(member.note || '');
   };
 
   const copyToClipboard = (text: string) => {
@@ -242,6 +294,7 @@ const AppContent: React.FC = () => {
           <div className={`absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] rounded-full blur-[160px] transition-all duration-1000 ${activeGroupId ? 'bg-teal-300/30' : 'bg-violet-300/30'}`}></div>
       </div>
 
+      {/* SIDEBAR */}
       <aside className="hidden md:flex flex-col w-72 bg-white/60 backdrop-blur-3xl border-r border-slate-100 shrink-0 z-20 relative shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
         <div className="p-8 pb-4">
           <div className="flex items-center gap-4 mb-10 group cursor-pointer">
@@ -294,7 +347,7 @@ const AppContent: React.FC = () => {
                         <span className="text-sm font-bold truncate tracking-tight">{group.name}</span>
                     </button>
                     
-                    {/* Settings Icon - Show only for active group and if leader */}
+                    {/* Settings Icon */}
                     {activeGroupId === group.id && group.leaderId === currentUserId && (
                         <button 
                             onClick={(e) => { e.stopPropagation(); setShowSettingsModal(true); }}
@@ -325,6 +378,7 @@ const AppContent: React.FC = () => {
         </div>
       </aside>
 
+      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col relative h-full overflow-hidden z-10">
         <div className="flex-1 overflow-hidden relative md:p-6 h-full flex flex-col">
            <div className={`flex-1 w-full max-w-[1600px] mx-auto bg-white/95 backdrop-blur-3xl md:rounded-[3rem] border transition-all duration-700 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] relative overflow-hidden flex flex-col ${activeGroupId ? 'border-emerald-100' : 'border-slate-100'}`}>
@@ -339,6 +393,7 @@ const AppContent: React.FC = () => {
            </div>
         </div>
 
+        {/* MOBILE NAVIGATION */}
         <div className="md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-100 pb-safe pt-3 px-6 flex justify-around items-center z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
           {[
               { id: 'tasks', icon: activeGroupId ? Users : Home },
@@ -351,19 +406,34 @@ const AppContent: React.FC = () => {
                 {activeTab === item.id && <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${activeGroupId ? 'bg-emerald-600' : 'bg-indigo-600'}`}></div>}
               </button>
           ))}
-          {/* Mobile Settings button for active group */}
           {activeGroupId && activeGroup?.leaderId === currentUserId && (
-              <button 
-                onClick={() => setShowSettingsModal(true)}
-                className="p-4 rounded-2xl text-emerald-600 bg-emerald-50 relative"
-              >
+              <button onClick={() => setShowSettingsModal(true)} className="p-4 rounded-2xl text-emerald-600 bg-emerald-50 relative">
                  <Settings size={24} strokeWidth={2.5} />
               </button>
           )}
         </div>
       </main>
 
-      {/* Group Create Modal */}
+      {/* MODAL: Join Group */}
+      {showJoinModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+              <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
+                  <button onClick={() => setShowJoinModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                  <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tighter">Tham gia nhóm</h3>
+                  <div className="space-y-6">
+                      <input 
+                        value={joinCodeInput} 
+                        onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())} 
+                        className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-mono text-center text-xl font-bold text-slate-800 focus:ring-4 focus:ring-emerald-100 transition-all outline-none tracking-widest uppercase" 
+                        placeholder="NHẬP MÃ" 
+                      />
+                      <button onClick={handleJoinGroup} className="w-full py-5 bg-emerald-600 text-white rounded-[1.5rem] font-black hover:bg-emerald-700 shadow-xl shadow-emerald-200 transition-all uppercase tracking-[0.2em] text-[11px]">Tham gia ngay</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* MODAL: Create Group */}
       {showGroupModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
@@ -380,7 +450,7 @@ const AppContent: React.FC = () => {
                                     reader.onloadend = () => setNewGroupImage(reader.result as string);
                                     reader.readAsDataURL(file);
                                   }
-                                  e.target.value = ''; // Reset input to allow re-selection
+                                  e.target.value = '';
                               }} />
                           </div>
                       </div>
@@ -391,7 +461,7 @@ const AppContent: React.FC = () => {
           </div>
       )}
 
-      {/* Group Settings Modal */}
+      {/* MODAL: Group Settings (Leader Only) */}
       {showSettingsModal && activeGroup && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in border border-white flex flex-col max-h-[85vh]">
@@ -405,9 +475,11 @@ const AppContent: React.FC = () => {
 
                   <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
                       
-                      {/* Invite / Add Member Section */}
+                      {/* Invite Section */}
                       <div className="space-y-4">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thêm thành viên</label>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mời thành viên</label>
+                          
+                          {/* Search */}
                           <div className="flex gap-2">
                               <div className="relative flex-1">
                                   <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
@@ -416,15 +488,11 @@ const AppContent: React.FC = () => {
                                     value={memberSearchQuery}
                                     onChange={(e) => setMemberSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
-                                    placeholder="Nhập tên, email hoặc ID..." 
+                                    placeholder="Tìm email, ID..." 
                                     className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100"
                                   />
                               </div>
-                              <button 
-                                onClick={handleSearchUsers}
-                                disabled={isSearching || !memberSearchQuery}
-                                className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                              >
+                              <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50">
                                   {isSearching ? <Loader2 size={18} className="animate-spin"/> : "Tìm"}
                               </button>
                           </div>
@@ -440,54 +508,91 @@ const AppContent: React.FC = () => {
                                                   <p className="text-xs text-slate-500">{user.email}</p>
                                               </div>
                                           </div>
-                                          <button 
-                                            onClick={() => handleAddMember(user)}
-                                            className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
-                                            title="Thêm"
-                                          >
-                                              <Plus size={16}/>
-                                          </button>
+                                          <button onClick={() => handleAddMember(user)} className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"><Plus size={16}/></button>
                                       </div>
                                   ))}
+                              </div>
+                          )}
+
+                          {/* Share Codes */}
+                          <div className="flex gap-2">
+                              <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between">
+                                  <div>
+                                      <p className="text-[10px] text-slate-400 font-bold uppercase">Mã nhóm</p>
+                                      <p className="text-lg font-black text-slate-800 tracking-widest">{activeGroup.joinCode}</p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                      <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-2 text-slate-400 hover:text-indigo-600 bg-white rounded-lg shadow-sm">{copiedCode ? <Check size={16}/> : <Copy size={16}/>}</button>
+                                      <button onClick={() => setShowQr(!showQr)} className="p-2 text-slate-400 hover:text-indigo-600 bg-white rounded-lg shadow-sm"><QrCode size={16}/></button>
+                                  </div>
+                              </div>
+                              <button 
+                                onClick={() => copyToClipboard(`${window.location.origin}${window.location.pathname}?joinCode=${activeGroup.joinCode}`)}
+                                className="px-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold text-xs hover:bg-emerald-100 flex flex-col items-center justify-center gap-1"
+                              >
+                                  <Share2 size={16}/> Link
+                              </button>
+                          </div>
+
+                          {showQr && (
+                              <div className="flex justify-center p-4 bg-white border border-slate-100 rounded-2xl shadow-sm animate-fade-in">
+                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?joinCode=${activeGroup.joinCode}`)}`} alt="QR Code" className="rounded-lg" />
                               </div>
                           )}
                       </div>
 
                       {/* Members List */}
                       <div className="space-y-4">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex justify-between items-center">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex justify-between">
                               <span>Thành viên ({activeGroup.members.length})</span>
-                              <button 
-                                onClick={() => copyToClipboard(activeGroup.joinCode)}
-                                className="flex items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-colors group"
-                              >
-                                  <span className="text-xs">Mã: {activeGroup.joinCode}</span>
-                                  {copiedCode ? <Check size={14} className="text-emerald-500"/> : <Copy size={14} className="group-hover:scale-110 transition-transform"/>}
-                              </button>
                           </label>
                           <div className="space-y-2">
                               {activeGroup.members.map((member) => (
-                                  <div key={member.id} className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                                      <div className="flex items-center gap-3">
-                                          <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover" alt={member.name}/>
-                                          <div>
-                                              <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                                  {member.name}
-                                                  {member.role === 'leader' && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Leader</span>}
-                                              </p>
-                                              <p className="text-xs text-slate-400 font-mono">ID: {member.id.slice(0, 8)}...</p>
+                                  <div key={member.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                                      <div className="flex items-start justify-between">
+                                          <div className="flex items-center gap-3">
+                                              <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover" alt={member.name}/>
+                                              <div>
+                                                  <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                                      {member.name}
+                                                      {member.role === 'leader' && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Leader</span>}
+                                                  </p>
+                                                  {editingMemberId === member.id ? (
+                                                      <div className="mt-1 space-y-1">
+                                                          <input 
+                                                            value={editMemberTitle}
+                                                            onChange={(e) => setEditMemberTitle(e.target.value)}
+                                                            className="text-xs border border-indigo-200 rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-indigo-500"
+                                                            placeholder="Chức danh (VD: Dev)"
+                                                          />
+                                                          <input 
+                                                            value={editMemberNote}
+                                                            onChange={(e) => setEditMemberNote(e.target.value)}
+                                                            className="text-xs border border-slate-200 rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-slate-400"
+                                                            placeholder="Ghi chú..."
+                                                          />
+                                                      </div>
+                                                  ) : (
+                                                      <div>
+                                                          <p className="text-[11px] text-indigo-600 font-bold">{member.customTitle || 'Thành viên'}</p>
+                                                          {member.note && <p className="text-[10px] text-slate-400 italic">{member.note}</p>}
+                                                      </div>
+                                                  )}
+                                              </div>
+                                          </div>
+                                          
+                                          <div className="flex gap-1">
+                                              {editingMemberId === member.id ? (
+                                                  <button onClick={() => handleUpdateMemberInfo(member.id)} className="p-2 text-emerald-500 bg-emerald-50 hover:bg-emerald-100 rounded-lg"><Save size={14}/></button>
+                                              ) : (
+                                                  <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg"><Edit2 size={14}/></button>
+                                              )}
+                                              
+                                              {member.role !== 'leader' && (
+                                                  <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><UserMinus size={14}/></button>
+                                              )}
                                           </div>
                                       </div>
-                                      
-                                      {member.role !== 'leader' && (
-                                          <button 
-                                            onClick={() => handleRemoveMember(member.id)}
-                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                            title="Xóa khỏi nhóm"
-                                          >
-                                              <UserMinus size={18}/>
-                                          </button>
-                                      )}
                                   </div>
                               ))}
                           </div>
@@ -495,10 +600,7 @@ const AppContent: React.FC = () => {
 
                       {/* Danger Zone */}
                       <div className="pt-6 border-t border-slate-100">
-                          <button 
-                            onClick={handleDeleteGroup}
-                            className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                          >
+                          <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
                               <Trash2 size={18}/> Xóa nhóm vĩnh viễn
                           </button>
                       </div>

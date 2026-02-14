@@ -166,6 +166,7 @@ export const searchUsers = async (query: string) => {
     const lowerQuery = query.toLowerCase();
 
     // STRICT: ONLY Return existing users, DO NOT create fake/seed users.
+    // Filter logic: Check if query matches email, displayName or uid
     
     return Object.values(users)
         .filter((user: any) => 
