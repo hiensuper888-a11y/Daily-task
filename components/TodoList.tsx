@@ -22,13 +22,13 @@ interface TodoListProps {
 const PriorityBadge = React.memo(({ priority }: { priority: Priority }) => {
     const { t } = useLanguage();
     const configs = {
-      high: { color: 'bg-rose-100 text-rose-700', label: t.high },
-      medium: { color: 'bg-amber-100 text-amber-700', label: t.medium },
-      low: { color: 'bg-emerald-100 text-emerald-700', label: t.low }
+      high: { color: 'bg-rose-100 text-rose-700 ring-rose-200', label: t.high },
+      medium: { color: 'bg-amber-100 text-amber-700 ring-amber-200', label: t.medium },
+      low: { color: 'bg-emerald-100 text-emerald-700 ring-emerald-200', label: t.low }
     };
     const config = configs[priority] || configs.medium;
     return (
-      <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${config.color}`}>
+      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ring-1 ring-inset ${config.color}`}>
         {config.label}
       </span>
     );
@@ -69,16 +69,16 @@ const TaskItem = React.memo(({
         const isSoon = diffHrs > 0 && diffHrs < 24;
 
         let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-        let colorClass = 'text-slate-500 bg-slate-100';
+        let colorClass = 'text-slate-500 bg-slate-50';
         let icon = <CalendarClock size={12} />;
 
         if (isOverdue) {
             text = t.overdue;
-            colorClass = 'text-rose-600 bg-rose-50 font-bold animate-pulse';
+            colorClass = 'text-rose-600 bg-rose-50 font-bold';
             icon = <AlertCircle size={12} />;
         } else if (isSoon) {
-            text = `${Math.ceil(diffHrs)}${t.hours}`;
-            colorClass = 'text-amber-600 bg-amber-50 font-bold animate-pulse';
+            text = `${Math.ceil(diffHrs)}${t.hoursLeft}`;
+            colorClass = 'text-amber-600 bg-amber-50 font-bold';
             icon = <Timer size={12} />;
         }
         return { text, colorClass, icon, isOverdue };
@@ -93,38 +93,43 @@ const TaskItem = React.memo(({
     return (
         <div 
             onClick={() => onEdit(task)}
-            className={`group relative p-4 rounded-3xl transition-all duration-300 cursor-pointer mb-3 ${
+            className={`group relative p-3 sm:p-4 rounded-2xl transition-all duration-300 cursor-pointer mb-2.5 border ${
                 task.completed 
-                ? 'bg-slate-50 opacity-60' 
-                : 'bg-white shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 hover:shadow-indigo-500/10'
+                ? 'bg-slate-50/50 border-slate-100 opacity-60' 
+                : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 hover:-translate-y-0.5'
             }`}
-            style={{ animationDelay: `${Math.min(index * 50, 500)}ms`, animationFillMode: 'both' }}
+            style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'both' }}
         >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3">
                 <button 
                   onClick={(e) => onToggle(task, e)} 
-                  className={`mt-1 w-6 h-6 rounded-[8px] flex items-center justify-center transition-all duration-300 ${
+                  className={`mt-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center transition-all duration-300 shadow-sm border ${
                     task.completed 
-                      ? 'bg-emerald-500 text-white scale-110 shadow-emerald-200' 
-                      : 'bg-slate-100 text-transparent hover:bg-indigo-100 hover:text-indigo-400'
+                      ? 'bg-emerald-500 border-emerald-500 text-white scale-105' 
+                      : 'bg-white border-slate-200 text-transparent hover:border-indigo-400 hover:shadow-indigo-100'
                   }`}
                 >
-                    <Check size={16} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
+                    <Check size={14} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
                 </button>
 
                 <div className="flex-1 min-w-0 pt-0.5">
-                    <p className={`text-[16px] font-medium leading-relaxed mb-2 transition-all ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <p className={`text-[15px] font-semibold leading-snug mb-2 transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
+                    
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                         {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
-                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
-                        {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
-                        {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-500"><Paperclip size={10}/> {attachmentsCount}</span>}
+                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                        {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-100"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
+                        {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-500 border border-indigo-100"><Paperclip size={10}/> {attachmentsCount}</span>}
                         {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
                     </div>
 
-                    {/* Progress Slider */}
-                    <div className="flex items-center gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full relative group/slider">
+                    {/* Minimal Progress Bar */}
+                    <div className="flex items-center gap-2 pt-1 group/slider" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full relative overflow-hidden">
+                            <div 
+                                className={`h-full rounded-full transition-all duration-500 ${task.completed ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-400 to-indigo-600'}`} 
+                                style={{ width: `${task.progress || 0}%` }}
+                            ></div>
                             <input 
                                 type="range" 
                                 min="0" 
@@ -134,19 +139,12 @@ const TaskItem = React.memo(({
                                 onChange={(e) => onProgressChange(task.id, Number(e.target.value))}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             />
-                            <div 
-                                className={`h-full rounded-full transition-all duration-300 ${task.completed ? 'bg-emerald-500' : 'bg-indigo-500'}`} 
-                                style={{ width: `${task.progress || 0}%` }}
-                            ></div>
-                            <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md border border-slate-200 opacity-0 group-hover/slider:opacity-100 transition-opacity pointer-events-none" style={{ left: `calc(${task.progress || 0}% - 6px)` }}></div>
                         </div>
-                        <span className={`text-[10px] font-bold min-w-[32px] text-right ${task.completed ? 'text-emerald-600' : 'text-slate-400'}`}>
-                            {task.progress || 0}%
-                        </span>
+                        {task.progress > 0 && <span className={`text-[9px] font-bold min-w-[24px] text-right ${task.completed ? 'text-emerald-600' : 'text-indigo-500'}`}>{task.progress}%</span>}
                     </div>
                 </div>
                 
-                <button onClick={(e) => onDelete(task.id, e)} className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all absolute top-2 right-2"><Trash2 size={16} /></button>
+                <button onClick={(e) => onDelete(task.id, e)} className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-500 bg-transparent rounded-lg transition-all absolute top-1 right-1"><Trash2 size={16} /></button>
             </div>
         </div>
     );
@@ -216,9 +214,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: "Chào buổi sáng", icon: Sunrise };
-    if (hour < 18) return { text: "Chào buổi chiều", icon: Sun };
-    return { text: "Chào buổi tối", icon: Moon };
+    if (hour < 12) return { text: t.today, icon: Sunrise };
+    if (hour < 18) return { text: t.today, icon: Sun };
+    return { text: t.today, icon: Moon };
   };
 
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
@@ -753,10 +751,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     key={f} 
                     onClick={() => setFilterStatus(f)} 
                     className={`
-                        relative px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 group
+                        relative px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 group border
                         ${isActive 
-                            ? `${config.colorClass} shadow-lg ${config.shadowClass} scale-105 ring-2 ring-white/20` 
-                            : 'bg-white/60 text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-md backdrop-blur-sm'
+                            ? `${config.colorClass} shadow-lg ${config.shadowClass} scale-105 border-white/20` 
+                            : 'bg-white/60 text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-md backdrop-blur-sm border-transparent'
                         }
                         active:scale-95
                     `}
@@ -839,7 +837,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
       {/* FIXED FLOATING CAPSULE INPUT - Refined Modern Look */}
       <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe">
-          <div className="max-w-2xl mx-auto flex items-center gap-2 p-2 pl-4 bg-white/90 backdrop-blur-xl border border-white rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] ring-1 ring-black/5 animate-slide-up hover:shadow-[0_12px_40px_rgba(99,102,241,0.15)] transition-shadow duration-300">
+          <div className="max-w-2xl mx-auto flex items-center gap-2 p-2 pl-4 bg-white/90 backdrop-blur-xl border border-white rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] ring-1 ring-black/5 animate-slide-up hover:shadow-[0_12px_40px_rgba(99,102,241,0.15)] transition-shadow duration-300 group focus-within:ring-2 focus-within:ring-indigo-500/20">
               <button 
                 onClick={() => setShowInputDetails(!showInputDetails)} 
                 className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-indigo-50 text-indigo-600 rotate-90' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}

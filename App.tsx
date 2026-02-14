@@ -29,8 +29,8 @@ const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full w-full bg-slate-50/50 backdrop-blur-sm z-50">
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
-        <Loader2 size={40} className="animate-spin text-primary-600" />
-        <div className="absolute inset-0 animate-pulse bg-primary-200 rounded-full blur-xl opacity-30"></div>
+        <Loader2 size={40} className="animate-spin text-indigo-600" />
+        <div className="absolute inset-0 animate-pulse bg-indigo-200 rounded-full blur-xl opacity-30"></div>
       </div>
     </div>
   </div>
@@ -78,15 +78,15 @@ const NavItem: React.FC<NavItemProps> = ({ tab, icon: Icon, label, activeTab, ac
   return (
     <button
       onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold group relative ${
+      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group relative ${
         isActive
           ? `text-white shadow-lg shadow-indigo-500/30` 
-          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'
       }`}
     >
-      {isActive && <div className="absolute inset-0 bg-indigo-600 rounded-xl"></div>}
+      {isActive && <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl"></div>}
       <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-100' : 'group-hover:scale-110'}`} />
-      <span className="relative z-10 text-[14px] font-semibold tracking-wide">{label}</span>
+      <span className="relative z-10 text-[14px] font-bold tracking-wide">{label}</span>
     </button>
   );
 };
@@ -234,13 +234,14 @@ const AppContent: React.FC = () => {
       setShowGroupModal(false); 
       setActiveGroupId(newGroup.id); 
       setActiveTab('tasks');
+      alert(t.groupCreated);
   };
 
   const handleJoinGroup = () => {
       if(!joinCodeInput) return;
       const existing = myGroups.find(g => g.joinCode === joinCodeInput);
       if(existing) { 
-          alert("Bạn đã là thành viên của nhóm này!"); 
+          alert(t.alreadyMember); 
           setActiveGroupId(existing.id); 
           setActiveTab('tasks'); 
           setShowJoinModal(false); 
@@ -249,7 +250,7 @@ const AppContent: React.FC = () => {
       }
       const globalGroups = getGlobalGroups(); 
       const targetGroup = globalGroups.find(g => g.joinCode === joinCodeInput);
-      if (!targetGroup) { alert("Mã nhóm không tồn tại hoặc không tìm thấy."); return; }
+      if (!targetGroup) { alert(t.invalidCode); return; }
       
       let updatedGroup = targetGroup; 
       const isAlreadyMember = targetGroup.members?.some(m => m.id === currentUserId);
@@ -269,7 +270,7 @@ const AppContent: React.FC = () => {
 
   const handleDeleteGroup = () => { 
       if (!activeGroup || activeGroup.leaderId !== currentUserId) return; 
-      if (confirm(`Xóa vĩnh viễn nhóm "${activeGroup.name}"? Hành động này không thể hoàn tác.`)) { 
+      if (confirm(`${t.deleteGroup}?`)) { 
           const groupId = activeGroup.id; 
           setActiveGroupId(null); 
           setShowSettingsModal(false); 
@@ -277,12 +278,13 @@ const AppContent: React.FC = () => {
           localStorage.removeItem(`group_${groupId}_tasks`); 
           deleteGlobalGroup(groupId);
           setMyGroups(prev => prev.filter(g => g.id !== groupId)); 
+          alert(t.groupDeleted);
       } 
   };
 
   const handleLeaveGroup = () => { 
       if (!activeGroup) return; 
-      if (confirm(`Rời nhóm "${activeGroup.name}"?`)) { 
+      if (confirm(`${t.leaveGroup}?`)) { 
           const updatedMembers = (activeGroup.members || []).filter(m => m.id !== currentUserId); 
           const updatedGroup = { ...activeGroup, members: updatedMembers }; 
           saveGlobalGroup(updatedGroup); 
@@ -300,7 +302,7 @@ const AppContent: React.FC = () => {
 
   const handleSearchUsers = async () => { if (!memberSearchQuery.trim()) return; setIsSearching(true); setHasSearched(true); try { const results = await searchUsers(memberSearchQuery); const existingMemberIds = activeGroup?.members?.map(m => m.id) || []; setFoundUsers(results.filter((u: any) => !existingMemberIds.includes(u.uid))); } catch (error) { console.error(error); } finally { setIsSearching(false); } };
   const handleAddMember = (user: any) => { if (!activeGroup) return; const newMember: GroupMember = { id: user.uid, name: user.name, avatar: user.avatar, role: 'member', joinedAt: Date.now(), customTitle: 'Thành viên', note: '', headerBackground: '' }; const updatedGroup = { ...activeGroup, members: [...(activeGroup.members || []), newMember] }; updateGroupMemberState(updatedGroup); setFoundUsers(foundUsers.filter(u => u.uid !== user.uid)); };
-  const handleRemoveMember = (memberId: string) => { if (!activeGroup || activeGroup.leaderId !== currentUserId || memberId === activeGroup.leaderId) return; if(confirm("Xóa thành viên?")) { const updatedGroup = { ...activeGroup, members: (activeGroup.members || []).filter(m => m.id !== memberId) }; updateGroupMemberState(updatedGroup); } };
+  const handleRemoveMember = (memberId: string) => { if (!activeGroup || activeGroup.leaderId !== currentUserId || memberId === activeGroup.leaderId) return; if(confirm(t.delete)) { const updatedGroup = { ...activeGroup, members: (activeGroup.members || []).filter(m => m.id !== memberId) }; updateGroupMemberState(updatedGroup); alert(t.memberRemoved); } };
   const handleUpdateMemberInfo = (memberId: string) => { if (!activeGroup) return; const updatedMembers = (activeGroup.members || []).map(m => { if (m.id === memberId) return { ...m, customTitle: editMemberTitle, note: editMemberNote }; return m; }); const updatedGroup = { ...activeGroup, members: updatedMembers }; updateGroupMemberState(updatedGroup); setEditingMemberId(null); };
   
   const handlePromoteMember = (memberId: string) => {
@@ -324,12 +326,12 @@ const AppContent: React.FC = () => {
 
   const handleShareGroup = async () => {
       if (!activeGroup) return;
-      const text = `🚀 Tham gia nhóm "${activeGroup.name}" trên Daily Task!\nMã tham gia: ${activeGroup.joinCode}`;
+      const text = `${t.shareText} ${activeGroup.joinCode}`;
       
       if (navigator.share) {
           try {
               await navigator.share({
-                  title: 'Tham gia nhóm Daily Task',
+                  title: t.shareTitle,
                   text: text,
               });
           } catch (e) {
@@ -337,7 +339,7 @@ const AppContent: React.FC = () => {
           }
       } else {
           copyToClipboard(text);
-          alert("Đã sao chép thông tin mời vào bộ nhớ tạm!");
+          alert(t.copied);
       }
   };
 
@@ -365,19 +367,19 @@ const AppContent: React.FC = () => {
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
       
       {/* DESKTOP SIDEBAR - Glassmorphism Style */}
-      <aside className="hidden lg:flex flex-col w-[280px] m-4 mr-0 rounded-[2rem] glass-panel z-20 relative transition-all overflow-hidden h-[calc(100vh-2rem)] shadow-2xl">
-        <div className="p-6">
-          <div className="flex items-center gap-4 mb-8 cursor-pointer group" onClick={() => {setActiveTab('tasks'); setActiveGroupId(null);}}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
-                <CheckSquare size={20} strokeWidth={2.5} />
+      <aside className="hidden lg:flex flex-col w-[280px] m-4 mr-0 rounded-[2.5rem] glass-panel z-20 relative transition-all overflow-hidden h-[calc(100vh-2rem)] shadow-2xl border border-white/50">
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-10 cursor-pointer group" onClick={() => {setActiveTab('tasks'); setActiveGroupId(null);}}>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
+                <CheckSquare size={24} strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-                <span className="text-lg font-bold tracking-tight text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">{t.appTitle}</span>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{t.workspace}</span>
+                <span className="text-xl font-black tracking-tight text-slate-800 leading-none group-hover:text-indigo-600 transition-colors">{t.appTitle}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{t.workspace}</span>
             </div>
           </div>
           
-          <div className="space-y-1">
+          <div className="space-y-1.5">
              <NavItem tab="tasks" icon={Home} label={t.overview} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="ai" icon={MessageSquare} label={t.ai} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="reports" icon={Activity} label={t.reports} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
@@ -387,46 +389,46 @@ const AppContent: React.FC = () => {
         </div>
 
         <div className="flex-1 px-4 overflow-y-auto custom-scrollbar pt-2">
-          <div className="flex items-center justify-between mb-2 px-4 mt-4">
-             <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">{t.groupsHeader}</p>
-             <button onClick={handleOpenCreateGroup} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-sm" title={t.create}><Plus size={14}/></button>
+          <div className="flex items-center justify-between mb-4 px-4 mt-2">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.groupsHeader}</p>
+             <button onClick={handleOpenCreateGroup} className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all shadow-sm active:scale-95" title={t.create}><Plus size={14} strokeWidth={3}/></button>
           </div>
 
-          <div className="space-y-1 pb-20">
+          <div className="space-y-1.5 pb-20 px-2">
               {myGroups.map(group => (
                   <div key={group.id} className="relative group/item">
                     <button
                         onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-300 ${
                             activeGroupId === group.id
-                            ? `bg-white shadow-md text-slate-900 z-10 relative ring-1 ring-slate-100` 
-                            : 'bg-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                            ? `bg-white shadow-lg shadow-indigo-100 text-indigo-900 ring-1 ring-indigo-50` 
+                            : 'bg-transparent text-slate-600 hover:bg-white/60 hover:text-slate-900'
                         }`}
                     >
                         {group.avatar ? (
-                            <img src={group.avatar} className={`w-8 h-8 rounded-lg object-cover shadow-sm ${activeGroupId === group.id ? 'ring-2 ring-indigo-100' : ''}`} alt="" />
+                            <img src={group.avatar} className={`w-9 h-9 rounded-xl object-cover shadow-sm ${activeGroupId === group.id ? 'ring-2 ring-indigo-100' : ''}`} alt="" />
                         ) : (
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
                                 {group.name.substring(0,2).toUpperCase()}
                             </div>
                         )}
-                        <span className={`text-sm font-semibold truncate flex-1 text-left`}>{group.name}</span>
-                        {activeGroupId === group.id && <Settings size={14} className="text-slate-300 hover:text-indigo-600 cursor-pointer animate-fade-in" onClick={(e) => {e.stopPropagation(); setShowSettingsModal(true); setSettingsTab('info');}} />}
+                        <span className={`text-sm font-bold truncate flex-1 text-left`}>{group.name}</span>
+                        {activeGroupId === group.id && <Settings size={16} className="text-indigo-400 hover:text-indigo-600 cursor-pointer animate-fade-in" onClick={(e) => {e.stopPropagation(); setShowSettingsModal(true); setSettingsTab('info');}} />}
                     </button>
                   </div>
               ))}
-              <button onClick={() => setShowJoinModal(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl mt-2 text-xs font-semibold text-slate-400 hover:text-indigo-600 transition-colors border border-dashed border-slate-200 hover:border-indigo-200 hover:bg-white/50">
-                  <ScanLine size={14}/>
+              <button onClick={() => setShowJoinModal(true)} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-4 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 group">
+                  <ScanLine size={16} className="group-hover:scale-110 transition-transform"/>
                   <span>{t.joinCodeBtn}</span>
               </button>
           </div>
         </div>
 
         {/* Language & Settings Footer */}
-        <div className="p-4 border-t border-slate-100/50 bg-white/30 backdrop-blur-md">
+        <div className="p-6 border-t border-white/50 bg-white/30 backdrop-blur-md">
             <button 
                 onClick={() => setShowLangMenu(!showLangMenu)} 
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/60 transition-all text-slate-600 font-bold text-xs"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/50 hover:bg-white border border-white transition-all text-slate-600 font-bold text-xs shadow-sm hover:shadow-md"
             >
                 <Globe size={16} className="text-indigo-500" />
                 <span className="flex-1 text-left">{languages.find(l => l.code === language)?.label}</span>
@@ -436,7 +438,7 @@ const AppContent: React.FC = () => {
             {showLangMenu && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)}></div>
-                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 p-2 max-h-[300px] overflow-y-auto custom-scrollbar animate-scale-in z-50 origin-bottom">
+                    <div className="absolute bottom-full left-6 right-6 mb-3 bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl border border-white p-2 max-h-[300px] overflow-y-auto custom-scrollbar animate-scale-in z-50 origin-bottom">
                         {languages.map(lang => (
                             <button
                                 key={lang.code}
@@ -456,7 +458,7 @@ const AppContent: React.FC = () => {
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col relative h-full overflow-hidden z-10 lg:p-4 lg:pl-0">
-           <div className="flex-1 overflow-hidden animate-fade-in h-full relative lg:rounded-[2rem] bg-slate-50/50 lg:bg-transparent">
+           <div className="flex-1 overflow-hidden animate-fade-in h-full relative lg:rounded-[2.5rem] bg-slate-50/50 lg:bg-transparent shadow-none lg:shadow-inner">
                <Suspense fallback={<LoadingFallback />}>
                    {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
                    activeTab === 'ai' ? <AiAssistant /> :
@@ -467,7 +469,7 @@ const AppContent: React.FC = () => {
 
         {/* MOBILE FLOATING DOCK - Premium iOS Style */}
         <div className="lg:hidden fixed bottom-6 left-4 right-4 z-[40]">
-            <div className="glass-modal rounded-[2rem] p-1.5 flex justify-between items-center shadow-2xl shadow-indigo-900/10 border border-white/50">
+            <div className="glass-modal rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl shadow-indigo-900/10 border border-white/60 bg-white/90 backdrop-blur-xl">
               {[
                   { id: 'tasks', icon: LayoutGrid, label: t.tasks },
                   { id: 'reports', icon: BarChart3, label: 'TK' },
@@ -477,8 +479,8 @@ const AppContent: React.FC = () => {
               ].map((item) => {
                   if (item.special) {
                       return (
-                        <div key="create" className="relative -top-8 mx-2">
-                           <button onClick={activeGroupId ? () => {setShowSettingsModal(true); setSettingsTab('info')} : handleOpenCreateGroup} className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 border-[4px] border-[#f8fafc] flex items-center justify-center btn-bounce hover:scale-105 transition-transform">
+                        <div key="create" className="relative -top-8 mx-1">
+                           <button onClick={activeGroupId ? () => {setShowSettingsModal(true); setSettingsTab('info')} : handleOpenCreateGroup} className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 border-[6px] border-[#f8fafc] flex items-center justify-center btn-bounce hover:scale-105 transition-transform active:scale-95">
                                 {activeGroupId ? <Settings size={28}/> : <Plus size={32} strokeWidth={3} />}
                            </button>
                         </div>
@@ -490,11 +492,10 @@ const AppContent: React.FC = () => {
                     <button 
                         key={item.id}
                         onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
-                        className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
                     >
-                        <div className={`relative ${isActive ? '-translate-y-1' : ''} transition-transform duration-300`}>
-                            <item.icon size={26} strokeWidth={isActive ? 2.5 : 2} />
-                            {isActive && <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600"></span>}
+                        <div className={`relative ${isActive ? '-translate-y-0.5' : ''} transition-transform duration-300`}>
+                            <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                         </div>
                     </button>
                   );
@@ -508,7 +509,7 @@ const AppContent: React.FC = () => {
       {/* Join Group Modal */}
       {showJoinModal && (
           <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
                   <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl mx-auto flex items-center justify-center text-indigo-600 mb-4 shadow-sm ring-4 ring-indigo-50">
@@ -533,7 +534,7 @@ const AppContent: React.FC = () => {
       {/* Group Creation Modal */}
       {showGroupModal && (
           <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
                   <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.createGroupHeader}</h3>
@@ -563,7 +564,7 @@ const AppContent: React.FC = () => {
       {/* Settings Modal */}
       {showSettingsModal && activeGroup && (
           <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] overflow-hidden">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] overflow-hidden border border-white/60">
                   <div className="p-6 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-xl z-10">
                       <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-4">
