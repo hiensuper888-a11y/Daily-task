@@ -53,11 +53,20 @@ const AppContent: React.FC = () => {
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   
-  // Logic tổng hợp task toàn cục để thông báo deadline
+  // Logic tổng hợp task từ tất cả project để thông báo deadline
+  // Sử dụng SESSION_KEY để lấy đúng prefix ID của user đang đăng nhập
   const allCurrentTasks = useMemo(() => {
+    // 1. Lấy task cá nhân
     const all = [...personalTasks];
+    
+    // Xác định prefix ID (guest hoặc uid)
+    const sessionUser = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) : null;
+    const prefix = sessionUser ? sessionUser : 'guest';
+
+    // 2. Scan localStorage để lấy task của từng group
     myGroups.forEach(group => {
-        const key = `${currentUserId}_group_${group.id}_tasks`;
+        // Key format: {prefix}_group_{id}_tasks
+        const key = `${prefix}_group_${group.id}_tasks`;
         const stored = localStorage.getItem(key);
         if (stored) {
             try {
@@ -66,8 +75,9 @@ const AppContent: React.FC = () => {
             } catch (e) { /* ignore */ }
         }
     });
+
     return all;
-  }, [personalTasks, myGroups, currentUserId]);
+  }, [personalTasks, myGroups, currentUserId]); // Re-run if user changes or groups update
 
   const { notifications, dismissNotification } = useDeadlineNotifications(allCurrentTasks);
 

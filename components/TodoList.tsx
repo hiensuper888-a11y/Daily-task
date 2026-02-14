@@ -47,19 +47,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
+  // Sửa lỗi timezone: Tính toán offset để hiển thị đúng giờ địa phương trong input datetime-local
   const toLocalISOString = (date: Date) => {
     if (!date || isNaN(date.getTime())) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const tzOffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
+    return localISOTime;
   };
 
   const getLocalDateString = (date: Date) => {
@@ -83,7 +82,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     let icon = <CalendarClock size={12} />;
 
     if (isOverdue) {
-      text = 'Quá hạn';
+      text = t.overdue || 'Quá hạn';
       colorClass = 'text-rose-600 bg-rose-50 border-rose-100 font-bold';
       icon = <AlertCircle size={12} />;
     } else if (isSoon) {
@@ -115,13 +114,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           size: file.size
         };
         if (isEdit && editingTask) {
-          setEditingTask({ ...editingTask, attachments: [...(editingTask.attachments || []), attachment] });
+          setEditingTask(prev => prev ? { ...prev, attachments: [...(prev.attachments || []), attachment] } : null);
         } else {
           setNewAttachments(prev => [...prev, attachment]);
         }
       };
       reader.readAsDataURL(file);
     });
+    // Reset value để cho phép upload lại cùng file nếu cần
+    if (e.target) e.target.value = '';
   };
 
   const addTask = () => {
@@ -304,6 +305,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setViewDate(newDate);
   };
 
+  const changeMonth = (delta: number) => {
+    const newDate = new Date(calendarViewDate);
+    newDate.setMonth(calendarViewDate.getMonth() + delta);
+    setCalendarViewDate(newDate);
+  };
+
+  const calendarDays = useMemo(() => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+    return days;
+  }, [calendarViewDate]);
+
   return (
     <div className="flex flex-col h-full relative overflow-hidden bg-white/50">
       
@@ -380,7 +398,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             <input 
                                 type="datetime-local" 
                                 value={toLocalISOString(new Date(editingTask.createdAt))} 
-                                onChange={e => setEditingTask({ ...editingTask, createdAt: e.target.value ? new Date(e.target.value).toISOString() : new Date().toISOString() })}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setEditingTask({ 
+                                        ...editingTask, 
+                                        createdAt: val ? new Date(val).toISOString() : new Date().toISOString() 
+                                    });
+                                }}
                                 className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
                             />
                         </div>
@@ -391,7 +415,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             <input 
                                 type="datetime-local" 
                                 value={editingTask.deadline ? toLocalISOString(new Date(editingTask.deadline)) : ''} 
-                                onChange={e => setEditingTask({ ...editingTask, deadline: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setEditingTask({ 
+                                        ...editingTask, 
+                                        deadline: val ? new Date(val).toISOString() : undefined 
+                                    });
+                                }}
                                 className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
                             />
                         </div>
@@ -399,10 +429,50 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 </div>
 
                 <div className="space-y-4 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 flex flex-col">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                        <ListChecks size={14}/> Các bước thực hiện
-                    </label>
+                    <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                            <ListChecks size={14}/> Các bước thực hiện
+                        </label>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => editFileInputRef.current?.click()} 
+                                className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg flex items-center gap-1"
+                            >
+                                <Paperclip size={10}/> Đính kèm
+                            </button>
+                            <input 
+                                type="file" 
+                                ref={editFileInputRef} 
+                                className="hidden" 
+                                multiple
+                                onChange={(e) => handleFileChange(e, true)}
+                            />
+                        </div>
+                    </div>
+                    
                     <div className="flex-1 space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                        {editingTask.attachments && editingTask.attachments.length > 0 && (
+                             <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+                                {editingTask.attachments.map(att => (
+                                    <div key={att.id} className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border border-slate-200 group/att">
+                                        {att.type === 'image' ? (
+                                            <img src={att.url} className="w-full h-full object-cover" alt="att"/>
+                                        ) : (
+                                            <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-400">
+                                                <FileText size={24}/>
+                                            </div>
+                                        )}
+                                        <button 
+                                            onClick={() => setEditingTask({...editingTask, attachments: editingTask.attachments?.filter(a => a.id !== att.id)})}
+                                            className="absolute top-0.5 right-0.5 bg-black/50 text-white p-0.5 rounded-full opacity-0 group-hover/att:opacity-100 transition-opacity"
+                                        >
+                                            <X size={10}/>
+                                        </button>
+                                    </div>
+                                ))}
+                             </div>
+                        )}
+
                         {editingTask.subtasks?.map(st => (
                             <div key={st.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 group">
                                 <button onClick={() => toggleSubtask(st.id)} className={`transition-colors ${st.completed ? 'text-emerald-500' : 'text-slate-300'}`}>
@@ -445,6 +515,64 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         </div>
       )}
 
+      {/* CALENDAR MODAL */}
+      {showCalendar && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white">
+            <div className="flex items-center justify-between mb-8">
+              <button onClick={() => changeMonth(-1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronLeft size={20}/></button>
+              <div className="text-center">
+                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">{calendarViewDate.getFullYear()}</p>
+                <h4 className="text-xl font-black text-slate-900 tracking-tight">{calendarViewDate.toLocaleString(language, { month: 'long' })}</h4>
+              </div>
+              <button onClick={() => changeMonth(1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronRight size={20}/></button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <div key={i} className="text-center text-[10px] font-black text-slate-300 py-2">{d}</div>
+              ))}
+              {calendarDays.map((date, i) => {
+                if (!date) return <div key={i} className="aspect-square"></div>;
+                const isSelected = date.toDateString() === viewDate.toDateString();
+                const isCurrentToday = date.toDateString() === new Date().toDateString();
+                return (
+                  <button
+                    key={i}
+                    onClick={() => { setViewDate(date); setShowCalendar(false); }}
+                    className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all relative group ${
+                      isSelected 
+                      ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg' : 'bg-indigo-600 text-white shadow-lg')
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {date.getDate()}
+                    {isCurrentToday && !isSelected && (
+                      <div className={`absolute bottom-1 w-1 h-1 rounded-full ${activeGroup ? 'bg-emerald-500' : 'bg-indigo-500'}`}></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={() => { setViewDate(new Date()); setCalendarViewDate(new Date()); setShowCalendar(false); }} className={`w-full py-4 mt-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeGroup ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>Quay lại hôm nay</button>
+            <button onClick={() => setShowCalendar(false)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 mt-2">Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {completingTaskId && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-scale-in border border-slate-100">
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Báo cáo hoàn thành</h3>
+                  <p className="text-slate-400 text-sm mb-8 font-medium">Bạn đã hoàn thành nhiệm vụ này? Hãy để lại ghi chú nếu cần.</p>
+                  <textarea value={completionNote} onChange={(e) => setCompletionNote(e.target.value)} placeholder="Mô tả ngắn gọn kết quả..." className="w-full h-36 p-5 bg-slate-50 border border-slate-200 rounded-3xl mb-8 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all text-sm font-medium resize-none" />
+                  <div className="flex gap-4">
+                      <button onClick={() => setCompletingTaskId(null)} className="flex-1 py-4 text-slate-400 font-black text-sm hover:bg-slate-50 rounded-2xl">Hủy</button>
+                      <button onClick={() => { toggleTask(completingTaskId, true, completionNote); setCompletingTaskId(null); }} className="flex-[2] py-4 bg-emerald-600 text-white font-black text-sm rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-200 transition-all uppercase tracking-widest">Hoàn tất</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* Header Area */}
       <div className="px-8 pt-10 pb-8 relative z-10 shrink-0">
         <div className="flex flex-col gap-10">
@@ -458,17 +586,46 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 {filterStatus === 'archived' ? 'Kho lưu trữ' : (activeGroup ? activeGroup.name : "Việc cần làm")}
               </h1>
             </div>
+            
+            <button 
+              onClick={() => setShowCalendar(true)}
+              className="hidden lg:flex flex-col items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group"
+            >
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-indigo-500 transition-colors">{viewDate.toLocaleDateString(language, { month: 'short' })}</span>
+              <span className="text-3xl font-black text-slate-900 leading-none">{viewDate.getDate()}</span>
+            </button>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 animate-fade-in">
             <div className="bg-white/60 p-1.5 rounded-[1.8rem] shadow-sm border border-slate-100 flex items-center justify-between min-w-[280px]">
               <button onClick={() => navigateDate(-1)} className="p-3 text-slate-400 hover:text-indigo-600 rounded-2xl transition-all active:scale-90"><ChevronLeft size={20} /></button>
-              <button className="flex flex-col items-center transition-transform active:scale-95 group">
+              <button onClick={() => { setShowCalendar(true); setCalendarViewDate(new Date(viewDate)); }} className="flex flex-col items-center transition-transform active:scale-95 group">
                 <span className="text-[14px] font-black text-slate-800 tracking-tight flex items-center gap-2">
                   {viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long' })}
+                  <CalendarIcon size={14} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
                 </span>
               </button>
               <button onClick={() => navigateDate(1)} className="p-3 text-slate-400 hover:text-indigo-600 rounded-2xl transition-all active:scale-90"><ChevronRight size={20} /></button>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
+              {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me'] : []), 'archived'] as FilterType[]).map(f => (
+                <button 
+                  key={f} 
+                  onClick={() => setFilterStatus(f)} 
+                  className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border-2 ${
+                    filterStatus === f 
+                    ? (activeGroup ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg' : 'bg-indigo-600 text-white border-indigo-500 shadow-lg') 
+                    : 'bg-white/40 text-slate-400 border-transparent hover:border-slate-200'
+                  }`}
+                >
+                  {f === 'archived' ? 'Kho lưu trữ' : t[f]}
+                </button>
+              ))}
+              <div className="relative ml-auto min-w-[220px] group hidden lg:block">
+                <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+                <input type="text" placeholder="Tìm kiếm công việc..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white/60 border border-slate-100 rounded-2xl text-[13px] font-bold focus:outline-none focus:ring-4 focus:ring-indigo-100/30 focus:bg-white transition-all shadow-sm" />
+              </div>
             </div>
           </div>
         </div>
@@ -476,19 +633,33 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
       {/* Task List Container */}
       <div className="flex-1 overflow-y-auto px-8 pb-48 custom-scrollbar space-y-4 relative z-0">
-        {filteredTasks.map((task, index) => {
+        {filteredTasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-200 animate-scale-in">
+            <div className="w-24 h-24 bg-white/60 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-sm border border-slate-100 group">
+              <Archive size={36} className="group-hover:scale-110 transition-transform duration-500 text-slate-300" />
+            </div>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
+              {filterStatus === 'archived' ? 'Chưa có mục lưu trữ' : 'Danh sách trống'}
+            </p>
+          </div>
+        ) : (
+          filteredTasks.map((task, index) => {
             const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
             const subtasksCount = task.subtasks?.length || 0;
             const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
+            const isNew = Date.now() - new Date(task.createdAt).getTime() < 3000;
             
             return (
               <div 
                 key={task.id} 
                 onClick={() => setEditingTask(task)}
-                className={`group bg-white rounded-[2rem] p-6 border-2 transition-all duration-300 cursor-pointer ${task.completed ? 'opacity-40 scale-[0.98] grayscale-[0.3]' : 'shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-100 border-transparent'}`}
+                className={`group bg-white rounded-[2rem] p-6 border-2 transition-all duration-300 cursor-pointer ${
+                  isNew ? 'animate-task-entry border-indigo-100 shadow-xl' : 'border-transparent'
+                } ${task.completed ? 'opacity-40 scale-[0.98] grayscale-[0.3]' : 'shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-100'}`}
+                style={{ animationDelay: `${index * 40}ms` }}
               >
                 <div className="flex items-start gap-6">
-                  <button onClick={(e) => handleToggleClick(task, e)} className={`mt-1 transition-all active:scale-90 ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-400'}`}>
+                  <button onClick={(e) => handleToggleClick(task, e)} className={`mt-1 transition-all active:scale-90 ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-400'}`}>
                     {task.completed ? <CheckCircle2 size={36} strokeWidth={2} /> : <Circle size={36} strokeWidth={2.5} />}
                   </button>
                   <div className="flex-1 min-w-0">
@@ -518,8 +689,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                       </div>
                       
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-3 group-hover:translate-x-0">
-                        <button onClick={(e) => archiveTask(task.id, e)} className="p-3 text-slate-300 hover:text-amber-500 hover:bg-amber-50 rounded-2xl transition-all"><Archive size={18} /></button>
-                        <button onClick={(e) => deleteTask(task.id, e)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"><Trash2 size={18} /></button>
+                        {task.archived ? (
+                          <button onClick={(e) => restoreTask(task.id, e)} className="p-3 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all" title="Phục hồi"><RotateCcw size={18} /></button>
+                        ) : (
+                          <button onClick={(e) => archiveTask(task.id, e)} className="p-3 text-slate-300 hover:text-amber-500 hover:bg-amber-50 rounded-2xl transition-all" title="Lưu trữ"><Archive size={18} /></button>
+                        )}
+                        <button onClick={(e) => deleteTask(task.id, e)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all" title="Xóa vĩnh viễn"><Trash2 size={18} /></button>
                       </div>
                     </div>
                   </div>
@@ -535,12 +710,87 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           <div className={`bg-white/95 backdrop-blur-3xl rounded-[2.8rem] border shadow-2xl transition-all duration-500 overflow-hidden ${
             showInputDetails ? 'p-8 border-indigo-200 translate-y-[-10px]' : 'p-3 border-slate-200/50'
           }`}>
+            {showInputDetails && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 animate-fade-in">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Ngày bắt đầu</label>
+                  <input 
+                    type="datetime-local" 
+                    value={assignedDate} 
+                    onChange={e => setAssignedDate(e.target.value)} 
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[13px] font-bold focus:ring-4 focus:ring-indigo-100 focus:bg-white transition-all outline-none" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Hạn chót</label>
+                  <input 
+                    type="datetime-local" 
+                    value={deadline} 
+                    onChange={e => setDeadline(e.target.value)} 
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[13px] font-bold focus:ring-4 focus:ring-indigo-100 focus:bg-white transition-all outline-none" 
+                  />
+                </div>
+                
+                <div className="col-span-1 md:col-span-2 flex flex-wrap gap-5 items-end">
+                  <div className="flex-1 min-w-[180px] space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Mức độ ưu tiên</label>
+                    <div className="flex gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
+                      {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                        <button key={p} onClick={() => setNewPriority(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                          newPriority === p ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-400'
+                        }`}>
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-[180px] space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                         <Paperclip size={12}/> Đính kèm
+                      </label>
+                      <div className="flex gap-2 items-center bg-slate-50 p-2 rounded-2xl border border-slate-100 h-[58px]">
+                          <button onClick={() => fileInputRef.current?.click()} className="h-full px-4 rounded-xl bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors">Chọn tệp</button>
+                          <span className="text-xs font-medium text-slate-400 truncate flex-1">{newAttachments.length > 0 ? `${newAttachments.length} tệp` : 'Chưa có tệp'}</span>
+                          <input type="file" ref={fileInputRef} onChange={(e) => handleFileChange(e)} className="hidden" multiple />
+                      </div>
+                  </div>
+                  {activeGroup && isLeader && (
+                    <div className="flex-1 min-w-[180px] space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Giao cho</label>
+                      <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[13px] font-bold appearance-none outline-none focus:bg-white transition-all">
+                        <option value="">Cá nhân</option>
+                        {activeGroup.members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-4">
-              <button onClick={() => setShowInputDetails(!showInputDetails)} className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-900 text-white rotate-90 shadow-xl' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
+              <button 
+                onClick={() => setShowInputDetails(!showInputDetails)} 
+                className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-900 text-white rotate-90 shadow-xl' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+              >
                 <SlidersHorizontal size={22} />
               </button>
-              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()} placeholder="Nhập nội dung công việc..." className="flex-1 bg-transparent border-none focus:ring-0 text-lg font-bold text-slate-800 h-14 placeholder:text-slate-300" />
-              <button onClick={addTask} disabled={!inputValue.trim()} className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${inputValue.trim() ? 'bg-indigo-600 text-white shadow-2xl scale-110 active:scale-95' : 'bg-slate-100 text-slate-300'}`}>
+              <input 
+                type="text" 
+                value={inputValue} 
+                onChange={e => setInputValue(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && addTask()} 
+                placeholder="Nhập nội dung công việc..." 
+                className="flex-1 bg-transparent border-none focus:ring-0 text-lg font-bold text-slate-800 h-14 placeholder:text-slate-300" 
+              />
+              <button 
+                onClick={addTask} 
+                disabled={!inputValue.trim()} 
+                className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${
+                  inputValue.trim() 
+                  ? (activeGroup ? 'bg-emerald-600 shadow-emerald-200' : 'bg-indigo-600 shadow-indigo-200') + ' text-white shadow-2xl scale-110 active:scale-95' 
+                  : 'bg-slate-100 text-slate-300'
+                }`}
+              >
                 <Plus size={32} strokeWidth={3} />
               </button>
             </div>
