@@ -1,5 +1,3 @@
-
-
 import { Language } from "../types";
 
 const enTranslations = {
@@ -19,6 +17,7 @@ const enTranslations = {
   all: "All",
   active: "Active",
   completed: "Completed",
+  archived: "Archived",
   emptyTasks: "No tasks found.",
   clearCompleted: "Archive completed",
   studioHeader: "AI Studio",
@@ -178,6 +177,7 @@ const viTranslations = {
   all: "Tất cả",
   active: "Đang làm",
   completed: "Đã xong",
+  archived: "Lưu trữ",
   emptyTasks: "Chưa có việc nào.",
   clearCompleted: "Lưu trữ xong",
   studioHeader: "Xưởng AI",

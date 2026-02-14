@@ -559,18 +559,41 @@ const AppContent: React.FC = () => {
                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">Thành viên ({activeGroup.members?.length || 0})</label>
                               <div className="space-y-2">
                                   {activeGroup.members?.map((member) => (
-                                      <div key={member.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                                          <div className="flex items-center gap-3">
-                                              <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover bg-slate-100" alt=""/>
-                                              <div><p className="text-sm font-bold text-slate-800">{member.name}</p><p className="text-[11px] text-indigo-600 font-bold">{member.customTitle || 'Thành viên'}</p></div>
+                                      <div key={member.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col">
+                                          <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-3">
+                                                  <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover bg-slate-100" alt=""/>
+                                                  <div><p className="text-sm font-bold text-slate-800">{member.name}</p><p className="text-[11px] text-indigo-600 font-bold">{member.customTitle || 'Thành viên'}</p></div>
+                                              </div>
+                                              {activeGroup.leaderId === currentUserId && member.id !== currentUserId && (
+                                                  <div className="flex gap-1">
+                                                      <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-lg"><Edit2 size={14}/></button>
+                                                      <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 rounded-lg"><UserMinus size={14}/></button>
+                                                  </div>
+                                              )}
                                           </div>
-                                          {activeGroup.leaderId === currentUserId && member.id !== currentUserId && (
-                                              <div className="flex gap-1">
-                                                  <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-lg"><Edit2 size={14}/></button>
-                                                  <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 rounded-lg"><UserMinus size={14}/></button>
+                                          
+                                          {/* Inline Editing UI */}
+                                          {editingMemberId === member.id && (
+                                              <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-slate-50 animate-fade-in">
+                                                  <input 
+                                                      value={editMemberTitle} 
+                                                      onChange={(e) => setEditMemberTitle(e.target.value)} 
+                                                      placeholder="Chức danh (VD: Developer)" 
+                                                      className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                  />
+                                                  <input 
+                                                      value={editMemberNote} 
+                                                      onChange={(e) => setEditMemberNote(e.target.value)} 
+                                                      placeholder="Ghi chú công việc..." 
+                                                      className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                  />
+                                                  <div className="flex gap-2 justify-end mt-1">
+                                                      <button onClick={() => setEditingMemberId(null)} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Hủy</button>
+                                                      <button onClick={() => handleUpdateMemberInfo(member.id)} className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">Lưu</button>
+                                                  </div>
                                               </div>
                                           )}
-                                          {/* Inline Edit Logic preserved but hidden for brevity */}
                                       </div>
                                   ))}
                               </div>
