@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users, Trophy, Medal, Crown, Table2, CheckCircle2, Circle } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users, Trophy, Medal, Crown, Table2, CheckCircle2, Circle, Download } from 'lucide-react';
 import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,8 +14,10 @@ interface ReportsProps {
 }
 
 export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
+  // Initialize view mode. If a group is active, default to group view, otherwise personal.
   const [viewMode, setViewMode] = useState<ViewMode>(activeGroup ? 'group' : 'personal');
 
+  // Sync view mode when activeGroup changes (e.g. user switches group in sidebar)
   useEffect(() => {
       if (activeGroup) {
           setViewMode('group');
@@ -24,23 +26,29 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       }
   }, [activeGroup?.id]);
 
+  // Determine if we are effectively in group view (requires both mode set to group AND an active group present)
   const isGroupView = viewMode === 'group' && !!activeGroup;
   
+  // DYNAMIC STORAGE KEY: This is the core fix. 
+  // It swaps the key immediately when viewMode changes.
   const taskStorageKey = isGroupView ? `group_${activeGroup?.id}_tasks` : 'daily_tasks';
   const reflectionStorageKey = isGroupView ? `group_${activeGroup?.id}_reflections` : 'reflections';
+  
+  // If viewing group, use global key (true). If personal, use user-specific key (false).
   const isGlobalStorage = isGroupView;
 
+  // Hooks to fetch data based on the dynamic key
   const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobalStorage);
   const [reflections, setReflections] = useRealtimeStorage<ReflectionMap>(reflectionStorageKey, {}, isGlobalStorage);
   
   const [period, setPeriod] = useState<Period>('day');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
-  
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
   const { t, language } = useLanguage();
 
+  // Calculate Date Range
   const getDateRange = useCallback(() => {
     const now = new Date();
     let start = new Date(now);
@@ -69,6 +77,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     return { start, end };
   }, [period, customStart, customEnd]);
 
+  // Reflection Key based on date
   const currentReflectionKey = useMemo(() => {
      const { end } = getDateRange();
      return end.toISOString().split('T')[0];
@@ -84,6 +93,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
      }));
   };
 
+  // Calculate Chart Data
   const chartData = useMemo(() => {
     const { start: currStart, end: currEnd } = getDateRange();
     const duration = currEnd.getTime() - currStart.getTime();
@@ -140,6 +150,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     };
   }, [tasks, getDateRange]);
 
+  // Calculate Group Stats (Leaderboard)
   const groupStats = useMemo(() => {
       if (!isGroupView || !activeGroup) return null;
 
@@ -168,6 +179,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const diff = chartData.currentScore - chartData.prevScore;
   const isPositive = diff >= 0;
 
+  // Chart Rendering Helpers
   const generateAreaPath = (points: {value: number}[], width: number, height: number) => {
       if (points.length < 2) return "";
       const stepX = width / (points.length - 1);
@@ -196,21 +208,26 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const sanitize = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const getReportContextName = () => isGroupView && activeGroup ? activeGroup.name : t.personal;
 
-  // --- EXPORT FUNCTIONS WITH GROUP SUPPORT ---
+  // --- EXPORT FUNCTIONS ---
   const exportToExcel = () => {
     const data = chartData.filteredTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
     const contextName = getReportContextName();
+    const contextType = isGroupView ? 'Group' : 'Personal';
     
     let csvContent = "\uFEFF"; 
-    csvContent += `Report Context,${contextName}\n`;
-    csvContent += `Report Period,${period}\n`;
-    csvContent += `Score,${chartData.currentScore}%\n`;
-    csvContent += `Comparison vs Prev,${diff}%\n\n`;
-    csvContent += `Self Evaluation,"${reflection.evaluation ? reflection.evaluation.replace(/"/g, '""') : 'N/A'}"\n`;
-    csvContent += `Needs Improvement,"${reflection.improvement ? reflection.improvement.replace(/"/g, '""') : 'N/A'}"\n\n`;
+    csvContent += `Report Type,${contextType}\n`;
+    csvContent += `Context Name,${contextName}\n`;
+    csvContent += `Period,${period}\n`;
+    csvContent += `Overall Score,${chartData.currentScore}%\n`;
+    csvContent += `Total Tasks,${chartData.currentCount}\n\n`;
     
-    // Header Row
+    if (!isGroupView) {
+        csvContent += `Self Evaluation,"${reflection.evaluation ? reflection.evaluation.replace(/"/g, '""') : 'N/A'}"\n`;
+        csvContent += `Needs Improvement,"${reflection.improvement ? reflection.improvement.replace(/"/g, '""') : 'N/A'}"\n\n`;
+    }
+    
+    // Header
     csvContent += `${t.dateTime},${t.taskContent},${t.status},${t.progress},${t.subtasksHeader},${t.assignedTo},${t.completedBy}\n`;
     
     data.forEach(task => {
@@ -226,8 +243,13 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
 
         csvContent += `${d.toLocaleString(language)},"${task.text.replace(/"/g, '""')}",${task.completed ? t.completed : t.active},${task.progress}%,"${subtasksStr.replace(/"/g, '""')}",${assigneeName},${completerName}\n`;
     });
+    
+    const fileName = isGroupView 
+        ? `Report-Group-${contextName.replace(/\s+/g, '_')}-${period}.csv`
+        : `Report-Personal-${period}.csv`;
+        
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    downloadFile(blob, `daily-task-report-${contextName.replace(/\s+/g, '-')}-${period}.csv`);
+    downloadFile(blob, fileName);
   };
 
   const exportToWord = () => {
@@ -237,18 +259,19 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       
       let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>Report</title>
-      <style>body{font-family:Arial,sans-serif;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background-color:#f2f2f2;}</style>
+      <style>body{font-family:Arial,sans-serif;} table{width:100%;border-collapse:collapse;margin-top:20px;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background-color:#f2f2f2;}</style>
       </head><body>`;
+      
       html += `<h1>${t.reportHeader} - ${period.toUpperCase()}</h1>`;
-      html += `<h2>Context: ${contextName}</h2>`;
-      html += `<h3>Summary</h3><p>Score: ${chartData.currentScore}% | Tasks: ${chartData.currentCount}</p>`;
+      html += `<h2>${isGroupView ? 'Group' : 'Personal'}: ${contextName}</h2>`;
+      html += `<h3>Summary</h3><p>Score: ${chartData.currentScore}% | Tasks Completed: ${chartData.currentCount}</p>`;
       
       if (!isGroupView) {
         html += `<h3>Reflection</h3><p><strong>Evaluation:</strong> ${sanitize(reflection.evaluation || "N/A")}</p>`;
         html += `<p><strong>Improvement:</strong> ${sanitize(reflection.improvement || "N/A")}</p>`;
       }
 
-      html += `<h3>Tasks</h3><table><tr><th>Time</th><th>Task</th><th>Status</th><th>Progress</th><th>Assigned To</th></tr>`;
+      html += `<h3>Tasks Details</h3><table><tr><th>Date</th><th>Task</th><th>Status</th><th>Progress</th><th>Assigned To</th></tr>`;
       data.forEach(t => {
          const d = new Date(t.createdAt);
          const assignee = isGroupView && activeGroup ? (activeGroup.members.find(m => m.id === t.assignedTo)?.name || 'Unassigned') : 'Me';
@@ -256,32 +279,54 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       });
       html += `</table></body></html>`;
       
+      const fileName = isGroupView 
+        ? `Report-Group-${contextName.replace(/\s+/g, '_')}-${period}.doc`
+        : `Report-Personal-${period}.doc`;
+
       const blob = new Blob([html], { type: 'application/msword' });
-      downloadFile(blob, `daily-task-report-${contextName.replace(/\s+/g, '-')}-${period}.doc`);
+      downloadFile(blob, fileName);
   };
 
-  // Keep XML and PPTX logic similar but less critical for the prompt's request
   const exportToXML = () => {
       const data = chartData.filteredTasks;
       const contextName = getReportContextName();
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<report>\n';
-      xml += `  <meta>\n    <context>${sanitize(contextName)}</context>\n    <period>${period}</period>\n  </meta>\n`;
+      xml += `  <meta>\n    <type>${isGroupView ? 'Group' : 'Personal'}</type>\n    <context>${sanitize(contextName)}</context>\n    <period>${period}</period>\n  </meta>\n`;
       xml += `  <tasks>\n`;
       data.forEach(t => {
-          xml += `    <task id="${t.id}">\n      <text>${sanitize(t.text)}</text>\n      <status>${t.completed ? 'completed' : 'active'}</status>\n    </task>\n`;
+          xml += `    <task id="${t.id}">\n      <text>${sanitize(t.text)}</text>\n      <status>${t.completed ? 'completed' : 'active'}</status>\n      <progress>${t.progress}</progress>\n    </task>\n`;
       });
       xml += `  </tasks>\n</report>`;
+      
+      const fileName = isGroupView 
+        ? `Report-Group-${contextName.replace(/\s+/g, '_')}-${period}.xml`
+        : `Report-Personal-${period}.xml`;
+
       const blob = new Blob([xml], { type: 'text/xml' });
-      downloadFile(blob, `daily-task-report-${period}.xml`);
+      downloadFile(blob, fileName);
   };
 
   const exportToPowerPoint = async () => {
       const pres = new PptxGenJS();
       const contextName = getReportContextName();
+      
+      // Title Slide
       let slide = pres.addSlide();
-      slide.addText(`Report - ${contextName}`, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
-      slide.addText(`Tasks: ${chartData.currentCount}`, { x: 1, y: 2, fontSize: 18 });
-      pres.writeFile({ fileName: `daily-task-report-${period}.pptx` });
+      slide.addText(t.reportHeader, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
+      slide.addText(`${isGroupView ? 'Group' : 'Personal'}: ${contextName}`, { x: 1, y: 1.5, fontSize: 18, color: '6366F1' });
+      slide.addText(`Period: ${period.toUpperCase()}`, { x: 1, y: 2, fontSize: 14, color: '888888' });
+      
+      // Stats Slide
+      slide = pres.addSlide();
+      slide.addText('Performance Overview', { x: 0.5, y: 0.5, fontSize: 18, bold: true });
+      slide.addText(`Productivity Score: ${chartData.currentScore}%`, { x: 1, y: 1.5, fontSize: 16 });
+      slide.addText(`Tasks Completed: ${chartData.currentCount}`, { x: 1, y: 2.0, fontSize: 16 });
+      
+      const fileName = isGroupView 
+        ? `Report-Group-${contextName.replace(/\s+/g, '_')}-${period}.pptx`
+        : `Report-Personal-${period}.pptx`;
+
+      pres.writeFile({ fileName: fileName });
   };
 
   const downloadFile = (blob: Blob, fileName: string) => {
@@ -319,11 +364,13 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     {t.reportHeader}
                 </h1>
                 <p className={`${isGroupView ? "text-emerald-100" : "text-indigo-100"} text-sm mt-2 font-medium opacity-90 tracking-wide`}>
-                    {isGroupView ? activeGroup?.name : t.personal}
+                    {getReportContextName()}
                 </p>
             </div>
+            
+            {/* VIEW MODE TOGGLE - CRITICAL FOR SWITCHING CONTEXT */}
             {activeGroup && (
-                <div className="bg-black/20 backdrop-blur-md p-1 rounded-xl flex items-center self-start md:self-center border border-white/10">
+                <div className="bg-black/20 backdrop-blur-md p-1 rounded-xl flex items-center self-start md:self-center border border-white/10 shadow-inner">
                     <button onClick={() => setViewMode('personal')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                         <User size={14} /> {t.personal}
                     </button>

@@ -3,11 +3,11 @@ import {
   Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, 
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, 
-  Edit3, CheckSquare, Square, ListChecks,
-  PlusCircle, Sun, Moon, Sunrise, Users, User,
+  Edit3, CheckSquare, ListChecks,
+  Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
-  MoreVertical, Paperclip, FileText, Image as ImageIcon, Download, XCircle, Wand2, Sparkles, Loader2,
-  MoreHorizontal
+  Paperclip, FileText, Loader2,
+  MoreVertical
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -107,7 +107,7 @@ const TaskItem = React.memo(({
                     <Check size={12} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
                 </button>
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-8">
                     <div className="flex items-center gap-2 mb-1">
                         <span className={`w-1.5 h-1.5 rounded-full ${priorityIndicator}`}></span>
                         {deadlineInfo && <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] border ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
@@ -125,15 +125,19 @@ const TaskItem = React.memo(({
                 </div>
              </div>
              
-             {/* Delete Action (Top Right Hover) */}
-             <button onClick={(e) => onDelete(task.id, e)} className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                <X size={14} />
+             {/* Delete Action (Explicit Button for Mobile/Desktop) */}
+             <button 
+                onClick={(e) => onDelete(task.id, e)} 
+                className="absolute top-3 right-3 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+             >
+                <Trash2 size={16} />
              </button>
         </div>
     );
 });
 
 export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
+  // Determine correct storage key based on active group
   const storageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
   const isGlobal = !!activeGroup;
 
@@ -170,7 +174,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
@@ -252,15 +255,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       }
   };
 
-  const downloadAttachment = (att: Attachment) => {
-      const link = document.createElement('a');
-      link.href = att.url;
-      link.download = att.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-  };
-
   // --- AI HANDLERS ---
   const handleAiRefineText = async () => {
       if (!editingTask || !isOnline) return;
@@ -275,31 +269,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       }
   };
 
-  const handleAiGenerateSubtasks = async () => {
-      if (!editingTask || !isOnline) return;
-      setIsAiProcessing(true);
-      try {
-          const steps = await generateSubtasksWithGemini(editingTask.text);
-          const newSubtasks: Subtask[] = steps.map(step => ({
-              id: Date.now() + Math.random(),
-              text: step,
-              completed: false
-          }));
-          setEditingTask(prev => prev ? { 
-              ...prev, 
-              subtasks: [...(prev.subtasks || []), ...newSubtasks] 
-          } : null);
-      } catch (e) {
-          console.error(e);
-      } finally {
-          setIsAiProcessing(false);
-      }
-  };
-
   const addTask = () => {
     if (inputValue.trim() === '') return;
     if (activeGroup && !isLeader) { alert(t.leaderOnly); return; }
     
+    // Determine creation date based on current view or explicit selection
     const taskDate = new Date(viewDate);
     if (isToday(viewDate)) {
       const now = new Date();
@@ -316,14 +290,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       archived: false,
       priority: newPriority,
       groupId: activeGroup?.id,
-      assignedTo: assignedTo || undefined, // Set assigned user
-      createdBy: currentUserId, // Track creator
+      assignedTo: assignedTo || (activeGroup ? undefined : currentUserId), // Self assign if personal
+      createdBy: currentUserId, 
       attachments: newAttachments,
       subtasks: [],
       comments: []
     };
 
+    // Update State Immediately
     setTasks(prev => [newTask, ...prev]);
+    
+    // Reset Form
     setInputValue('');
     setDeadline('');
     setAssignedDate('');
@@ -355,7 +332,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       }));
   }, [setTasks, currentUserId]);
 
-  // useCallback optimizes these handlers so they don't break memoization of TaskItem
   const handleToggleClick = useCallback((task: Task, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (task.archived) return; 
@@ -363,7 +339,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setTimeout(() => setLastCheckedId(null), 500);
 
     if (task.completed) {
-        // Toggle off immediately
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: false, progress: 0, completedAt: undefined, completedBy: undefined, completionNote: undefined } : t));
     }
     else {
@@ -371,7 +346,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           setCompletingTaskId(task.id); 
           setCompletionNote(''); 
       } else {
-          // Toggle on immediately
           setTasks(prev => prev.map(t => {
               if (t.id === task.id) {
                   playSuccessSound();
@@ -401,10 +375,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     }));
   };
 
-  const addSubtask = () => { if (!editingTask || !newSubtaskText.trim()) return; const newSub: Subtask = { id: Date.now(), text: newSubtaskText.trim(), completed: false }; const updatedSubtasks = [...(editingTask.subtasks || []), newSub]; setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); setNewSubtaskText(''); };
-  const toggleSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).map(st => st.id === subId ? { ...st, completed: !st.completed } : st); const completedCount = updatedSubtasks.filter(st => st.completed).length; const progress = Math.round((completedCount / updatedSubtasks.length) * 100); setEditingTask({ ...editingTask, subtasks: updatedSubtasks, progress, completed: progress === 100 }); };
-  const deleteSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId); setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); };
-  
   const deleteTask = useCallback((id: number, e?: React.MouseEvent) => { 
       if (e) e.stopPropagation(); 
       if (confirm(t.deleteTaskConfirm)) { 
@@ -415,7 +385,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const handleEditClick = useCallback((task: Task) => setEditingTask(task), []);
 
-  // --- FILTERING & SORTING LOGIC ---
   const filteredTasks = useMemo(() => {
     const targetDateStr = getLocalDateString(viewDate);
     
@@ -527,11 +496,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
       
-      {/* PROFESSIONAL EDIT MODAL - KEPT SAME BUT CLEANER */}
+      {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
         <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-md animate-fade-in">
           <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col border border-white/60">
-              {/* Content of Edit Modal remains functionally the same but style inherits new global css */}
               <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 flex items-center justify-between border-b border-slate-100 rounded-t-[2.5rem]">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100">
@@ -544,22 +512,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 </div>
                 <button onClick={() => setEditingTask(null)} className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-200 rounded-full transition-all"><X size={20}/></button>
             </div>
-            {/* ... Rest of Edit Modal ... */}
             <div className="p-8 space-y-8">
-                {/* ... Inputs ... */}
                 <div className="group relative">
                     <div className="flex justify-between items-center mb-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.taskContent}</label>
                         {isOnline && (
                              <button onClick={handleAiRefineText} disabled={isAiProcessing} className="text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
-                                 {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Wand2 size={12}/>} {t.optimizeAi}
+                                 {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : t.optimizeAi}
                              </button>
                         )}
                     </div>
                     <textarea rows={2} value={editingTask.text} onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} className="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-indigo-200 focus:bg-white text-lg font-semibold text-slate-800 focus:ring-0 outline-none resize-none placeholder:text-slate-300 transition-all shadow-sm"/>
                 </div>
 
-                {/* Progress */}
                 <div className="group">
                     <div className="flex justify-between items-center mb-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.progress}</label>
@@ -568,7 +533,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     <input type="range" min="0" max="100" value={editingTask.progress || 0} onChange={(e) => setEditingTask({...editingTask, progress: Number(e.target.value), completed: Number(e.target.value) === 100})} className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"/>
                 </div>
                  
-                 {/* Assign */}
                  {activeGroup && (
                     <div className="space-y-3">
                          <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Users size={16}/> {t.assignTask}</label>
@@ -583,9 +547,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                          </div>
                     </div>
                  )}
-
-                 {/* Attachments & Subtasks can remain as is for brevity in this update, assuming they work */}
-                 {/* ... (Existing code for attachments/subtasks) ... */}
             </div>
             <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-8 border-t border-slate-100 rounded-b-[2.5rem] flex gap-4">
               <button onClick={(e) => deleteTask(editingTask.id, e)} className="p-4 rounded-xl text-rose-500 font-bold bg-rose-50 hover:bg-rose-100 transition-all"><Trash2 size={24}/></button>
@@ -659,7 +620,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 );
               })}
             </div>
-            {/* ... Sort & Search Buttons (kept concise) ... */}
              <div className="relative">
                 <button onClick={() => setShowSortMenu(!showSortMenu)} className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all shadow-sm ${showSortMenu ? 'bg-indigo-100 text-indigo-600' : 'bg-white/60 text-slate-400 hover:bg-white hover:shadow-md'}`}><ArrowUpDown size={20} /></button>
                 {showSortMenu && (<div className="absolute top-12 right-0 bg-white/95 backdrop-blur-xl border border-white p-2 rounded-2xl shadow-xl z-40 min-w-[160px] animate-scale-in origin-top-right">{(Object.keys(sortOptionsConfig) as SortOption[]).map(key => { const config = sortOptionsConfig[key]; const Icon = config.icon; return (<button key={key} onClick={() => { setSortOption(key); setShowSortMenu(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${sortOption === key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={16} /><span>{config.label}</span>{sortOption === key && <Check size={14} className="ml-auto"/>}</button>) })}</div>)}
@@ -695,7 +655,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         )}
       </div>
 
-      {/* FIXED FLOATING CAPSULE INPUT - IMPROVED DESIGN */}
+      {/* FIXED FLOATING CAPSULE INPUT */}
       <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
           <div className="w-full max-w-2xl bg-slate-900/95 backdrop-blur-2xl rounded-[2.5rem] p-2 pl-3 shadow-[0_8px_40px_-10px_rgba(0,0,0,0.3)] ring-1 ring-white/10 animate-slide-up flex items-center gap-3 group transition-all hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)]">
               <button 
@@ -706,13 +666,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
               </button>
               
               <div className="flex-1 min-w-0 relative">
-                  {/* EXPANDED DETAILS PANEL - FLOATING ABOVE */}
+                  {/* EXPANDED DETAILS PANEL */}
                   {showInputDetails && (
                       <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-up origin-bottom">
                           <div className="flex flex-col gap-4">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
                             
-                            {/* Attachments Preview */}
                             {newAttachments.length > 0 && (
                                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
                                     {newAttachments.map(att => (
