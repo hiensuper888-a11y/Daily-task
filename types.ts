@@ -43,6 +43,7 @@ export interface Task {
   assignedTo?: string; // userId (email or uid)
   completedBy?: string; // userId of who finished it
   completionNote?: string; // Note added when finishing
+  createdBy?: string; // User ID of creator
   
   // New features
   attachments?: Attachment[];
