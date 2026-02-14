@@ -1,3 +1,4 @@
+
 import { Language } from "../types";
 
 const enTranslations = {
@@ -17,7 +18,7 @@ const enTranslations = {
   all: "All",
   active: "Active",
   completed: "Completed",
-  emptyTasks: "No tasks for this day.",
+  emptyTasks: "No tasks found.",
   clearCompleted: "Archive completed",
   studioHeader: "AI Studio",
   studioSubHeader: "Edit images with AI",
@@ -132,6 +133,30 @@ const enTranslations = {
   setAssignedDate: "Set Start Date",
   setEstimate: "Set Estimate",
   overdue: "Overdue",
+  
+  // Group Translations
+  myGroups: "My Groups",
+  personal: "Personal",
+  createGroup: "Create Group",
+  joinGroup: "Join Group",
+  groupName: "Group Name",
+  joinCode: "Join Code",
+  inviteMembers: "Invite Members",
+  scanQr: "Scan QR Code",
+  copyLink: "Copy Link",
+  assignedTo: "Assigned to",
+  assignTo: "Assign to",
+  completedBy: "Completed by",
+  completionNote: "Completion Note",
+  addNotePlaceholder: "Describe what you did...",
+  submitCompletion: "Submit & Complete",
+  assigned_to_me: "Assigned to Me",
+  leader: "Leader",
+  member: "Member",
+  groupCreated: "Group created successfully!",
+  groupJoined: "Joined group successfully!",
+  groupJoinError: "Invalid code or already joined.",
+  copySuccess: "Code copied!",
 };
 
 const viTranslations = {
@@ -151,7 +176,7 @@ const viTranslations = {
   all: "Tất cả",
   active: "Đang làm",
   completed: "Đã xong",
-  emptyTasks: "Không có việc ngày này.",
+  emptyTasks: "Chưa có việc nào.",
   clearCompleted: "Lưu trữ xong",
   studioHeader: "Xưởng AI",
   studioSubHeader: "Chỉnh sửa ảnh AI",
@@ -266,6 +291,30 @@ const viTranslations = {
   setAssignedDate: "Ngày giao việc",
   setEstimate: "Chọn thời gian",
   overdue: "Quá hạn",
+
+  // Group Translations
+  myGroups: "Nhóm của tôi",
+  personal: "Cá nhân",
+  createGroup: "Tạo nhóm mới",
+  joinGroup: "Tham gia nhóm",
+  groupName: "Tên nhóm",
+  joinCode: "Mã tham gia",
+  inviteMembers: "Mời thành viên",
+  scanQr: "Quét mã QR",
+  copyLink: "Sao chép mã",
+  assignedTo: "Giao cho",
+  assignTo: "Giao cho...",
+  completedBy: "Hoàn thành bởi",
+  completionNote: "Ghi chú kết quả",
+  addNotePlaceholder: "Mô tả kết quả công việc...",
+  submitCompletion: "Hoàn thành & Báo cáo",
+  assigned_to_me: "Việc của tôi",
+  leader: "Trưởng nhóm",
+  member: "Thành viên",
+  groupCreated: "Tạo nhóm thành công!",
+  groupJoined: "Đã tham gia nhóm!",
+  groupJoinError: "Mã không đúng hoặc đã tham gia.",
+  copySuccess: "Đã chép mã!",
 };
 
 export const translations = {

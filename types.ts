@@ -1,3 +1,4 @@
+
 export interface Subtask {
   id: number;
   text: string;
@@ -18,9 +19,33 @@ export interface Task {
   archived?: boolean;
   subtasks?: Subtask[];
   priority?: Priority;
+  
+  // Group features
+  groupId?: string;
+  assignedTo?: string; // userId (email or uid)
+  completedBy?: string; // userId of who finished it
+  completionNote?: string; // Note added when finishing
 }
 
-export type FilterType = 'all' | 'active' | 'completed';
+export interface GroupMember {
+  id: string; // email or uid
+  name: string;
+  avatar: string;
+  role: 'leader' | 'member';
+  joinedAt: number;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  leaderId: string;
+  members: GroupMember[];
+  joinCode: string; // Simple code for manual joining
+  createdAt: number;
+}
+
+export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me';
 
 export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 

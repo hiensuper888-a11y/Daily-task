@@ -5,17 +5,20 @@ export const SESSION_KEY = 'daily_task_active_session_user';
 
 /**
  * A hook that syncs with localStorage and updates in real-time across tabs.
- * It automatically prefixes keys with the current user's email to ensure data separation.
+ * It automatically prefixes keys with the current user's email to ensure data separation,
+ * UNLESS globalKey is set to true (used for shared group data simulation).
  */
-export function useRealtimeStorage<T>(key: string, initialValue: T) {
+export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: boolean = false) {
   
   // Helper to determine the prefix (User ID/Email or 'guest')
   const getStorageKey = useCallback(() => {
+    if (globalKey) return key; // No prefix for group/shared data
+
     if (typeof window === 'undefined') return `guest_${key}`;
     const currentUser = window.localStorage.getItem(SESSION_KEY);
     const prefix = currentUser ? currentUser.trim() : 'guest';
     return `${prefix}_${key}`;
-  }, [key]);
+  }, [key, globalKey]);
 
   // Helper to get value from storage
   const readValue = useCallback((): T => {
