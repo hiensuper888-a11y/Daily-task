@@ -9,11 +9,11 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 // Memoized Chat Bubble Component
 const ChatBubble = memo(({ msg }: { msg: ChatMessage }) => {
     return (
-        <div className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-slide-up`}>
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-md ${msg.role === 'user' ? 'bg-slate-800 text-white' : 'bg-gradient-to-tr from-indigo-500 to-violet-600 text-white'}`}>
-                {msg.role === 'user' ? <User size={16}/> : <Sparkles size={16}/>}
+        <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-slide-up group`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-slate-800 text-white' : 'bg-white text-indigo-600'}`}>
+                {msg.role === 'user' ? <User size={14}/> : <Sparkles size={14}/>}
             </div>
-            <div className={`p-4 rounded-[1.2rem] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-none' : 'bg-white/90 text-slate-700 border border-white/50 rounded-tl-none backdrop-blur-md'}`}>
+            <div className={`p-3.5 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-white/80 text-slate-700 backdrop-blur-md rounded-tl-sm'}`}>
                 {msg.text}
             </div>
         </div>
@@ -66,42 +66,42 @@ export const AiAssistant: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8fafc] rounded-none lg:rounded-[2.5rem] relative overflow-hidden">
-             {/* Simple Header */}
-            <div className="bg-white/70 backdrop-blur-xl px-6 py-4 border-b border-white/50 flex items-center justify-between shrink-0 z-20">
+        <div className="flex flex-col h-full bg-transparent relative overflow-hidden">
+             {/* Transparent Header */}
+            <div className="px-6 py-4 flex items-center justify-between shrink-0 z-20">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
-                        <Sparkles size={20} className="text-white"/>
+                    <div className="w-10 h-10 bg-white/40 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-sm border border-white/20">
+                        <Sparkles size={20} className="text-indigo-600"/>
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-slate-800 leading-none">{t.aiChatTitle}</h2>
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1 mt-1">
+                        <h2 className="text-lg font-black text-slate-800 leading-none drop-shadow-sm">{t.aiChatTitle}</h2>
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-1 mt-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {t.online}
                         </span>
                     </div>
                 </div>
-                <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl">
+                <div className="flex gap-1 bg-white/30 p-1 rounded-xl backdrop-blur-md border border-white/20">
                     {(['gemini', 'chatgpt'] as AiModel[]).map((m) => (
-                        <button key={m} onClick={() => setSelectedModel(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${selectedModel === m ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>{m}</button>
+                        <button key={m} onClick={() => setSelectedModel(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${selectedModel === m ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>{m}</button>
                     ))}
                 </div>
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar relative z-10">
+            <div className="flex-1 overflow-y-auto px-4 pb-32 pt-2 space-y-6 custom-scrollbar relative z-10 mask-gradient-top">
                 {messages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
-                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-inner"><Bot size={48} className="opacity-20"/></div>
-                        <p className="text-sm font-bold">{t.startChat}</p>
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 animate-fade-in">
+                        <div className="w-24 h-24 bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center shadow-inner"><Bot size={48} className="opacity-40 text-indigo-300"/></div>
+                        <p className="text-sm font-bold opacity-70">{t.startChat}</p>
                     </div>
                 )}
                 {messages.map((msg) => (
                     <ChatBubble key={msg.id} msg={msg} />
                 ))}
                 {isLoading && (
-                    <div className="flex gap-3 mr-auto animate-fade-in">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-md"><Bot size={16} className="text-white"/></div>
-                        <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 flex gap-1 items-center shadow-sm">
+                    <div className="flex gap-3 mr-auto animate-fade-in pl-1">
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm"><Sparkles size={14} className="text-indigo-600"/></div>
+                        <div className="bg-white/60 px-4 py-3 rounded-2xl rounded-tl-sm backdrop-blur-md flex gap-1 items-center shadow-sm">
                             <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
                             <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce delay-75"></span>
                             <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce delay-150"></span>
@@ -111,30 +111,27 @@ export const AiAssistant: React.FC = () => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="p-4 bg-white/70 backdrop-blur-xl border-t border-white/50 shrink-0 pb-safe z-20">
-                <div className="flex items-end gap-2 max-w-4xl mx-auto">
-                    <button onClick={() => setMessages([])} className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={20}/></button>
-                    {tasks.length > 0 && <button onClick={handleAnalyzeTasks} className="p-3 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-colors"><ListChecks size={20}/></button>}
+            {/* Floating Input Area */}
+            <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
+                <div className="w-full max-w-2xl bg-white/80 backdrop-blur-[30px] rounded-[2rem] p-2 pl-3 shadow-premium ring-1 ring-white/40 animate-slide-up flex items-center gap-2 group transition-all hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.15)]">
+                    <button onClick={() => setMessages([])} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={18}/></button>
+                    {tasks.length > 0 && <button onClick={handleAnalyzeTasks} className="p-2.5 text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors"><ListChecks size={18}/></button>}
                     
-                    <div className="flex-1 bg-white border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl transition-all flex items-center px-2 shadow-sm">
-                        <textarea
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}}
-                            disabled={!isOnline}
-                            placeholder={t.typeMessage}
-                            className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[48px] resize-none text-sm font-medium text-slate-700 placeholder:text-slate-400"
-                            rows={1}
-                        />
-                    </div>
+                    <input
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
+                        disabled={!isOnline}
+                        placeholder={t.typeMessage}
+                        className="flex-1 bg-transparent border-none px-2 py-2 text-[15px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
+                    />
                     
                     <button 
                         onClick={() => handleSendMessage()} 
                         disabled={!inputValue.trim() || isLoading}
-                        className={`p-3 rounded-xl transition-all shadow-md ${!inputValue.trim() ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-md ${!inputValue.trim() ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white hover:scale-110 hover:bg-indigo-700'}`}
                     >
-                        <Send size={20} />
+                        <Send size={18} />
                     </button>
                 </div>
             </div>

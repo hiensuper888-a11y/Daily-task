@@ -35,7 +35,6 @@ export const ImageEditor: React.FC = () => {
     };
     reader.readAsDataURL(file);
     
-    // Reset file input to allow selecting the same file again if needed
     e.target.value = '';
   };
 
@@ -84,21 +83,25 @@ export const ImageEditor: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50 md:bg-white md:rounded-3xl">
-      <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 to-fuchsia-600 p-8 text-white shrink-0 shadow-lg">
-        <div className="absolute -right-4 -bottom-8 opacity-20 text-white">
-            <Sparkles size={120} />
+    <div className="flex flex-col h-full bg-transparent">
+      {/* Light Glass Header */}
+      <div className="px-6 py-6 pb-2">
+        <div className="flex items-center gap-3 mb-1">
+             <div className="w-10 h-10 rounded-2xl bg-white/40 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-sm">
+                 <Wand2 size={20} className="text-fuchsia-600" />
+             </div>
+             <div>
+                <h1 className="text-xl font-black bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                {t.studioHeader}
+                </h1>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                {t.studioSubHeader}
+                </p>
+             </div>
         </div>
-        <h1 className="text-2xl font-bold flex items-center gap-3 relative z-10">
-          <Wand2 size={28} className="text-yellow-300" />
-          {t.studioHeader}
-        </h1>
-        <p className="text-violet-100 text-sm mt-2 font-medium opacity-90 relative z-10">
-          {t.studioSubHeader}
-        </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar pb-32 md:pb-6">
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar pb-32 md:pb-6">
         <div className="max-w-7xl mx-auto w-full h-full flex flex-col">
             
             {/* Upload Area */}
@@ -106,13 +109,13 @@ export const ImageEditor: React.FC = () => {
             <div className="flex-1 flex flex-col justify-center min-h-[400px]">
                 <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className="group flex-1 border-3 border-dashed border-slate-300 rounded-[2rem] bg-white flex flex-col items-center justify-center text-slate-400 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50/50 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl w-full max-w-2xl mx-auto"
+                    className="group flex-1 border-2 border-dashed border-white/50 rounded-[2.5rem] bg-white/30 backdrop-blur-md flex flex-col items-center justify-center text-slate-400 hover:border-violet-400 hover:text-violet-600 hover:bg-white/50 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl w-full max-w-2xl mx-auto"
                 >
-                    <div className="p-6 bg-slate-50 rounded-full mb-6 group-hover:bg-white group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                        <Upload size={48} className="opacity-50 group-hover:opacity-100" />
+                    <div className="p-6 bg-white/50 rounded-full mb-6 group-hover:bg-white group-hover:scale-110 transition-transform duration-300 shadow-sm ring-1 ring-white/60">
+                        <Upload size={48} className="opacity-50 group-hover:opacity-100 text-violet-500" />
                     </div>
-                    <p className="font-bold text-xl mb-2">{t.uploadPrompt}</p>
-                    <p className="text-base text-slate-400">{t.uploadSubPrompt}</p>
+                    <p className="font-bold text-xl mb-2 text-slate-700">{t.uploadPrompt}</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wide">{t.uploadSubPrompt}</p>
                     <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -128,9 +131,9 @@ export const ImageEditor: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start h-full">
                 
                 {/* Original Image Card */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 h-full flex flex-col">
+                <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] shadow-sm border border-white/50 h-full flex flex-col">
                     <div className="flex justify-between items-center text-sm font-bold text-slate-700 mb-4 px-1">
-                        <span className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg"><ImageIcon size={16}/> {t.originalImage}</span>
+                        <span className="flex items-center gap-2 bg-white/50 px-3 py-1.5 rounded-lg border border-white/50"><ImageIcon size={16}/> {t.originalImage}</span>
                         <button 
                             onClick={() => {
                             setOriginalImage(null); 
@@ -142,8 +145,8 @@ export const ImageEditor: React.FC = () => {
                             {t.reset}
                         </button>
                     </div>
-                    <div className="flex-1 min-h-[250px] bg-slate-100/50 rounded-xl overflow-hidden relative border border-slate-100 flex items-center justify-center group">
-                        <img src={originalImage} alt="Original" className="max-w-full max-h-[50vh] object-contain shadow-md" />
+                    <div className="flex-1 min-h-[250px] bg-slate-100/50 rounded-2xl overflow-hidden relative border border-slate-100 flex items-center justify-center group">
+                        <img src={originalImage} alt="Original" className="max-w-full max-h-[50vh] object-contain shadow-md rounded-lg" />
                         <div className="absolute top-1/2 -right-3 lg:flex hidden items-center justify-center w-8 h-8 bg-white rounded-full shadow-md z-10 text-slate-400">
                              <MoveRight size={16} />
                         </div>
@@ -151,16 +154,16 @@ export const ImageEditor: React.FC = () => {
                 </div>
 
                 {/* Result Area */}
-                <div className="bg-white p-5 rounded-2xl shadow-md border border-violet-100 relative overflow-hidden h-full flex flex-col ring-1 ring-violet-50">
+                <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] shadow-md border border-white/50 relative overflow-hidden h-full flex flex-col ring-1 ring-white/40">
                     {!generatedImage && isLoading && (
-                        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-2xl">
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-20 flex flex-col items-center justify-center rounded-[2rem]">
                             <Loader2 size={48} className="animate-spin text-violet-600 mb-4" />
                             <p className="text-base font-bold text-violet-700 animate-pulse">{t.processing}</p>
                         </div>
                     )}
 
                     <div className="flex justify-between items-center text-sm font-bold text-violet-700 mb-4 px-1">
-                        <span className="flex items-center gap-2 bg-violet-50 px-3 py-1.5 rounded-lg"><Sparkles size={16}/> {t.aiResult}</span>
+                        <span className="flex items-center gap-2 bg-violet-50 px-3 py-1.5 rounded-lg border border-violet-100"><Sparkles size={16}/> {t.aiResult}</span>
                         {generatedImage && (
                             <button onClick={useAsInput} className='text-xs flex items-center gap-1.5 hover:underline font-medium bg-violet-50 px-3 py-1.5 rounded-lg text-violet-600 hover:bg-violet-100 transition-colors'>
                                 <RefreshCw size={12}/> {t.useAsInput}
@@ -168,13 +171,13 @@ export const ImageEditor: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="flex-1 min-h-[250px] bg-slate-50/50 rounded-xl overflow-hidden relative border-2 border-dashed border-violet-100 flex items-center justify-center">
+                    <div className="flex-1 min-h-[250px] bg-slate-50/50 rounded-2xl overflow-hidden relative border-2 border-dashed border-violet-200 flex items-center justify-center">
                         {generatedImage ? (
-                            <img src={generatedImage} alt="Generated" className="max-w-full max-h-[50vh] object-contain shadow-lg animate-fade-in" />
+                            <img src={generatedImage} alt="Generated" className="max-w-full max-h-[50vh] object-contain shadow-lg animate-fade-in rounded-lg" />
                         ) : (
-                            <div className="text-center text-slate-300">
-                                <Wand2 size={48} className="mx-auto mb-2 opacity-20"/>
-                                <p className="text-sm font-medium">{t.resultPlaceholder}</p>
+                            <div className="text-center text-slate-400">
+                                <Wand2 size={48} className="mx-auto mb-2 opacity-30"/>
+                                <p className="text-sm font-bold opacity-60">{t.resultPlaceholder}</p>
                             </div>
                         )}
                     </div>
@@ -194,42 +197,33 @@ export const ImageEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Controls - Fixed at bottom for mobile, sticky for Desktop */}
+      {/* Controls */}
       {originalImage && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-6 bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_30px_rgba(0,0,0,0.08)] rounded-t-[2rem] z-30 md:static md:rounded-none md:border-t-0 md:bg-transparent md:shadow-none">
-            <div className="max-w-4xl mx-auto w-full">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1">
-                    {t.promptLabel}
-                </label>
-                <div className="flex gap-3">
+        <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
+             <div className="w-full max-w-2xl bg-white/80 backdrop-blur-[30px] rounded-[2rem] p-2 pl-3 shadow-premium ring-1 ring-white/40 animate-slide-up flex items-center gap-2">
+                 <div className="flex-1 relative">
                     <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={isOnline ? t.promptPlaceholder : "Offline mode - Cannot generate"}
-                    className="flex-1 px-5 py-3.5 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all text-sm shadow-sm"
-                    disabled={isLoading || !isOnline}
-                    onKeyDown={(e) => { if(e.key === 'Enter') handleGenerate() }}
+                        type="text"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder={isOnline ? t.promptPlaceholder : "Offline mode"}
+                        className="w-full bg-transparent border-none px-2 py-2 text-[15px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
+                        disabled={isLoading || !isOnline}
+                        onKeyDown={(e) => { if(e.key === 'Enter') handleGenerate() }}
                     />
-                    <button
+                 </div>
+                 <button
                     onClick={handleGenerate}
                     disabled={isLoading || !prompt.trim() || !isOnline}
-                    className={`px-6 py-3.5 rounded-2xl text-white font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-violet-500/20 ${
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-md ${
                         isLoading || !prompt.trim() || !isOnline
-                        ? 'bg-slate-300 shadow-none cursor-not-allowed'
-                        : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:scale-105 active:scale-95'
+                        ? 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed'
+                        : 'bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white hover:scale-110'
                     }`}
-                    >
-                    {isLoading ? <Loader2 size={20} className="animate-spin" /> : !isOnline ? <WifiOff size={20} /> : <Wand2 size={20} />}
-                    <span className="hidden sm:inline">{isLoading ? t.generating : !isOnline ? "Offline" : t.generate}</span>
-                    </button>
-                </div>
-                {error && (
-                    <p className="text-red-500 text-xs mt-3 font-medium px-1 animate-fade-in flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span> {error}
-                    </p>
-                )}
-            </div>
+                >
+                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
+                </button>
+             </div>
         </div>
       )}
     </div>
