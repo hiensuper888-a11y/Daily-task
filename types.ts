@@ -58,6 +58,7 @@ export interface GroupMember {
   // New features for member management
   customTitle?: string; // Chức danh (VD: Designer, Developer)
   note?: string;        // Ghi chú công việc
+  headerBackground?: string; // Custom header background (CSS value: url or linear-gradient)
 }
 
 export interface Group {

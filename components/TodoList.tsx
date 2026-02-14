@@ -68,6 +68,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
+  // Find current user's membership to get preferences
+  const currentMember = activeGroup?.members.find(m => m.id === currentUserId);
+
   // Reset form when switching groups
   useEffect(() => {
       setInputValue('');
@@ -344,6 +347,29 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     return days;
   }, [calendarViewDate]);
 
+  // Determine Header Style
+  const headerStyle = useMemo(() => {
+    const customBg = currentMember?.headerBackground;
+    if (customBg) {
+        // If it's a URL or base64, wrap in url() if not already
+        const isImage = customBg.startsWith('data:') || customBg.startsWith('http');
+        const bgValue = isImage ? `url(${customBg})` : customBg;
+        return { 
+            background: bgValue,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            textShadow: '0 2px 10px rgba(0,0,0,0.5)' // Ensure text readability
+        };
+    }
+    // Default gradient
+    return {};
+  }, [currentMember]);
+  
+  const headerClasses = useMemo(() => {
+    if (currentMember?.headerBackground) return "px-6 pt-6 pb-4 lg:px-8 lg:pt-10 lg:pb-8 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl";
+    return "px-6 pt-6 pb-4 lg:px-8 lg:pt-10 lg:pb-8 relative z-10 shrink-0 transition-all duration-500";
+  }, [currentMember]);
+
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
       
@@ -471,28 +497,33 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       )}
 
       {/* Header Area */}
-      <div className="px-6 pt-6 pb-4 lg:px-8 lg:pt-10 lg:pb-8 relative z-10 shrink-0">
+      <div className={headerClasses} style={headerStyle}>
+        {/* Overlay for readability if image set */}
+        {currentMember?.headerBackground && <div className="absolute inset-0 bg-black/40 z-[-1]"></div>}
+        
         <div className="flex flex-col gap-6 lg:gap-10">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
             <div className="animate-slide-right w-full lg:w-auto">
-              <div className={`inline-flex items-center gap-2.5 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-3 lg:mb-5 shadow-sm border ${activeGroup ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-indigo-600 text-white border-indigo-500'}`}>
+              <div className={`inline-flex items-center gap-2.5 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-3 lg:mb-5 shadow-sm border ${activeGroup ? (currentMember?.headerBackground ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-emerald-600 text-white border-emerald-500') : 'bg-indigo-600 text-white border-indigo-500'}`}>
                 {activeGroup ? <Users size={12} strokeWidth={3}/> : <User size={12} strokeWidth={3}/>}
                 {activeGroup ? 'Dự án Nhóm' : 'Không gian Cá nhân'}
               </div>
-              <h1 className="text-3xl lg:text-5xl font-black text-slate-900 tracking-tighter transition-all duration-700">
+              <h1 className={`text-3xl lg:text-5xl font-black tracking-tighter transition-all duration-700 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>
                 {filterStatus === 'archived' ? 'Kho lưu trữ' : (activeGroup ? activeGroup.name : "Việc cần làm")}
               </h1>
             </div>
             
             <button 
               onClick={() => setShowCalendar(true)}
-              className="flex items-center gap-3 bg-white/80 backdrop-blur-md p-3 px-4 rounded-2xl border border-white shadow-sm hover:shadow-md transition-all group w-full lg:w-auto justify-between lg:justify-center lg:flex-col lg:items-center lg:p-4 lg:rounded-3xl"
+              className={`flex items-center gap-3 backdrop-blur-md p-3 px-4 rounded-2xl border shadow-sm hover:shadow-md transition-all group w-full lg:w-auto justify-between lg:justify-center lg:flex-col lg:items-center lg:p-4 lg:rounded-3xl ${
+                currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white hover:bg-white/30' : 'bg-white/80 border-white'
+              }`}
             >
               <div className="text-left lg:text-center">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block group-hover:text-indigo-500 transition-colors">{viewDate.toLocaleDateString(language, { month: 'short' })}</span>
-                  <span className="text-2xl lg:text-3xl font-black text-slate-900 leading-none">{viewDate.getDate()}</span>
+                  <span className={`text-[10px] font-black uppercase tracking-widest block transition-colors ${currentMember?.headerBackground ? 'text-white/70 group-hover:text-white' : 'text-slate-400 group-hover:text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { month: 'short' })}</span>
+                  <span className={`text-2xl lg:text-3xl font-black leading-none ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>{viewDate.getDate()}</span>
               </div>
-              <CalendarIcon size={20} className="text-slate-300 lg:hidden"/>
+              <CalendarIcon size={20} className={`${currentMember?.headerBackground ? 'text-white/70' : 'text-slate-300'} lg:hidden`}/>
             </button>
           </div>
 
@@ -510,7 +541,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         ? (activeGroup 
                             ? 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/30 scale-105 ring-2 ring-emerald-500/20 ring-offset-2 ring-offset-slate-50' 
                             : 'bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-lg shadow-indigo-500/30 scale-105 ring-2 ring-indigo-500/20 ring-offset-2 ring-offset-slate-50') 
-                        : 'bg-white text-slate-500 hover:text-slate-800 hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 scale-100'
+                        : (currentMember?.headerBackground 
+                            ? 'bg-white/20 text-white hover:bg-white/30 border border-white/20' 
+                            : 'bg-white text-slate-500 hover:text-slate-800 hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 scale-100')
                       }
                     `}
                   >
@@ -521,8 +554,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
               })}
             </div>
             <div className="relative group w-full lg:w-[250px]">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                <input type="text" placeholder="Tìm kiếm..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white/60 border border-white rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm" />
+                <Search size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${currentMember?.headerBackground ? 'text-white/60 group-focus-within:text-white' : 'text-slate-400 group-focus-within:text-indigo-500'}`} />
+                <input 
+                    type="text" 
+                    placeholder="Tìm kiếm..." 
+                    value={searchQuery} 
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 transition-all shadow-sm ${
+                        currentMember?.headerBackground 
+                        ? 'bg-white/20 border border-white/30 text-white placeholder:text-white/50 focus:ring-white/50 focus:bg-white/30' 
+                        : 'bg-white/60 border border-white text-slate-800 placeholder:text-slate-400 focus:ring-indigo-100'
+                    }`} 
+                />
             </div>
           </div>
         </div>

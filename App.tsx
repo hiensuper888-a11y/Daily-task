@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Share2, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, QrCode, Edit2, Save } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Share2, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, QrCode, Edit2, Save, Palette } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -74,6 +74,7 @@ const AppContent: React.FC = () => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'info' | 'personalize'>('info');
 
   // Create Group State
   const [newGroupName, setNewGroupName] = useState('');
@@ -92,6 +93,9 @@ const AppContent: React.FC = () => {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editMemberTitle, setEditMemberTitle] = useState('');
   const [editMemberNote, setEditMemberNote] = useState('');
+  
+  // Personalization State
+  const personalBgInputRef = useRef<HTMLInputElement>(null);
 
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'Người dùng', email: 'guest', avatar: '', provider: null, isLoggedIn: false });
   
@@ -360,6 +364,31 @@ const AppContent: React.FC = () => {
       setEditingMemberId(null);
   };
 
+  const handleUpdatePersonalGroupSettings = (headerBg: string) => {
+    if (!activeGroup) return;
+    const updatedMembers = activeGroup.members.map(m => {
+        if (m.id === currentUserId) {
+            return { ...m, headerBackground: headerBg };
+        }
+        return m;
+    });
+    const updatedGroup = { ...activeGroup, members: updatedMembers };
+    setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
+    saveGlobalGroup(updatedGroup);
+  };
+
+  const handlePersonalBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            handleUpdatePersonalGroupSettings(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+      e.target.value = '';
+  };
+
   const startEditingMember = (member: GroupMember) => {
       setEditingMemberId(member.id);
       setEditMemberTitle(member.customTitle || '');
@@ -464,7 +493,7 @@ const AppContent: React.FC = () => {
                     
                     {activeGroupId === group.id && (
                         <button 
-                            onClick={(e) => { e.stopPropagation(); setShowSettingsModal(true); }}
+                            onClick={(e) => { e.stopPropagation(); setShowSettingsModal(true); setSettingsTab('info'); }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-emerald-100 hover:bg-emerald-500 hover:text-white transition-colors"
                         >
                             <Settings size={14} />
@@ -541,7 +570,7 @@ const AppContent: React.FC = () => {
               ))}
               {/* Mobile Group Settings Toggle or Create */}
               {activeGroupId ? (
-                  <button onClick={() => setShowSettingsModal(true)} className="p-3 rounded-2xl text-emerald-600 bg-emerald-50/50 btn-press">
+                  <button onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} className="p-3 rounded-2xl text-emerald-600 bg-emerald-50/50 btn-press">
                      <Settings size={24} strokeWidth={2.5} />
                   </button>
               ) : (
@@ -612,80 +641,207 @@ const AppContent: React.FC = () => {
       {showSettingsModal && activeGroup && (
           <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-lg animate-fade-in">
               <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh]">
-                  <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 rounded-t-[2.5rem]">
-                      <div>
-                          <h3 className="text-xl font-black text-slate-800">Quản lý nhóm</h3>
-                          <p className="text-sm text-slate-500 font-medium">{activeGroup.name}</p>
+                  <div className="p-8 pb-4 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-md z-10 rounded-t-[2.5rem]">
+                      <div className="flex items-center justify-between mb-4">
+                          <div>
+                              <h3 className="text-xl font-black text-slate-800">Cài đặt nhóm</h3>
+                              <p className="text-sm text-slate-500 font-medium">{activeGroup.name}</p>
+                          </div>
+                          <button onClick={() => setShowSettingsModal(false)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
                       </div>
-                      <button onClick={() => setShowSettingsModal(false)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                      
+                      {/* Tabs */}
+                      <div className="flex bg-slate-100 p-1 rounded-xl">
+                          <button 
+                            onClick={() => setSettingsTab('info')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${settingsTab === 'info' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                             Thông tin
+                          </button>
+                          <button 
+                            onClick={() => setSettingsTab('personalize')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${settingsTab === 'personalize' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                             Cá nhân hóa
+                          </button>
+                      </div>
                   </div>
 
                   <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                      {/* ... (Existing Settings Content remains unchanged) ... */}
-                      {/* Re-using existing content logic for brevity in this response, assumed unchanged logic inside modal */}
-                       <div className="space-y-4">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mời thành viên</label>
-                          <div className="flex gap-2">
-                                  <div className="relative flex-1">
-                                      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
-                                      <input 
-                                        type="text" 
-                                        value={memberSearchQuery}
-                                        onChange={(e) => setMemberSearchQuery(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
-                                        placeholder="Tìm email, ID..." 
-                                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100"
-                                      />
-                                  </div>
-                                  <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50">
-                                      {isSearching ? <Loader2 size={18} className="animate-spin"/> : "Tìm"}
-                                  </button>
-                            </div>
-                           {/* ... Rest of the modal content ... */}
-                            {/* Just ensuring the modal structure is maintained */}
-                            <div className="flex gap-2 mt-4">
-                              <div className="flex-1 bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
-                                  <div>
-                                      <p className="text-[10px] text-slate-400 font-bold uppercase">Code</p>
-                                      <p className="text-lg font-black text-slate-800 tracking-widest font-mono">{activeGroup.joinCode}</p>
-                                  </div>
-                                  <div className="flex gap-1">
-                                      <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-lg">{copiedCode ? <Check size={16}/> : <Copy size={16}/>}</button>
-                                  </div>
-                              </div>
-                          </div>
-                       </div>
-                       
-                       <div className="space-y-4">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thành viên ({activeGroup.members.length})</label>
-                           <div className="space-y-2">
-                              {activeGroup.members.map((member) => (
-                                  <div key={member.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                                      <div className="flex items-start justify-between">
-                                          <div className="flex items-center gap-3">
-                                              <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover" alt={member.name}/>
-                                              <div>
-                                                  <p className="text-sm font-bold text-slate-800">{member.name}</p>
-                                                  <p className="text-[11px] text-indigo-600 font-bold">{member.customTitle || 'Thành viên'}</p>
-                                              </div>
-                                          </div>
+                      {settingsTab === 'info' ? (
+                        <>
+                           <div className="space-y-4">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mời thành viên</label>
+                              <div className="flex gap-2">
+                                      <div className="relative flex-1">
+                                          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
+                                          <input 
+                                            type="text" 
+                                            value={memberSearchQuery}
+                                            onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
+                                            placeholder="Tìm email, ID..." 
+                                            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                          />
+                                      </div>
+                                      <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                                          {isSearching ? <Loader2 size={18} className="animate-spin"/> : "Tìm"}
+                                      </button>
+                                </div>
+                                
+                                {foundUsers.length > 0 && (
+                                    <div className="bg-white border border-slate-100 rounded-xl p-2 space-y-1">
+                                        {foundUsers.map(u => (
+                                            <div key={u.uid} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <img src={u.avatar} className="w-8 h-8 rounded-full" alt=""/>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-800">{u.name}</p>
+                                                        <p className="text-[10px] text-slate-500">{u.email}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => handleAddMember(u)} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100"><Plus size={14}/></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {hasSearched && foundUsers.length === 0 && !isSearching && (
+                                    <p className="text-xs text-slate-400 italic text-center">Không tìm thấy người dùng.</p>
+                                )}
+
+                                <div className="flex gap-2 mt-4">
+                                  <div className="flex-1 bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
+                                      <div>
+                                          <p className="text-[10px] text-slate-400 font-bold uppercase">Code</p>
+                                          <p className="text-lg font-black text-slate-800 tracking-widest font-mono">{activeGroup.joinCode}</p>
+                                      </div>
+                                      <div className="flex gap-1">
+                                          <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-lg">{copiedCode ? <Check size={16}/> : <Copy size={16}/>}</button>
                                       </div>
                                   </div>
-                              ))}
+                              </div>
+                           </div>
+                           
+                           <div className="space-y-4">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thành viên ({activeGroup.members.length})</label>
+                               <div className="space-y-2">
+                                  {activeGroup.members.map((member) => (
+                                      <div key={member.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                                          <div className="flex items-start justify-between">
+                                              <div className="flex items-center gap-3">
+                                                  <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover" alt={member.name}/>
+                                                  <div>
+                                                      <p className="text-sm font-bold text-slate-800">{member.name}</p>
+                                                      <p className="text-[11px] text-indigo-600 font-bold">{member.customTitle || 'Thành viên'}</p>
+                                                  </div>
+                                              </div>
+                                              {activeGroup.leaderId === currentUserId && member.id !== currentUserId && (
+                                                  <div className="flex gap-1">
+                                                      <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={14}/></button>
+                                                      <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg transition-colors"><UserMinus size={14}/></button>
+                                                  </div>
+                                              )}
+                                              {editingMemberId === member.id && (
+                                                 <div className="absolute inset-0 bg-white/95 z-10 rounded-2xl p-3 flex flex-col gap-2 border border-indigo-200">
+                                                     <input value={editMemberTitle} onChange={e => setEditMemberTitle(e.target.value)} placeholder="Chức danh" className="text-xs p-2 bg-slate-50 rounded-lg border border-slate-200"/>
+                                                     <input value={editMemberNote} onChange={e => setEditMemberNote(e.target.value)} placeholder="Ghi chú" className="text-xs p-2 bg-slate-50 rounded-lg border border-slate-200"/>
+                                                     <div className="flex gap-2 mt-1">
+                                                         <button onClick={() => handleUpdateMemberInfo(member.id)} className="flex-1 bg-indigo-600 text-white text-[10px] font-bold py-1.5 rounded-lg">Lưu</button>
+                                                         <button onClick={() => setEditingMemberId(null)} className="flex-1 bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded-lg">Hủy</button>
+                                                     </div>
+                                                 </div>
+                                              )}
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                           </div>
+                           
+                            <div className="pt-6 border-t border-slate-100">
+                              {activeGroup.leaderId === currentUserId ? (
+                                  <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
+                                      <Trash2 size={16}/> Xóa nhóm vĩnh viễn
+                                  </button>
+                              ) : (
+                                  <button onClick={handleLeaveGroup} className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+                                      <LogOut size={16}/> Rời nhóm
+                                  </button>
+                              )}
                           </div>
-                       </div>
-                       
-                        <div className="pt-6 border-t border-slate-100">
-                          {activeGroup.leaderId === currentUserId ? (
-                              <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
-                                  <Trash2 size={16}/> Xóa nhóm vĩnh viễn
-                              </button>
-                          ) : (
-                              <button onClick={handleLeaveGroup} className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
-                                  <LogOut size={16}/> Rời nhóm
-                              </button>
-                          )}
-                      </div>
+                        </>
+                      ) : (
+                        <div className="space-y-6">
+                            <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 text-indigo-800 text-xs font-medium leading-relaxed">
+                                <p className="mb-2"><strong>Cá nhân hóa trải nghiệm:</strong></p>
+                                <p>Thay đổi hình nền tiêu đề chỉ áp dụng cho tài khoản của bạn trong nhóm này. Các thành viên khác sẽ không thấy thay đổi này.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Màu sắc</label>
+                                <div className="grid grid-cols-5 gap-3">
+                                    {[
+                                        { val: '', name: 'Mặc định', bg: 'bg-slate-200 border-dashed border-2 border-slate-400' },
+                                        { val: 'linear-gradient(to right, #ec4899, #8b5cf6)', name: 'Pink Purple', bg: 'bg-gradient-to-r from-pink-500 to-violet-500' },
+                                        { val: 'linear-gradient(to right, #3b82f6, #06b6d4)', name: 'Blue Cyan', bg: 'bg-gradient-to-r from-blue-500 to-cyan-500' },
+                                        { val: 'linear-gradient(to right, #f59e0b, #ef4444)', name: 'Orange Red', bg: 'bg-gradient-to-r from-amber-500 to-red-500' },
+                                        { val: 'linear-gradient(to right, #10b981, #3b82f6)', name: 'Green Blue', bg: 'bg-gradient-to-r from-emerald-500 to-blue-500' },
+                                        { val: '#1e293b', name: 'Dark', bg: 'bg-slate-800' },
+                                        { val: '#0f172a', name: 'Midnight', bg: 'bg-slate-950' },
+                                        { val: '#4c1d95', name: 'Violet', bg: 'bg-violet-900' },
+                                        { val: '#881337', name: 'Rose', bg: 'bg-rose-900' },
+                                    ].map((c, i) => (
+                                        <button 
+                                            key={i}
+                                            onClick={() => handleUpdatePersonalGroupSettings(c.val)}
+                                            className={`aspect-square rounded-xl ${c.bg} shadow-sm hover:scale-105 transition-transform relative`}
+                                            title={c.name}
+                                        >
+                                            {/* Show check if roughly matches current bg (simplified check) */}
+                                            {activeGroup.members.find(m => m.id === currentUserId)?.headerBackground === c.val && (
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Check size={16} className="text-white drop-shadow-md"/>
+                                                </div>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Hình ảnh</label>
+                                <button 
+                                    onClick={() => personalBgInputRef.current?.click()}
+                                    className="w-full h-32 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600 transition-all gap-2"
+                                >
+                                    <ImageIcon size={24}/>
+                                    <span className="text-xs font-bold">Tải ảnh lên</span>
+                                </button>
+                                <input 
+                                    type="file" 
+                                    ref={personalBgInputRef} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={handlePersonalBgUpload}
+                                />
+                                {activeGroup.members.find(m => m.id === currentUserId)?.headerBackground?.startsWith('data:') && (
+                                    <div className="relative h-32 rounded-2xl overflow-hidden shadow-md group">
+                                        <img 
+                                            src={activeGroup.members.find(m => m.id === currentUserId)?.headerBackground} 
+                                            className="w-full h-full object-cover" 
+                                            alt="Custom Header"
+                                        />
+                                        <button 
+                                            onClick={() => handleUpdatePersonalGroupSettings('')}
+                                            className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                        >
+                                            <Trash2 size={16}/>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                      )}
                   </div>
               </div>
           </div>
