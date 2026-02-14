@@ -32,6 +32,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
   
+  // Ref for tracking the last toggled task for animation
+  const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
+
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = activeGroup?.leaderId === currentUserId;
@@ -112,6 +115,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const handleToggleClick = (task: Task) => {
+      setLastCheckedId(task.id);
+      setTimeout(() => setLastCheckedId(null), 500); // Clear animation flag
+
       if (task.completed) toggleTask(task.id, false);
       else {
           if (activeGroup) { setCompletingTaskId(task.id); setCompletionNote(''); }
@@ -272,8 +278,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         <div className={`px-4 py-1.5 rounded-xl text-xs font-black transition-colors ${activeGroup ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>
                            {stats.completed}/{stats.total} đã xong
                         </div>
-                        <div className="h-2 w-40 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                            <div className={`h-full transition-all duration-1000 ${activeGroup ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{width: `${stats.progress}%`}}></div>
+                        <div className="h-2.5 w-40 bg-slate-100 rounded-full overflow-hidden shadow-inner relative group/bar">
+                            <div className={`h-full transition-all duration-1000 relative overflow-hidden ${activeGroup ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{width: `${stats.progress}%`}}>
+                                <div className="absolute inset-0 shimmer opacity-30"></div>
+                            </div>
                         </div>
                         <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{stats.progress}%</span>
                     </div>
@@ -292,36 +300,36 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
             <div className="flex flex-col md:flex-row gap-4 animate-fade-in">
                 <div className="bg-white p-2 rounded-[1.5rem] shadow-sm border border-slate-100 flex items-center justify-between min-w-[280px]">
-                    <button onClick={() => navigateDate(-1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl transition-all"><ChevronLeft size={22} /></button>
+                    <button onClick={() => navigateDate(-1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl transition-all active:scale-90"><ChevronLeft size={22} /></button>
                     <button 
                       onClick={() => { setShowCalendar(true); setCalendarViewDate(new Date(viewDate)); }}
                       className="flex flex-col items-center hover:scale-105 transition-transform group"
                     >
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-0.5 group-hover:text-indigo-400">{isToday(viewDate) ? "Hôm nay" : viewDate.toLocaleDateString(language, { weekday: 'long' })}</span>
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-0.5 group-hover:text-indigo-400 transition-colors">{isToday(viewDate) ? "Hôm nay" : viewDate.toLocaleDateString(language, { weekday: 'long' })}</span>
                         <span className="text-[15px] font-black text-slate-800 tracking-tight flex items-center gap-2">
                             {viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long' })}
                             <CalendarIcon size={14} className="text-indigo-500 opacity-40 group-hover:opacity-100 transition-opacity" />
                         </span>
                     </button>
-                    <button onClick={() => navigateDate(1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl transition-all"><ChevronRight size={22} /></button>
+                    <button onClick={() => navigateDate(1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl transition-all active:scale-90"><ChevronRight size={22} /></button>
                 </div>
 
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
                     {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me'] : [])] as FilterType[]).map(f => (
-                        <button key={f} onClick={() => setFilterStatus(f)} className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border-2 ${filterStatus === f ? (activeGroup ? 'bg-emerald-600 text-white border-emerald-500 shadow-xl' : 'bg-indigo-600 text-white border-indigo-500 shadow-xl') : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}>
+                        <button key={f} onClick={() => setFilterStatus(f)} className={`px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border-2 ${filterStatus === f ? (activeGroup ? 'bg-emerald-600 text-white border-emerald-500 shadow-xl' : 'bg-indigo-600 text-white border-indigo-500 shadow-xl') : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200 active:scale-95'}`}>
                             {t[f]}
                         </button>
                     ))}
                     <div className="relative ml-auto min-w-[220px] group hidden lg:block">
                         <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
-                        <input type="text" placeholder="Tìm công việc..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-[13px] font-bold focus:outline-none focus:ring-4 focus:ring-slate-100" />
+                        <input type="text" placeholder="Tìm công việc..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-2xl text-[13px] font-bold focus:outline-none focus:ring-4 focus:ring-slate-100 transition-all" />
                     </div>
                 </div>
             </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-10 pb-48 custom-scrollbar z-0">
+      <div className="flex-1 overflow-y-auto px-10 pb-48 custom-scrollbar z-0 transition-opacity duration-300" key={filterStatus + viewDate.toDateString()}>
         {filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-slate-200 animate-scale-in">
                 <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-sm border border-slate-50"><Archive size={40} /></div>
@@ -329,27 +337,36 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             </div>
         ) : (
             <div className="grid grid-cols-1 gap-4">
-                {filteredTasks.map((task) => {
+                {filteredTasks.map((task, index) => {
                     const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
                     const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
+                    const isNew = Date.now() - new Date(task.createdAt).getTime() < 2000;
+                    
                     return (
-                        <div key={task.id} className={`group bg-white rounded-[2.2rem] p-6 border-2 transition-all duration-300 ${task.completed ? 'opacity-50 border-transparent bg-slate-50/50 scale-[0.98]' : 'border-slate-100 hover:border-indigo-100 hover:shadow-2xl hover:-translate-y-1'}`}>
+                        <div 
+                          key={task.id} 
+                          className={`group bg-white rounded-[2.2rem] p-6 border-2 transition-all duration-500 ${isNew ? 'animate-task-entry' : ''} ${task.completed ? 'opacity-50 border-transparent bg-slate-50/50 scale-[0.98]' : 'border-slate-100 hover:border-indigo-100 hover:shadow-2xl hover:-translate-y-1.5'}`}
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
                             <div className="flex items-start gap-6">
-                                <button onClick={() => handleToggleClick(task)} className={`mt-1.5 transition-all ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-500'}`}>
+                                <button 
+                                  onClick={() => handleToggleClick(task)} 
+                                  className={`mt-1.5 transition-all ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-500'}`}
+                                >
                                     {task.completed ? <CheckCircle2 size={32} /> : <Circle size={32} strokeWidth={2.5} />}
                                 </button>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start gap-3">
-                                        <p className={`text-xl font-black leading-tight tracking-tight ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.text}</p>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                                            <button onClick={() => deleteTask(task.id)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl"><Trash2 size={18} /></button>
+                                        <p className={`text-xl font-black leading-tight tracking-tight transition-all duration-500 ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.text}</p>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => deleteTask(task.id)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all active:scale-90"><Trash2 size={18} /></button>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-4 mt-5">
-                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${task.priority === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>Ưu tiên: {task.priority}</span>
-                                        {deadlineInfo && <span className={`text-[10px] font-black flex items-center gap-2 px-3 py-1 rounded-lg border ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                                    <div className="flex flex-wrap items-center gap-4 mt-5 transition-all">
+                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-colors ${task.priority === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>Ưu tiên: {task.priority}</span>
+                                        {deadlineInfo && <span className={`text-[10px] font-black flex items-center gap-2 px-3 py-1 rounded-lg border transition-all ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
                                         {assignedMember && (
-                                            <div className="flex items-center gap-2 ml-auto bg-slate-50 px-3 py-1 rounded-xl">
+                                            <div className="flex items-center gap-2 ml-auto bg-slate-50 px-3 py-1 rounded-xl transition-all hover:bg-slate-100">
                                                 <span className="text-[9px] font-black text-slate-400 uppercase">Giao cho:</span>
                                                 <img src={assignedMember.avatar} className="w-7 h-7 rounded-lg border-2 border-white shadow-sm" alt={assignedMember.name} />
                                             </div>
@@ -366,17 +383,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
       <div className="absolute bottom-10 left-0 right-0 px-10 z-30 pointer-events-none">
           <div className="max-w-4xl mx-auto pointer-events-auto">
-              <div className={`bg-white rounded-[2.5rem] border-2 shadow-2xl transition-all duration-500 ${showInputDetails ? 'p-8 border-indigo-100' : 'p-3 border-slate-50'}`}>
+              <div className={`bg-white/90 backdrop-blur-2xl rounded-[2.5rem] border-2 shadow-2xl transition-all duration-500 ${showInputDetails ? 'p-8 border-indigo-100 translate-y-[-10px]' : 'p-3 border-slate-100/50'}`}>
                   {showInputDetails && (
                       <div className="grid grid-cols-2 gap-4 mb-6 animate-fade-in">
                           <div className="space-y-1">
                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Hạn chót</label>
-                              <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold" />
+                              <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-indigo-100 transition-all outline-none" />
                           </div>
                           {activeGroup && isLeader && (
                               <div className="space-y-1">
                                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Thành viên</label>
-                                  <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold appearance-none">
+                                  <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-xs font-bold appearance-none outline-none focus:ring-4 focus:ring-indigo-100 transition-all">
                                       <option value="">Chọn người thực hiện...</option>
                                       {activeGroup.members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                   </select>
@@ -384,15 +401,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                           )}
                           <div className="col-span-2 flex gap-2">
                              {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                                 <button key={p} onClick={() => setNewPriority(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${newPriority === p ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400'}`}>{p}</button>
+                                 <button key={p} onClick={() => setNewPriority(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 ${newPriority === p ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>{p}</button>
                              ))}
                           </div>
                       </div>
                   )}
                   <div className="flex items-center gap-3">
-                      <button onClick={() => setShowInputDetails(!showInputDetails)} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-900 text-white rotate-90' : 'bg-slate-50 text-slate-300'}`}><SlidersHorizontal size={22} /></button>
+                      <button onClick={() => setShowInputDetails(!showInputDetails)} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-900 text-white rotate-90 shadow-xl' : 'bg-slate-50 text-slate-300 hover:bg-slate-100'}`}><SlidersHorizontal size={22} /></button>
                       <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()} placeholder="Nhập việc cần làm ngay..." className="flex-1 bg-transparent border-none focus:ring-0 text-lg font-bold text-slate-800 h-14" />
-                      <button onClick={addTask} disabled={!inputValue.trim()} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${inputValue.trim() ? (activeGroup ? 'bg-emerald-600 shadow-emerald-200' : 'bg-indigo-600 shadow-indigo-200') + ' text-white shadow-xl scale-110' : 'bg-slate-100 text-slate-300'}`}><Plus size={32} strokeWidth={3} /></button>
+                      <button onClick={addTask} disabled={!inputValue.trim()} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${inputValue.trim() ? (activeGroup ? 'bg-emerald-600 shadow-emerald-200' : 'bg-indigo-600 shadow-indigo-200') + ' text-white shadow-xl scale-110 active:scale-95' : 'bg-slate-100 text-slate-300'}`}><Plus size={32} strokeWidth={3} /></button>
                   </div>
               </div>
           </div>
