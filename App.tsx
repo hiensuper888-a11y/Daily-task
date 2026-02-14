@@ -548,7 +548,7 @@ const AppContent: React.FC = () => {
                 key={item.id} 
                 onClick={() => { 
                     if (item.id === 'tasks') {
-                        // If we are already on tasks tab, toggle between Group and Personal
+                        // Intelligent navigation: If in group, go back to personal. If already personal, stay (or reload).
                         if (activeTab === 'tasks' && activeGroupId) {
                             setActiveGroupId(null);
                         } else {
