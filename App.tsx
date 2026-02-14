@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
@@ -26,11 +26,11 @@ const languages: { code: Language; label: string; flag: string }[] = [
 ];
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-full w-full bg-white/50 backdrop-blur-sm">
+  <div className="flex items-center justify-center h-full w-full bg-slate-50/50 backdrop-blur-sm">
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
         <Loader2 size={40} className="animate-spin text-indigo-600" />
-        <div className="absolute inset-0 animate-pulse bg-indigo-200 rounded-full blur-xl opacity-20"></div>
+        <div className="absolute inset-0 animate-pulse bg-indigo-200 rounded-full blur-xl opacity-30"></div>
       </div>
     </div>
   </div>
@@ -80,13 +80,13 @@ const NavItem: React.FC<NavItemProps> = ({ tab, icon: Icon, label, activeTab, ac
       onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
       className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group mb-1 relative overflow-hidden ${
         isActive
-          ? `bg-indigo-50/80 text-indigo-600 shadow-sm` 
-          : 'text-slate-500 hover:bg-white/60 hover:text-slate-900 hover:shadow-sm'
+          ? `bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100` 
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
       }`}
     >
-      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r-full"></div>}
-      <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
+      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
       <span className="text-[15px] tracking-tight">{label}</span>
+      {isActive && <div className="absolute right-3 w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>}
     </button>
   );
 };
@@ -289,6 +289,45 @@ const AppContent: React.FC = () => {
   const handleAddMember = (user: any) => { if (!activeGroup) return; const newMember: GroupMember = { id: user.uid, name: user.name, avatar: user.avatar, role: 'member', joinedAt: Date.now(), customTitle: 'Thành viên', note: '', headerBackground: '' }; const updatedGroup = { ...activeGroup, members: [...(activeGroup.members || []), newMember] }; updateGroupMemberState(updatedGroup); setFoundUsers(foundUsers.filter(u => u.uid !== user.uid)); };
   const handleRemoveMember = (memberId: string) => { if (!activeGroup || activeGroup.leaderId !== currentUserId || memberId === activeGroup.leaderId) return; if(confirm("Xóa thành viên?")) { const updatedGroup = { ...activeGroup, members: (activeGroup.members || []).filter(m => m.id !== memberId) }; updateGroupMemberState(updatedGroup); } };
   const handleUpdateMemberInfo = (memberId: string) => { if (!activeGroup) return; const updatedMembers = (activeGroup.members || []).map(m => { if (m.id === memberId) return { ...m, customTitle: editMemberTitle, note: editMemberNote }; return m; }); const updatedGroup = { ...activeGroup, members: updatedMembers }; updateGroupMemberState(updatedGroup); setEditingMemberId(null); };
+  
+  const handlePromoteMember = (memberId: string) => {
+      if (!activeGroup || activeGroup.leaderId !== currentUserId) return;
+      if (!confirm("⚠️ Chuyển quyền Trưởng nhóm?\n\nBạn sẽ mất quyền quản trị cao nhất và trở thành thành viên thường.")) return;
+
+      const updatedMembers = activeGroup.members.map(m => {
+          if (m.id === memberId) return { ...m, role: 'leader' as const }; // New leader
+          if (m.id === activeGroup.leaderId) return { ...m, role: 'member' as const }; // Old leader (me)
+          return m;
+      });
+
+      const updatedGroup = { 
+          ...activeGroup, 
+          leaderId: memberId, 
+          members: updatedMembers 
+      };
+      
+      updateGroupMemberState(updatedGroup);
+  };
+
+  const handleShareGroup = async () => {
+      if (!activeGroup) return;
+      const text = `🚀 Tham gia nhóm "${activeGroup.name}" trên Daily Task!\nMã tham gia: ${activeGroup.joinCode}`;
+      
+      if (navigator.share) {
+          try {
+              await navigator.share({
+                  title: 'Tham gia nhóm Daily Task',
+                  text: text,
+              });
+          } catch (e) {
+              console.log('Error sharing:', e);
+          }
+      } else {
+          copyToClipboard(text);
+          alert("Đã sao chép thông tin mời vào bộ nhớ tạm!");
+      }
+  };
+
   const handleUpdatePersonalGroupSettings = (headerBg: string) => { if (!activeGroup || !activeGroup.members) return; const updatedMembers = activeGroup.members.map(m => { if (m.id === currentUserId) return { ...m, headerBackground: headerBg }; return m; }); const updatedGroup = { ...activeGroup, members: updatedMembers }; updateGroupMemberState(updatedGroup); };
   const handlePersonalBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { handleUpdatePersonalGroupSettings(reader.result as string); }; reader.readAsDataURL(file); } e.target.value = ''; };
   const startEditingMember = (member: GroupMember) => { setEditingMemberId(member.id); setEditMemberTitle(member.customTitle || ''); setEditMemberNote(member.note || ''); };
@@ -313,7 +352,7 @@ const AppContent: React.FC = () => {
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
       
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex flex-col w-[280px] bg-white/65 backdrop-blur-2xl border-r border-white/40 shrink-0 z-20 relative transition-all overflow-hidden h-full shadow-sm">
+      <aside className="hidden lg:flex flex-col w-[280px] bg-white/60 backdrop-blur-2xl border-r border-white/40 shrink-0 z-20 relative transition-all overflow-hidden h-full shadow-lg">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-10 cursor-pointer group" onClick={() => {setActiveTab('tasks'); setActiveGroupId(null);}}>
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
@@ -438,7 +477,7 @@ const AppContent: React.FC = () => {
                     <button 
                         key={item.id}
                         onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
-                        className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600 bg-white/80 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} className={`mb-0.5 transition-transform ${isActive ? 'scale-110' : ''}`} />
                         {isActive && <span className="w-1 h-1 rounded-full bg-indigo-500 mt-1"></span>}
@@ -451,7 +490,7 @@ const AppContent: React.FC = () => {
 
       {/* Modals - Wrapped in Glassmorphism */}
       {showJoinModal && (
-          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-xl animate-fade-in">
+          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-xl animate-fade-in">
               <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
                   <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors bg-white/50 p-2 rounded-full"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
@@ -476,7 +515,7 @@ const AppContent: React.FC = () => {
 
       {/* Group Creation Modal */}
       {showGroupModal && (
-          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-xl animate-fade-in">
+          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-xl animate-fade-in">
               <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
                   <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors bg-white/50 p-2 rounded-full"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
@@ -506,7 +545,7 @@ const AppContent: React.FC = () => {
 
       {/* Settings Modal - Enhanced for Management */}
       {showSettingsModal && activeGroup && (
-          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-xl animate-fade-in">
+          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-xl animate-fade-in">
               <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[3rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] border border-white/60">
                   <div className="p-8 pb-4 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-xl z-10 rounded-t-[3rem]">
                       <div className="flex items-center justify-between mb-6">
@@ -544,10 +583,13 @@ const AppContent: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-2 bg-black/20 p-2 pr-2 pl-4 rounded-2xl backdrop-blur-md border border-white/10 w-full max-w-[280px]">
                                         <div className="font-mono text-2xl font-black text-white tracking-widest flex-1">{activeGroup.joinCode}</div>
-                                        <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-3 bg-white text-indigo-600 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md">
-                                            {copiedCode ? <Check size={20} className="text-emerald-500"/> : <Copy size={20}/>}
+                                        <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-3 bg-white/20 text-white rounded-xl hover:bg-white hover:text-indigo-600 active:scale-95 transition-all shadow-md" title="Sao chép mã">
+                                            {copiedCode ? <Check size={20} className="text-emerald-300"/> : <Copy size={20}/>}
                                         </button>
                                     </div>
+                                    <button onClick={handleShareGroup} className="mt-4 px-6 py-2.5 bg-white text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg shadow-indigo-900/20 active:scale-95">
+                                        <Share2 size={16}/> Chia sẻ thông tin nhóm
+                                    </button>
                                     <p className="text-[11px] mt-4 opacity-70 font-medium">Chia sẻ mã này với những người bạn muốn mời vào nhóm.</p>
                                 </div>
                              </div>
@@ -607,6 +649,7 @@ const AppContent: React.FC = () => {
                                               {/* Only Leader can edit/remove others. Users can edit themselves? Maybe not in this version to keep simple. */}
                                               {activeGroup.leaderId === currentUserId && member.id !== currentUserId && (
                                                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                      <button onClick={() => handlePromoteMember(member.id)} className="p-2 text-amber-500 hover:text-amber-700 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors" title="Chuyển quyền trưởng nhóm"><Crown size={16}/></button>
                                                       <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-xl hover:bg-indigo-50 transition-colors" title="Chỉnh sửa vai trò"><Edit2 size={16}/></button>
                                                       <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 rounded-xl hover:bg-red-50 transition-colors" title="Xóa khỏi nhóm"><UserMinus size={16}/></button>
                                                   </div>

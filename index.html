@@ -30,39 +30,46 @@
         -webkit-tap-highlight-color: transparent;
         user-select: none;
         overflow: hidden;
-        color: #1e293b;
+        color: #0f172a;
         /* Performance: Optimize text rendering */
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
       }
 
       ::selection {
-        background: rgba(99, 102, 241, 0.2);
+        background: rgba(99, 102, 241, 0.15);
         color: #4338ca;
       }
       
-      /* Premium Mesh Background - Optimized: Fixed position, own layer */
+      /* Premium Mesh Background - Modern & Subtle */
       .mesh-bg {
         position: fixed;
         inset: 0;
         z-index: -1;
+        background: 
+            radial-gradient(circle at 15% 50%, rgba(238, 242, 255, 0.8), transparent 25%), 
+            radial-gradient(circle at 85% 30%, rgba(245, 243, 255, 0.8), transparent 25%);
         background-color: #f8fafc;
-        background-image: 
-          radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-          radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-          radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
-          radial-gradient(at 0% 100%, rgba(20, 184, 166, 0.05) 0px, transparent 50%);
-        filter: blur(60px);
-        transform: translateZ(0); /* Force GPU layer */
+        filter: contrast(120%);
+        transform: translateZ(0);
         pointer-events: none;
+      }
+      
+      .mesh-bg::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+          opacity: 0.4;
+          mix-blend-mode: overlay;
       }
 
       /* Polished Scrollbar */
-      .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background-color: rgba(203, 213, 225, 0.5); 
-        border-radius: 20px; 
+        background-color: rgba(203, 213, 225, 0.6); 
+        border-radius: 10px; 
       }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
         background-color: rgba(148, 163, 184, 0.8); 
@@ -71,68 +78,54 @@
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
-      /* Animations - Optimized with will-change where appropriate */
-      @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
+      /* Modern Animations */
+      @keyframes fade-in-up {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
       }
-      @keyframes scaleIn {
-        from { opacity: 0; transform: scale(0.96); }
-        to { opacity: 1; transform: scale(1); }
+      @keyframes scale-in-center {
+        0% { opacity: 0; transform: scale(0.95); }
+        100% { opacity: 1; transform: scale(1); }
       }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+      @keyframes float-subtle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
       }
-      @keyframes slideRight {
-        from { opacity: 0; transform: translateX(-20px); }
-        to { opacity: 1; transform: translateX(0); }
+      @keyframes pulse-ring {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
       }
-      @keyframes checkPop {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.3); }
-        100% { transform: scale(1); }
-      }
+
+      .animate-fade-in { animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+      .animate-scale-in { animation: scale-in-center 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+      .animate-float { animation: float-subtle 4s ease-in-out infinite; }
+      .animate-slide-up { animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       
-      .animate-float { animation: float 6s ease-in-out infinite; will-change: transform; }
-      .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-      .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-      .animate-slide-right { animation: slideRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-      .animate-check { animation: checkPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-      
-      /* Glass Morphism Utilities - Optimized for Mobile */
-      .glass-panel {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        transform: translateZ(0);
-      }
-      
+      /* Glass Morphism - Refined */
       .glass-card {
-        background: rgba(255, 255, 255, 0.75); /* Slightly more opaque for performance */
-        backdrop-filter: blur(12px); /* Reduced blur for performance */
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.02), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
         border: 1px solid rgba(255, 255, 255, 0.6);
-        transform: translateZ(0); /* Promote to own layer */
+        box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.04), 0 4px 16px -2px rgba(0, 0, 0, 0.02);
       }
       
       .glass-modern {
         background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        transform: translateZ(0);
+        backdrop-filter: blur(24px) saturate(160%);
+        -webkit-backdrop-filter: blur(24px) saturate(160%);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.08);
       }
 
-      /* Interactive Elements */
-      .btn-bounce { transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; will-change: transform; }
-      .btn-bounce:active { transform: scale(0.94); }
+      /* Interactive States */
+      .btn-bounce { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; }
+      .btn-bounce:active { transform: scale(0.92); }
+      .btn-bounce:hover { transform: scale(1.02); }
       
-      .btn-press { transition: transform 0.1s ease-in-out; cursor: pointer; will-change: transform; }
-      .btn-press:active { transform: scale(0.9); }
+      .btn-press { transition: transform 0.1s ease; cursor: pointer; }
+      .btn-press:active { transform: scale(0.94); }
 
       /* Safe Areas */
       .pb-safe { padding-bottom: var(--safe-bottom); }
@@ -140,8 +133,8 @@
       
       /* Utilities */
       .mask-gradient-x {
-        -webkit-mask-image: linear-gradient(to right, transparent, black 10px, black 95%, transparent);
-        mask-image: linear-gradient(to right, transparent, black 10px, black 95%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 15px, black 95%, transparent);
+        mask-image: linear-gradient(to right, transparent, black 15px, black 95%, transparent);
       }
     </style>
 <script type="importmap">
