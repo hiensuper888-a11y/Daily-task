@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Share2, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, QrCode, Edit2, Save } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Share2, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2 } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
 import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
@@ -64,7 +63,6 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('tasks');
   const [showLangMenu, setShowLangMenu] = useState(false);
   const { language, setLanguage, t } = useLanguage();
-  const isOnline = useOnlineStatus();
   
   const [myGroups, setMyGroups] = useRealtimeStorage<Group[]>('my_groups', []);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -87,7 +85,6 @@ const AppContent: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [showQr, setShowQr] = useState(false);
   
   // Edit Member State
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
@@ -129,7 +126,8 @@ const AppContent: React.FC = () => {
               const validGroups = prevMyGroups.filter(localGroup => {
                   const globalMatch = globalGroups.find(gg => gg.id === localGroup.id);
                   if (globalMatch) {
-                      const amIMember = globalMatch.members.some(m => m.id === currentUserId);
+                      // Safety check for members
+                      const amIMember = globalMatch.members?.some(m => m.id === currentUserId);
                       return amIMember;
                   }
                   return false;
@@ -247,7 +245,8 @@ const AppContent: React.FC = () => {
       }
 
       let updatedGroup = targetGroup;
-      const isAlreadyMember = targetGroup.members.some(m => m.id === currentUserId);
+      // Safety check for members
+      const isAlreadyMember = targetGroup.members?.some(m => m.id === currentUserId);
       
       if (!isAlreadyMember) {
           const newMember: GroupMember = {
@@ -260,7 +259,7 @@ const AppContent: React.FC = () => {
               note: '',
               headerBackground: ''
           };
-          updatedGroup = { ...targetGroup, members: [...targetGroup.members, newMember] };
+          updatedGroup = { ...targetGroup, members: [...(targetGroup.members || []), newMember] };
           saveGlobalGroup(updatedGroup);
       }
 
@@ -830,7 +829,7 @@ const AppContent: React.FC = () => {
                                 {activeGroup.members?.find(m => m.id === currentUserId)?.headerBackground?.startsWith('data:') && (
                                     <div className="relative h-32 rounded-2xl overflow-hidden shadow-md group">
                                         <img 
-                                            src={activeGroup.members.find(m => m.id === currentUserId)?.headerBackground} 
+                                            src={activeGroup.members?.find(m => m.id === currentUserId)?.headerBackground} 
                                             className="w-full h-full object-cover" 
                                             alt="Custom Header"
                                         />
