@@ -74,14 +74,10 @@ const AppContent: React.FC = () => {
     // 1. Lấy task cá nhân
     const all = [...personalTasks];
     
-    // Xác định prefix ID (guest hoặc uid)
-    const sessionUser = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) : null;
-    const prefix = sessionUser ? sessionUser : 'guest';
-
     // 2. Scan localStorage để lấy task của từng group
     myGroups.forEach(group => {
-        // Key format: {prefix}_group_{id}_tasks
-        const key = `${prefix}_group_${group.id}_tasks`;
+        // Key format: group_{id}_tasks (Group tasks are global/shared so no user prefix)
+        const key = `group_${group.id}_tasks`;
         const stored = localStorage.getItem(key);
         if (stored) {
             try {
@@ -92,7 +88,7 @@ const AppContent: React.FC = () => {
     });
 
     return all;
-  }, [personalTasks, myGroups, currentUserId, storageVersion]); // Add storageVersion dependency
+  }, [personalTasks, myGroups, currentUserId, storageVersion]);
 
   const { notifications, dismissNotification } = useDeadlineNotifications(allCurrentTasks);
 
