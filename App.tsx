@@ -204,8 +204,20 @@ const AppContent: React.FC = () => {
   
   const handleOpenCreateGroup = () => { setShowGroupModal(true); };
   
+  const generateUniqueJoinCode = () => {
+      const groups = getGlobalGroups();
+      let code = '';
+      let isUnique = false;
+      while (!isUnique) {
+          code = Math.random().toString(36).substring(2, 8).toUpperCase();
+          isUnique = !groups.some(g => g.joinCode === code);
+      }
+      return code;
+  };
+
   const handleCreateGroup = () => {
       if (!newGroupName.trim()) return;
+      
       const newGroup: Group = {
           id: Date.now().toString(),
           name: newGroupName,
@@ -213,7 +225,8 @@ const AppContent: React.FC = () => {
           leaderId: currentUserId,
           avatar: newGroupImage,
           members: [{ id: currentUserId, name: userProfile.name || 'Người dùng', avatar: userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`, role: 'leader', joinedAt: Date.now(), customTitle: 'Trưởng nhóm', note: 'Quản trị viên', headerBackground: '' }],
-          joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(), createdAt: Date.now()
+          joinCode: generateUniqueJoinCode(), 
+          createdAt: Date.now()
       };
       saveGlobalGroup(newGroup);
       setMyGroups(prev => [...prev, newGroup]);
@@ -584,6 +597,7 @@ const AppContent: React.FC = () => {
                                         <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${activeGroup.joinCode}`} alt="QR Code" className="w-32 h-32 rounded-xl mix-blend-multiply" />
                                     </div>
                                     <div className="flex items-center gap-2 bg-black/20 p-2 pr-2 pl-4 rounded-2xl backdrop-blur-md border border-white/10 w-full max-w-[280px]">
+                                        <QrCode size={20} className="text-white/80"/>
                                         <div className="font-mono text-2xl font-black text-white tracking-widest flex-1">{activeGroup.joinCode}</div>
                                         <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-3 bg-white/20 text-white rounded-xl hover:bg-white hover:text-indigo-600 active:scale-95 transition-all shadow-md" title="Sao chép mã">
                                             {copiedCode ? <Check size={20} className="text-emerald-300"/> : <Copy size={20}/>}

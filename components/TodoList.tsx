@@ -40,7 +40,8 @@ const TaskItem = React.memo(({
   lastCheckedId, 
   onToggle, 
   onDelete, 
-  onEdit 
+  onEdit,
+  onProgressChange
 }: { 
   task: Task, 
   index: number,
@@ -49,7 +50,8 @@ const TaskItem = React.memo(({
   lastCheckedId: number | null, 
   onToggle: (task: Task, e?: React.MouseEvent) => void,
   onDelete: (id: number, e?: React.MouseEvent) => void,
-  onEdit: (task: Task) => void
+  onEdit: (task: Task) => void,
+  onProgressChange: (id: number, progress: number) => void
 }) => {
     
     const formatDeadline = (isoString: string) => {
@@ -106,11 +108,34 @@ const TaskItem = React.memo(({
 
                 <div className="flex-1 min-w-0 pt-0.5">
                     <p className={`text-[16px] font-medium leading-relaxed mb-2 transition-all ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
                         {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
                         {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
                         {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
                         {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
+                    </div>
+
+                    {/* Progress Slider */}
+                    <div className="flex items-center gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full relative group/slider">
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                step="5"
+                                value={task.progress || 0} 
+                                onChange={(e) => onProgressChange(task.id, Number(e.target.value))}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <div 
+                                className={`h-full rounded-full transition-all duration-300 ${task.completed ? 'bg-emerald-500' : 'bg-indigo-500'}`} 
+                                style={{ width: `${task.progress || 0}%` }}
+                            ></div>
+                            <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md border border-slate-200 opacity-0 group-hover/slider:opacity-100 transition-opacity pointer-events-none" style={{ left: `calc(${task.progress || 0}% - 6px)` }}></div>
+                        </div>
+                        <span className={`text-[10px] font-bold min-w-[32px] text-right ${task.completed ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            {task.progress || 0}%
+                        </span>
                     </div>
                 </div>
                 
@@ -228,6 +253,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setEditingTask(null);
   };
 
+  const handleProgressChange = useCallback((taskId: number, newProgress: number) => {
+      setTasks(prev => prev.map(t => {
+          if (t.id === taskId) {
+              const isCompleted = newProgress === 100;
+              if (isCompleted && !t.completed) playSuccessSound();
+              return {
+                  ...t,
+                  progress: newProgress,
+                  completed: isCompleted,
+                  completedAt: isCompleted ? new Date().toISOString() : undefined,
+                  completedBy: isCompleted ? currentUserId : undefined
+              };
+          }
+          return t;
+      }));
+  }, [setTasks, currentUserId]);
+
   // useCallback optimizes these handlers so they don't break memoization of TaskItem
   const handleToggleClick = useCallback((task: Task, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -237,7 +279,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
     if (task.completed) {
         // Toggle off immediately
-        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: false, completedAt: undefined, completedBy: undefined, completionNote: undefined } : t));
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: false, progress: 0, completedAt: undefined, completedBy: undefined, completionNote: undefined } : t));
     }
     else {
       if (activeGroup) { 
@@ -421,6 +463,22 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 <div className="group">
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nội dung công việc</label>
                     <textarea rows={2} value={editingTask.text} onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} className="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-indigo-200 focus:bg-white text-lg font-semibold text-slate-800 focus:ring-0 outline-none resize-none placeholder:text-slate-300 transition-all shadow-sm"/>
+                </div>
+
+                {/* Task Progress in Modal */}
+                <div className="group">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Tiến độ</label>
+                        <span className="text-sm font-bold text-indigo-600">{editingTask.progress || 0}%</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        value={editingTask.progress || 0}
+                        onChange={(e) => setEditingTask({...editingTask, progress: Number(e.target.value), completed: Number(e.target.value) === 100})}
+                        className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
                 </div>
                  
                  {/* Group Assignment Section in Edit Modal */}
@@ -619,6 +677,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onToggle={handleToggleClick}
                 onDelete={deleteTask}
                 onEdit={handleEditClick}
+                onProgressChange={handleProgressChange}
              />
           ))
         )}
