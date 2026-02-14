@@ -163,8 +163,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
     if (task.completed) toggleTask(task.id, false);
     else {
-      if (activeGroup) { setCompletingTaskId(task.id); setCompletionNote(''); }
-      else toggleTask(task.id, true);
+      if (activeGroup) { 
+          setCompletingTaskId(task.id); 
+          setCompletionNote(''); 
+      } else {
+          toggleTask(task.id, true);
+      }
     }
   };
 
@@ -539,6 +543,39 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           </div>
         </div>
       </div>
+
+      {/* GROUP COMPLETION MODAL */}
+      {activeGroup && completingTaskId !== null && (
+        <div onClick={() => setCompletingTaskId(null)} className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-scale-in border border-slate-100">
+             <h3 className="text-lg font-bold text-slate-800 mb-2 text-center">Hoàn thành công việc</h3>
+             <p className="text-xs font-medium text-slate-500 mb-4 text-center">Thêm ghi chú cho các thành viên khác (tùy chọn)</p>
+             
+             <textarea 
+                value={completionNote}
+                onChange={(e) => setCompletionNote(e.target.value)}
+                placeholder="Ví dụ: Đã gửi email, đang chờ phản hồi..."
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-28 mb-4 transition-all"
+                autoFocus
+             />
+             
+             <div className="flex gap-3">
+                 <button onClick={() => setCompletingTaskId(null)} className="flex-1 py-3 text-slate-500 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-colors">Bỏ qua</button>
+                 <button 
+                    onClick={() => {
+                        if (completingTaskId !== null) {
+                            toggleTask(completingTaskId, true, completionNote);
+                            setCompletingTaskId(null);
+                        }
+                    }} 
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-colors"
+                 >
+                    Xác nhận
+                 </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
