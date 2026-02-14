@@ -32,7 +32,12 @@
         user-select: none;
         overflow: hidden; /* Prevent body scroll, handle in containers */
         color: #1e293b;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.01em;
+      }
+      
+      ::selection {
+        background: rgba(99, 102, 241, 0.2);
+        color: #1e293b;
       }
 
       /* Refined Mesh Background */
@@ -54,13 +59,15 @@
       /* Custom Scrollbar - Slim & Modern */
       .custom-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; } /* Hidden by default for cleaner look, handled by touch */
       @media (min-width: 1024px) {
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { 
-          background-color: rgba(203, 213, 225, 0.4); 
+          background-color: rgba(203, 213, 225, 0.5); 
           border-radius: 100px; 
+          border: 2px solid transparent;
+          background-clip: content-box;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(148, 163, 184, 0.6); }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(148, 163, 184, 0.8); }
       }
       
       .scrollbar-none::-webkit-scrollbar { display: none; }
@@ -68,11 +75,11 @@
 
       /* Animation Utilities */
       @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(16px); }
+        from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
       }
       @keyframes scaleIn {
-        from { opacity: 0; transform: scale(0.96); }
+        from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
       }
       @keyframes slideInRight {
@@ -84,20 +91,25 @@
       }
       @keyframes float {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
+        50% { transform: translateY(-8px); }
+      }
+      @keyframes drawPath {
+        from { stroke-dashoffset: 1000; }
+        to { stroke-dashoffset: 0; }
       }
 
-      .animate-fade-in { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .animate-fade-in { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .animate-scale-in { animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       .animate-slide-right { animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       .animate-check { animation: checkBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
       .animate-float { animation: float 6s ease-in-out infinite; }
+      .animate-draw { stroke-dasharray: 1000; animation: drawPath 2s ease-out forwards; }
       
       /* Glass Morphism */
       .glass-modern {
         background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(24px) saturate(160%);
-        -webkit-backdrop-filter: blur(24px) saturate(160%);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.6);
         box-shadow: 
           0 4px 6px -1px rgba(0, 0, 0, 0.02),
@@ -105,12 +117,20 @@
           inset 0 0 0 1px rgba(255, 255, 255, 0.5);
       }
       
+      .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      }
+      
       .glass-dock {
-        background: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(24px) saturate(180%);
         -webkit-backdrop-filter: blur(24px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
       }
 
       /* Mobile Safe Areas */
@@ -119,7 +139,7 @@
       
       /* Utilities */
       .btn-press { transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); }
-      .btn-press:active { transform: scale(0.94); }
+      .btn-press:active { transform: scale(0.96); }
       
       .mask-image-gradient {
         mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
