@@ -3,7 +3,7 @@ import {
   Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, 
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, User as UserIcon, Users, 
-  RotateCcw, Paperclip, Image as ImageIcon, FileText, Video, 
+  RotateCcw, Paperclip, Image as ImageIcon, FileText, 
   ExternalLink, Clock, Edit3, Flame, Zap, CheckCircle, Info, ArrowUpRight,
   PlusCircle, CheckSquare, Square, ListChecks
 } from 'lucide-react';
