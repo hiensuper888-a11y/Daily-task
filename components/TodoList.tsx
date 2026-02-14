@@ -3,7 +3,7 @@ import {
   Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, 
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, 
-  Clock, Edit3, Flame, Zap, CheckCircle, 
+  Edit3, Flame, Zap, CheckCircle, 
   PlusCircle, CheckSquare, Square, ListChecks,
   Users, User
 } from 'lucide-react';
