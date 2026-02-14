@@ -4,7 +4,7 @@ import * as firebaseAuth from "firebase/auth";
 // Cast to any to avoid "has no exported member" errors if types are missing/incompatible
 const { getAuth, GoogleAuthProvider, FacebookAuthProvider } = firebaseAuth as any;
 
-// TODO: Thay thế thông tin bên dưới bằng cấu hình từ Firebase Console của bạn
+// TODO: Thay thế thông tin bên dưới bằng cấu hình từ Firebase Console của bạn để dùng tính năng thật
 // Truy cập: https://console.firebase.google.com/ -> Project Settings -> General -> Your apps
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY_HERE",
@@ -16,15 +16,19 @@ const firebaseConfig = {
 };
 
 // Khởi tạo Firebase (Sử dụng try-catch để tránh crash app nếu chưa config)
-let auth: any = null; // Changed from Auth | null to any
-let googleProvider: any = null; // Changed type to any for consistency
-let facebookProvider: any = null; // Changed type to any for consistency
+let auth: any = null;
+let googleProvider: any = null;
+let facebookProvider: any = null;
+let app: FirebaseApp | null = null;
+
+export const isFirebaseConfigured = () => {
+    return firebaseConfig.apiKey !== "YOUR_API_KEY_HERE";
+};
 
 try {
-  // Chỉ khởi tạo nếu config hợp lệ (ví dụ đơn giản check apiKey)
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
-      let app: FirebaseApp;
-      // Check if app is already initialized to avoid "Firebase: Firebase App named '[DEFAULT]' already exists" error
+  // Chỉ khởi tạo nếu config hợp lệ hoặc để tránh lỗi runtime
+  if (isFirebaseConfigured()) {
+      // Check if app is already initialized
       if (getApps().length === 0) {
           app = initializeApp(firebaseConfig);
       } else {
@@ -34,7 +38,7 @@ try {
       googleProvider = new GoogleAuthProvider();
       facebookProvider = new FacebookAuthProvider();
   } else {
-      console.warn("Firebase chưa được cấu hình. Vui lòng cập nhật services/firebaseConfig.ts");
+      console.warn("Firebase chưa được cấu hình đúng. Ứng dụng sẽ chạy ở chế độ Demo (Giả lập đăng nhập).");
   }
 } catch (error) {
   console.error("Lỗi khởi tạo Firebase:", error);
