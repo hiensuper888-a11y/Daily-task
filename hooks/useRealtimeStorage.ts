@@ -17,6 +17,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
     return `${prefix}_${key}`;
   }, [key, globalKey]);
 
+  // Function to read value safely
   const readValue = useCallback((): T => {
     if (typeof window === 'undefined') return initialValue;
     try {
@@ -44,21 +45,20 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
     }
   };
 
+  // Sync when key changes or external updates happen
   useEffect(() => {
+    // Immediate update when key changes to prevent stale data
+    setStoredValue(readValue());
+
     const handleSync = () => setStoredValue(readValue());
 
     window.addEventListener('storage', handleSync);
     window.addEventListener('local-storage', handleSync);
     window.addEventListener('auth-change', handleSync);
 
-    // Đặc biệt quan trọng: theo dõi thay đổi SESSION_KEY trực tiếp
+    // Poll for session changes to ensure multi-tab consistency
     const interval = setInterval(() => {
-      const currentKey = getStorageKey();
-      const session = window.localStorage.getItem(SESSION_KEY);
-      // Nếu session thay đổi, cập nhật lại dữ liệu
-      if (session && !currentKey.startsWith(session) && !globalKey) {
-        handleSync();
-      }
+      handleSync();
     }, 1000);
 
     return () => {
@@ -67,7 +67,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
       window.removeEventListener('auth-change', handleSync);
       clearInterval(interval);
     };
-  }, [readValue, getStorageKey, globalKey]);
+  }, [readValue, getStorageKey]); // Re-run when key definition changes
 
   return [storedValue, setValue] as const;
 }

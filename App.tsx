@@ -97,7 +97,8 @@ const AppContent: React.FC = () => {
   
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
   
-  const activeGroup = myGroups.find(g => g.id === activeGroupId) || null;
+  // Safely find active group
+  const activeGroup = useMemo(() => myGroups.find(g => g.id === activeGroupId) || null, [myGroups, activeGroupId]);
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   
@@ -155,6 +156,13 @@ const AppContent: React.FC = () => {
       return () => clearInterval(interval);
   }, [setMyGroups, currentUserId]);
 
+  // Fix: Reset active group if it disappears (e.g. was deleted or kicked)
+  useEffect(() => {
+      if (activeGroupId && !myGroups.find(g => g.id === activeGroupId)) {
+          setActiveGroupId(null);
+      }
+  }, [myGroups, activeGroupId]);
+
   // Check for join code in URL
   useEffect(() => {
       const params = new URLSearchParams(window.location.search);
@@ -186,6 +194,12 @@ const AppContent: React.FC = () => {
   const { notifications, dismissNotification } = useDeadlineNotifications(allCurrentTasks);
 
   // --- Group Functions ---
+
+  const resetModalState = () => {
+      setNewGroupName('');
+      setNewGroupImage('');
+      setJoinCodeInput('');
+  };
 
   const handleOpenCreateGroup = () => {
       if (!userProfile.isLoggedIn) {
@@ -222,8 +236,7 @@ const AppContent: React.FC = () => {
       // Save globally (mock backend)
       saveGlobalGroup(newGroup);
 
-      setNewGroupName('');
-      setNewGroupImage('');
+      resetModalState();
       setShowGroupModal(false);
       setActiveGroupId(newGroup.id);
       setActiveTab('tasks');
@@ -239,6 +252,7 @@ const AppContent: React.FC = () => {
           setActiveGroupId(existing.id);
           setActiveTab('tasks');
           setShowJoinModal(false);
+          resetModalState();
           return;
       }
       
@@ -275,6 +289,7 @@ const AppContent: React.FC = () => {
       setActiveGroupId(updatedGroup.id);
       setActiveTab('tasks');
       setShowJoinModal(false);
+      resetModalState();
       alert(`Đã tham gia nhóm "${updatedGroup.name}" thành công!`);
   };
 
@@ -546,7 +561,7 @@ const AppContent: React.FC = () => {
       {showJoinModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
-                  <button onClick={() => setShowJoinModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                  <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
                   <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tighter">Tham gia nhóm</h3>
                   <div className="space-y-6">
                       <input 
@@ -565,7 +580,7 @@ const AppContent: React.FC = () => {
       {showGroupModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
-                  <button onClick={() => setShowGroupModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                  <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
                   <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tighter">Tạo nhóm dự án</h3>
                   <div className="space-y-6">
                       <div className="flex justify-center">
