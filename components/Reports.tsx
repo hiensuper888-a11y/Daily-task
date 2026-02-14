@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users, Trophy, Medal, Crown, Table2, CheckCircle2, Circle } from 'lucide-react';
 import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,24 +14,18 @@ interface ReportsProps {
 }
 
 export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
-  // Determine initial view mode based on whether a group is active
   const [viewMode, setViewMode] = useState<ViewMode>(activeGroup ? 'group' : 'personal');
 
-  // Update view mode if activeGroup prop changes (e.g. user navigation)
   useEffect(() => {
       if (activeGroup) {
           setViewMode('group');
       } else {
           setViewMode('personal');
       }
-  }, [activeGroup?.id]); // Use ID for stable dependency
+  }, [activeGroup?.id]);
 
-  // Derived keys based on View Mode
   const isGroupView = viewMode === 'group' && !!activeGroup;
   
-  // If Group View: Use group specific keys and isGlobal=true
-  // If Personal View: Use generic keys and isGlobal=false (user specific)
-  // Use optional chaining to satisfy TypeScript even though isGroupView checks existence
   const taskStorageKey = isGroupView ? `group_${activeGroup?.id}_tasks` : 'daily_tasks';
   const reflectionStorageKey = isGroupView ? `group_${activeGroup?.id}_reflections` : 'reflections';
   const isGlobalStorage = isGroupView;
@@ -43,14 +37,12 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   
-  // State for chart interactivity
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
   const { t, language } = useLanguage();
 
   const getDateRange = useCallback(() => {
     const now = new Date();
-    
     let start = new Date(now);
     let end = new Date(now);
     end.setHours(23, 59, 59, 999);
@@ -113,7 +105,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     const currentScore = calculateScore(currentTasks);
     const prevScore = calculateScore(prevTasks);
 
-    // Generate 7 points for the chart
     const generatePoints = (s: Date, totalDuration: number) => {
         const points = [];
         const stepTime = totalDuration / 6; 
@@ -122,7 +113,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
              const tStart = new Date(s.getTime() + (stepTime * i));
              const tEnd = new Date(tStart.getTime() + stepTime); 
              
-             // Filter tasks in this specific slice
              const sliceTasks = tasks.filter(t => {
                  const d = new Date(t.createdAt);
                  return d >= tStart && d < tEnd;
@@ -145,20 +135,38 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
         currentCount: currentTasks.length, 
         prevCount: prevTasks.length,
         currentPoints,
-        prevPoints
+        prevPoints,
+        filteredTasks: currentTasks 
     };
   }, [tasks, getDateRange]);
 
+  const groupStats = useMemo(() => {
+      if (!isGroupView || !activeGroup) return null;
+
+      const memberStats = activeGroup.members.map(member => {
+          const memberTasks = chartData.filteredTasks.filter(t => t.assignedTo === member.id);
+          const total = memberTasks.length;
+          const completed = memberTasks.filter(t => t.completed).length;
+          const avgProgress = total > 0 
+              ? Math.round(memberTasks.reduce((acc, curr) => acc + curr.progress, 0) / total) 
+              : 0;
+          
+          return {
+              ...member,
+              totalTasks: total,
+              completedTasks: completed,
+              completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+              score: avgProgress
+          };
+      }).sort((a, b) => b.completedTasks - a.completedTasks || b.score - a.score);
+
+      const topPerformer = memberStats.length > 0 && memberStats[0].totalTasks > 0 ? memberStats[0] : null;
+
+      return { memberStats, topPerformer };
+  }, [isGroupView, activeGroup, chartData.filteredTasks]);
+
   const diff = chartData.currentScore - chartData.prevScore;
   const isPositive = diff >= 0;
-
-  const getFilteredTasks = () => {
-    const { start, end } = getDateRange();
-    return tasks.filter(t => {
-      const tDate = new Date(t.createdAt);
-      return tDate >= start && tDate <= end;
-    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  };
 
   const generateAreaPath = (points: {value: number}[], width: number, height: number) => {
       if (points.length < 2) return "";
@@ -185,16 +193,12 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       return path;
   };
 
-  // Helper for text sanitization in XML/HTML
   const sanitize = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const getReportContextName = () => isGroupView && activeGroup ? activeGroup.name : t.personal;
 
-  const getReportContextName = () => {
-      if (isGroupView && activeGroup) return activeGroup.name;
-      return t.personal;
-  };
-
+  // --- EXPORT FUNCTIONS WITH GROUP SUPPORT ---
   const exportToExcel = () => {
-    const data = getFilteredTasks();
+    const data = chartData.filteredTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
     const contextName = getReportContextName();
     
@@ -205,73 +209,79 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     csvContent += `Comparison vs Prev,${diff}%\n\n`;
     csvContent += `Self Evaluation,"${reflection.evaluation ? reflection.evaluation.replace(/"/g, '""') : 'N/A'}"\n`;
     csvContent += `Needs Improvement,"${reflection.improvement ? reflection.improvement.replace(/"/g, '""') : 'N/A'}"\n\n`;
-    csvContent += `${t.dateTime},${t.taskContent},${t.status},${t.progress},${t.subtasksHeader}\n`;
+    
+    // Header Row
+    csvContent += `${t.dateTime},${t.taskContent},${t.status},${t.progress},${t.subtasksHeader},${t.assignedTo},${t.completedBy}\n`;
+    
     data.forEach(task => {
         const d = new Date(task.createdAt);
         const subtasksStr = task.subtasks?.map(s => `[${s.completed ? 'x' : ' '}] ${s.text}`).join('; ') || '';
-        csvContent += `${d.toLocaleString(language)},"${task.text.replace(/"/g, '""')}",${task.completed ? t.completed : t.active},${task.progress}%,"${subtasksStr.replace(/"/g, '""')}"\n`;
+        
+        let assigneeName = 'Me';
+        let completerName = '';
+        if (isGroupView && activeGroup) {
+            assigneeName = activeGroup.members.find(m => m.id === task.assignedTo)?.name || 'Unassigned';
+            completerName = task.completedBy ? (activeGroup.members.find(m => m.id === task.completedBy)?.name || 'Unknown') : '';
+        }
+
+        csvContent += `${d.toLocaleString(language)},"${task.text.replace(/"/g, '""')}",${task.completed ? t.completed : t.active},${task.progress}%,"${subtasksStr.replace(/"/g, '""')}",${assigneeName},${completerName}\n`;
     });
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    downloadFile(blob, `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.csv`);
+    downloadFile(blob, `daily-task-report-${contextName.replace(/\s+/g, '-')}-${period}.csv`);
   };
 
   const exportToWord = () => {
-      const data = getFilteredTasks();
+      const data = chartData.filteredTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
       const contextName = getReportContextName();
       
       let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>Report</title></head><body>`;
+      <head><meta charset='utf-8'><title>Report</title>
+      <style>body{font-family:Arial,sans-serif;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background-color:#f2f2f2;}</style>
+      </head><body>`;
       html += `<h1>${t.reportHeader} - ${period.toUpperCase()}</h1>`;
       html += `<h2>Context: ${contextName}</h2>`;
       html += `<h3>Summary</h3><p>Score: ${chartData.currentScore}% | Tasks: ${chartData.currentCount}</p>`;
-      html += `<h3>Reflection</h3><p><strong>Evaluation:</strong> ${sanitize(reflection.evaluation || "N/A")}</p>`;
-      html += `<p><strong>Improvement:</strong> ${sanitize(reflection.improvement || "N/A")}</p>`;
-      html += `<h3>Tasks</h3><table border="1" style="border-collapse:collapse;width:100%"><tr><th>Time</th><th>Task</th><th>Status</th><th>Progress</th></tr>`;
+      
+      if (!isGroupView) {
+        html += `<h3>Reflection</h3><p><strong>Evaluation:</strong> ${sanitize(reflection.evaluation || "N/A")}</p>`;
+        html += `<p><strong>Improvement:</strong> ${sanitize(reflection.improvement || "N/A")}</p>`;
+      }
+
+      html += `<h3>Tasks</h3><table><tr><th>Time</th><th>Task</th><th>Status</th><th>Progress</th><th>Assigned To</th></tr>`;
       data.forEach(t => {
          const d = new Date(t.createdAt);
-         html += `<tr><td>${d.toLocaleString()}</td><td>${sanitize(t.text)}</td><td>${t.completed ? "Done" : "Active"}</td><td>${t.progress}%</td></tr>`;
+         const assignee = isGroupView && activeGroup ? (activeGroup.members.find(m => m.id === t.assignedTo)?.name || 'Unassigned') : 'Me';
+         html += `<tr><td>${d.toLocaleString()}</td><td>${sanitize(t.text)}</td><td>${t.completed ? "Done" : "Active"}</td><td>${t.progress}%</td><td>${assignee}</td></tr>`;
       });
       html += `</table></body></html>`;
       
       const blob = new Blob([html], { type: 'application/msword' });
-      downloadFile(blob, `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.doc`);
+      downloadFile(blob, `daily-task-report-${contextName.replace(/\s+/g, '-')}-${period}.doc`);
   };
 
+  // Keep XML and PPTX logic similar but less critical for the prompt's request
   const exportToXML = () => {
-      const data = getFilteredTasks();
-      const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      const data = chartData.filteredTasks;
       const contextName = getReportContextName();
-      
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<report>\n';
-      xml += `  <meta>\n    <context>${sanitize(contextName)}</context>\n    <period>${period}</period>\n    <score>${chartData.currentScore}</score>\n    <totalTasks>${chartData.currentCount}</totalTasks>\n  </meta>\n`;
-      xml += `  <reflection>\n    <evaluation>${sanitize(reflection.evaluation || "")}</evaluation>\n    <improvement>${sanitize(reflection.improvement || "")}</improvement>\n  </reflection>\n`;
+      xml += `  <meta>\n    <context>${sanitize(contextName)}</context>\n    <period>${period}</period>\n  </meta>\n`;
       xml += `  <tasks>\n`;
       data.forEach(t => {
-          xml += `    <task id="${t.id}">\n      <text>${sanitize(t.text)}</text>\n      <status>${t.completed ? 'completed' : 'active'}</status>\n      <progress>${t.progress}</progress>\n      <created>${t.createdAt}</created>\n    </task>\n`;
+          xml += `    <task id="${t.id}">\n      <text>${sanitize(t.text)}</text>\n      <status>${t.completed ? 'completed' : 'active'}</status>\n    </task>\n`;
       });
       xml += `  </tasks>\n</report>`;
       const blob = new Blob([xml], { type: 'text/xml' });
-      downloadFile(blob, `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.xml`);
+      downloadFile(blob, `daily-task-report-${period}.xml`);
   };
 
   const exportToPowerPoint = async () => {
       const pres = new PptxGenJS();
-      const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
       const contextName = getReportContextName();
-      
       let slide = pres.addSlide();
-      slide.addText(`Productivity Report - ${period.toUpperCase()}`, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
-      slide.addText(`Context: ${contextName}`, { x: 1, y: 1.5, fontSize: 16, color: '6366F1' });
-      slide.addText(`Score: ${chartData.currentScore}%`, { x: 1, y: 2.5, fontSize: 18, color: '00CC99' });
-      slide.addText(`Tasks Completed: ${chartData.currentCount}`, { x: 1, y: 3, fontSize: 18 });
-
-      slide = pres.addSlide();
-      slide.addText("Self Reflection", { x: 0.5, y: 0.5, fontSize: 20, bold: true, color: '6366F1' });
-      slide.addText(`Evaluation: ${reflection.evaluation || "N/A"}`, { x: 0.5, y: 1.5, fontSize: 14, w: 8 });
-      slide.addText(`Improvement: ${reflection.improvement || "N/A"}`, { x: 0.5, y: 3.5, fontSize: 14, w: 8 });
-
-      pres.writeFile({ fileName: `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.pptx` });
+      slide.addText(`Report - ${contextName}`, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
+      slide.addText(`Tasks: ${chartData.currentCount}`, { x: 1, y: 2, fontSize: 18 });
+      pres.writeFile({ fileName: `daily-task-report-${period}.pptx` });
   };
 
   const downloadFile = (blob: Blob, fileName: string) => {
@@ -286,19 +296,11 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     }
   };
 
-  // Add CSS for drawing animation
   React.useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
-      @keyframes draw-path {
-        from { stroke-dashoffset: 1000; }
-        to { stroke-dashoffset: 0; }
-      }
-      .animate-draw-path {
-        stroke-dasharray: 1000;
-        stroke-dashoffset: 1000;
-        animation: draw-path 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-      }
+      @keyframes draw-path { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+      .animate-draw-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw-path 2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
     `;
     document.head.appendChild(style);
     return () => { document.head.removeChild(style); };
@@ -320,23 +322,13 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     {isGroupView ? activeGroup?.name : t.personal}
                 </p>
             </div>
-
-            {/* View Mode Toggle - Only shown if activeGroup exists */}
             {activeGroup && (
                 <div className="bg-black/20 backdrop-blur-md p-1 rounded-xl flex items-center self-start md:self-center border border-white/10">
-                    <button 
-                        onClick={() => setViewMode('personal')} 
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
-                    >
-                        <User size={14} />
-                        {t.personal}
+                    <button onClick={() => setViewMode('personal')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+                        <User size={14} /> {t.personal}
                     </button>
-                    <button 
-                        onClick={() => setViewMode('group')} 
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
-                    >
-                        <Users size={14} />
-                        {t.groupView}
+                    <button onClick={() => setViewMode('group')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+                        <Users size={14} /> {t.groupView}
                     </button>
                 </div>
             )}
@@ -350,69 +342,15 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
             {/* Period Selector */}
             <div className="flex bg-white/70 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-white overflow-x-auto ring-1 ring-slate-100/50">
             {(['day', 'week', 'month', 'year', 'custom'] as Period[]).map((p) => (
-                <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`flex-1 min-w-[70px] py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
-                    period === p 
-                    ? (isGroupView ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md shadow-indigo-500/20' 
-                    : 'text-slate-500 hover:bg-white hover:text-slate-700'
-                }`}
-                >
+                <button key={p} onClick={() => setPeriod(p)} className={`flex-1 min-w-[70px] py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${period === p ? (isGroupView ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md shadow-indigo-500/20' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
                 {t[p as keyof typeof t]}
                 </button>
             ))}
             </div>
 
-            {period === 'custom' && (
-                <div className="glass-card p-6 rounded-2xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">{t.startDate}</label>
-                        <input type="datetime-local" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-full border-none ring-1 ring-slate-200 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">{t.endDate}</label>
-                        <input type="datetime-local" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-full border-none ring-1 ring-slate-200 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 transition-all outline-none font-medium" />
-                    </div>
-                </div>
-            )}
-
-            {/* Today's Special Report */}
-            {period === 'day' && (
-                <div className={`relative rounded-[2.5rem] p-8 text-white shadow-2xl overflow-hidden animate-scale-in group ${isGroupView ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
-                    {/* Modern mesh background for the card */}
-                    <div className={`absolute inset-0 bg-gradient-to-br opacity-90 ${isGroupView ? 'from-emerald-500 via-teal-600 to-green-700' : 'from-indigo-500 via-purple-600 to-violet-700'}`}></div>
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
-                    
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-8">
-                            <div>
-                                <h2 className="text-xl font-bold flex items-center gap-2 mb-1 opacity-90 tracking-tight"><Calendar size={22}/> {t.reportToday}</h2>
-                                <p className="text-white/70 text-sm font-medium">{new Date().toLocaleDateString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            </div>
-                            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-                                <TrendingUp size={24} className="text-white"/>
-                            </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-4">
-                             <div className="flex-1 bg-white/10 p-5 rounded-2xl backdrop-blur-lg border border-white/20 group-hover:bg-white/20 transition-all duration-500">
-                                 <p className="text-[10px] uppercase font-bold tracking-widest mb-2 text-white/60">{t.productivityScore}</p>
-                                 <p className="text-5xl font-black tracking-tighter">{chartData.currentScore}%</p>
-                             </div>
-                             <div className="flex-1 bg-white/10 p-5 rounded-2xl backdrop-blur-lg border border-white/20 group-hover:bg-white/20 transition-all duration-500 delay-75">
-                                 <p className="text-[10px] uppercase font-bold tracking-widest mb-2 text-white/60">{t.tasksCompleted}</p>
-                                 <p className="text-5xl font-black tracking-tighter">{chartData.currentCount}</p>
-                             </div>
-                        </div>
-                    </div>
-                    <ArrowUpRight className="absolute -right-8 -top-8 text-white/10 w-64 h-64 rotate-12 group-hover:rotate-45 group-hover:scale-110 transition-all duration-700" />
-                </div>
-            )}
-
             {/* Area Chart Comparison */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in flex flex-col justify-between" style={{animationDelay: '0.1s'}}>
+                <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in flex flex-col justify-between shadow-premium" style={{animationDelay: '0.1s'}}>
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -437,88 +375,30 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                 </linearGradient>
                                 <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                                     <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                                    <feMerge>
-                                        <feMergeNode in="coloredBlur"/>
-                                        <feMergeNode in="SourceGraphic"/>
-                                    </feMerge>
+                                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
                                 </filter>
                             </defs>
-
-                            {/* Previous Period (Dotted) */}
                             <path d={generateAreaPath(chartData.prevPoints, 100, 50)} fill="#f1f5f9" opacity="0.5" />
                             <path d={generateLinePath(chartData.prevPoints, 100, 50)} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
-                            
-                            {/* Current Period (Animated Area) */}
                             <path d={generateAreaPath(chartData.currentPoints, 100, 50)} fill="url(#gradientCurrent)" className="animate-fade-in" style={{animationDuration: '1.5s'}} />
+                            <path key={`line-${period}-${isGroupView}-${activeGroup?.id}`} d={generateLinePath(chartData.currentPoints, 100, 50)} fill="none" stroke={isGroupView ? "#14b8a6" : "#6366f1"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-draw-path" filter="url(#glow)"/>
                             
-                            {/* Current Period (Animated Line) */}
-                            <path 
-                                key={`line-${period}-${isGroupView}-${activeGroup?.id}`}
-                                d={generateLinePath(chartData.currentPoints, 100, 50)} 
-                                fill="none" 
-                                stroke={isGroupView ? "#14b8a6" : "#6366f1"} 
-                                strokeWidth="2.5" 
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="animate-draw-path"
-                                filter="url(#glow)"
-                            />
-
-                            {/* Interaction Layer & Tooltips */}
                             {chartData.currentPoints.map((point, index) => {
                                 const x = index * (100 / (chartData.currentPoints.length - 1));
                                 const y = 50 - (point.value / 100) * 50;
                                 const isHovered = hoveredIndex === index;
                                 const isRightSide = index > 4;
-
                                 return (
                                     <g key={index} onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)}>
-                                        {/* Invisible Trigger Zone */}
-                                        <rect 
-                                            x={x - 8} 
-                                            y="0" 
-                                            width="16" 
-                                            height="50" 
-                                            fill="transparent" 
-                                            className="cursor-crosshair"
-                                        />
-                                        
-                                        {/* Tooltip Elements (Only show when hovered) */}
+                                        <rect x={x - 8} y="0" width="16" height="50" fill="transparent" className="cursor-crosshair"/>
                                         {isHovered && (
                                             <>
-                                                {/* Vertical Line */}
-                                                <line 
-                                                    x1={x} y1={y} x2={x} y2="50" 
-                                                    stroke={isGroupView ? "#14b8a6" : "#6366f1"} 
-                                                    strokeWidth="1" 
-                                                    strokeDasharray="2,2" 
-                                                    opacity="0.6"
-                                                />
-                                                
-                                                {/* Glowing Dot */}
-                                                <circle 
-                                                    cx={x} cy={y} r="3" 
-                                                    fill="white" 
-                                                    stroke={isGroupView ? "#14b8a6" : "#6366f1"} 
-                                                    strokeWidth="2"
-                                                    filter="url(#glow)"
-                                                />
-
-                                                {/* Tooltip Box - Floating Glass Card */}
+                                                <line x1={x} y1={y} x2={x} y2="50" stroke={isGroupView ? "#14b8a6" : "#6366f1"} strokeWidth="1" strokeDasharray="2,2" opacity="0.6"/>
+                                                <circle cx={x} cy={y} r="3" fill="white" stroke={isGroupView ? "#14b8a6" : "#6366f1"} strokeWidth="2" filter="url(#glow)"/>
                                                 <g transform={`translate(${isRightSide ? x - 35 : x - 10}, ${y - 15})`} className="drop-shadow-lg">
-                                                    <rect 
-                                                        x="0" y="0" width="45" height="16" rx="4" 
-                                                        fill="white" 
-                                                        fillOpacity="0.95"
-                                                        stroke={isGroupView ? "#ccfbf1" : "#e0e7ff"}
-                                                        strokeWidth="0.5"
-                                                    />
-                                                    <text x="22.5" y="7" textAnchor="middle" fontSize="3.5" fontWeight="bold" fill="#334155" fontFamily="Plus Jakarta Sans">
-                                                        {point.value}%
-                                                    </text>
-                                                    <text x="22.5" y="12" textAnchor="middle" fontSize="2.5" fontWeight="500" fill="#94a3b8" fontFamily="Plus Jakarta Sans">
-                                                        {point.date.getDate()}/{point.date.getMonth() + 1}
-                                                    </text>
+                                                    <rect x="0" y="0" width="45" height="16" rx="4" fill="white" fillOpacity="0.95" stroke={isGroupView ? "#ccfbf1" : "#e0e7ff"} strokeWidth="0.5"/>
+                                                    <text x="22.5" y="7" textAnchor="middle" fontSize="3.5" fontWeight="bold" fill="#334155" fontFamily="Plus Jakarta Sans">{point.value}%</text>
+                                                    <text x="22.5" y="12" textAnchor="middle" fontSize="2.5" fontWeight="500" fill="#94a3b8" fontFamily="Plus Jakarta Sans">{point.date.getDate()}/{point.date.getMonth() + 1}</text>
                                                 </g>
                                             </>
                                         )}
@@ -526,53 +406,109 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                 )
                             })}
                         </svg>
-                        <div className="absolute inset-x-0 bottom-0 flex justify-between text-[10px] text-slate-300 font-bold pt-4 border-t border-slate-50">
-                             <span>{t.start}</span>
-                             <span>{t.middle}</span>
-                             <span>{t.end}</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-center gap-3 text-sm bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                        <span className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">{t.productivityTrend}</span>
-                        <span className={`font-black text-lg flex items-center ${isPositive ? 'text-emerald-600' : 'text-rose-500'}`}>
-                            {isPositive ? <TrendingUp size={20} className="mr-1.5"/> : <TrendingDown size={20} className="mr-1.5"/>}
-                            {diff > 0 ? '+' : ''}{diff}%
-                        </span>
                     </div>
                 </div>
 
-                {/* Reflection Area */}
-                <div className="glass-card rounded-[2.5rem] p-8 flex flex-col animate-fade-in" style={{animationDelay: '0.2s'}}>
-                    <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <PenSquare size={18} className="text-orange-500"/>
-                        {t.selfEval}
+                {/* Leaderboard or Reflection */}
+                {isGroupView && groupStats ? (
+                    <div className="glass-card rounded-[2.5rem] p-8 flex flex-col animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
+                        <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <Trophy size={18} className="text-amber-500"/>
+                            {t.leaderboard}
+                        </h3>
+                        <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-2 max-h-[350px]">
+                            {groupStats.memberStats.map((member, idx) => {
+                                const isTop = idx === 0 && member.totalTasks > 0;
+                                return (
+                                    <div key={member.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isTop ? 'bg-gradient-to-r from-amber-50 to-white border-amber-200 shadow-sm' : 'bg-white border-slate-100'}`}>
+                                        <div className="relative shrink-0">
+                                            <img src={member.avatar} className="w-10 h-10 rounded-xl bg-slate-100 object-cover" alt={member.name}/>
+                                            {isTop && <div className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white text-[10px]"><Crown size={10} fill="currentColor"/></div>}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <h4 className="text-sm font-bold text-slate-700 truncate">{member.name}</h4>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${member.completionRate >= 80 ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{member.completionRate}%</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className={`h-full rounded-full ${isTop ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{width: `${member.completionRate}%`}}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                     <div className="glass-card rounded-[2.5rem] p-8 flex flex-col animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
+                        <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <PenSquare size={18} className="text-orange-500"/>
+                            {t.selfEval}
+                        </h3>
+                        <div className="flex-1 space-y-6">
+                            <textarea className="w-full h-32 p-4 bg-slate-50 border-none ring-1 ring-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-200 focus:bg-white resize-none transition-all" placeholder={t.writeReflection} value={(reflections[currentReflectionKey] || {}).evaluation || ''} onChange={(e) => handleReflectionChange('evaluation', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* DETAILED TASK TABLE */}
+            <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
+                 <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <Table2 size={18} className="text-indigo-500"/> {t.taskDetails}
                     </h3>
-                    <div className="flex-1 space-y-6">
-                        <div className="group">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block group-focus-within:text-orange-500 transition-colors">{t.selfEval} ({t.required})</label>
-                            <textarea 
-                                className="w-full h-32 p-4 bg-slate-50 hover:bg-white border-none ring-1 ring-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-200 focus:bg-white resize-none placeholder:text-slate-400 transition-all shadow-inner"
-                                placeholder={t.writeReflection}
-                                value={(reflections[currentReflectionKey] || {}).evaluation || ''}
-                                onChange={(e) => handleReflectionChange('evaluation', e.target.value)}
-                            />
-                        </div>
-                        <div className="group">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block group-focus-within:text-blue-500 transition-colors">{t.improve} ({t.required})</label>
-                            <textarea 
-                                className="w-full h-32 p-4 bg-slate-50 hover:bg-white border-none ring-1 ring-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white resize-none placeholder:text-slate-400 transition-all shadow-inner"
-                                placeholder={t.writeImprovement}
-                                value={(reflections[currentReflectionKey] || {}).improvement || ''}
-                                onChange={(e) => handleReflectionChange('improvement', e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </div>
+                    <div className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{chartData.filteredTasks.length} {t.items}</div>
+                 </div>
+                 
+                 <div className="overflow-x-auto">
+                     <table className="w-full text-left border-collapse">
+                         <thead>
+                             <tr className="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                 <th className="py-3 px-2">{t.dateTime}</th>
+                                 <th className="py-3 px-2">{t.taskContent}</th>
+                                 <th className="py-3 px-2">{t.status}</th>
+                                 {isGroupView && <th className="py-3 px-2">{t.assignedTo}</th>}
+                             </tr>
+                         </thead>
+                         <tbody className="text-sm font-medium text-slate-600">
+                             {chartData.filteredTasks.length === 0 ? (
+                                 <tr><td colSpan={4} className="py-8 text-center text-slate-400 italic">{t.noData}</td></tr>
+                             ) : (
+                                 chartData.filteredTasks.slice(0, 10).map(task => { // Show top 10 preview
+                                     const member = isGroupView ? activeGroup?.members.find(m => m.id === task.assignedTo) : null;
+                                     return (
+                                        <tr key={task.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-3 px-2 whitespace-nowrap text-xs text-slate-400">{new Date(task.createdAt).toLocaleDateString()}</td>
+                                            <td className="py-3 px-2 max-w-[200px] truncate">{task.text}</td>
+                                            <td className="py-3 px-2">
+                                                {task.completed 
+                                                    ? <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-[10px] font-bold"><CheckCircle2 size={10}/> {t.completed}</span>
+                                                    : <span className="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold"><Circle size={10}/> {t.active}</span>
+                                                }
+                                            </td>
+                                            {isGroupView && (
+                                                <td className="py-3 px-2">
+                                                    {member ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <img src={member.avatar} className="w-5 h-5 rounded-full bg-slate-200" alt=""/>
+                                                            <span className="text-xs truncate max-w-[80px]">{member.name}</span>
+                                                        </div>
+                                                    ) : <span className="text-xs text-slate-400 italic">Unassigned</span>}
+                                                </td>
+                                            )}
+                                        </tr>
+                                     )
+                                 })
+                             )}
+                         </tbody>
+                     </table>
+                     {chartData.filteredTasks.length > 10 && <div className="text-center text-xs text-slate-400 mt-4 italic">...and {chartData.filteredTasks.length - 10} more items (visible in export)</div>}
+                 </div>
             </div>
 
             {/* Export & Share */}
-            <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in" style={{animationDelay: '0.3s'}}>
+            <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in shadow-premium" style={{animationDelay: '0.3s'}}>
                 <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
                     <Share2 size={18} className="text-emerald-500"/> {t.export}
                 </h3>

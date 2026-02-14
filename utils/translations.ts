@@ -152,6 +152,11 @@ const enTranslations = {
   middle: "Middle",
   end: "End",
   groupView: "Group",
+  teamPerformance: "Team Performance",
+  leaderboard: "Leaderboard",
+  memberStats: "Member Stats",
+  completionRate: "Rate",
+  topPerformer: "Top Performer",
   
   // Auth & Profile
   loginHeader: "Cloud Sync",
@@ -430,6 +435,11 @@ const viTranslations = {
   middle: "Giữa",
   end: "Cuối",
   groupView: "Nhóm",
+  teamPerformance: "Hiệu suất nhóm",
+  leaderboard: "Bảng thành tích",
+  memberStats: "Thống kê thành viên",
+  completionRate: "Tỷ lệ",
+  topPerformer: "Xuất sắc nhất",
   
   // Auth & Profile
   loginHeader: "Đồng Bộ Hóa",

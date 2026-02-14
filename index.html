@@ -38,6 +38,16 @@
               'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
               'glow': '0 0 15px rgba(99, 102, 241, 0.3)',
               'subtle': '0 2px 10px rgba(0,0,0,0.03)',
+              'premium': '0 20px 40px -10px rgba(0,0,0,0.08)'
+            },
+            animation: {
+              'float': 'float 6s ease-in-out infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              }
             }
           }
         }
@@ -60,31 +70,35 @@
         text-rendering: optimizeLegibility;
       }
 
-      /* Clean, Modern Background */
+      /* Clean, Modern Background - More Premium */
       .mesh-bg {
         position: fixed;
         inset: 0;
         z-index: -1;
         background-color: #f8fafc;
         background-image: 
-            radial-gradient(at 10% 10%, hsla(240, 100%, 96%, 1) 0px, transparent 50%),
-            radial-gradient(at 90% 10%, hsla(280, 100%, 96%, 1) 0px, transparent 50%),
-            radial-gradient(at 50% 90%, hsla(220, 100%, 97%, 1) 0px, transparent 50%);
+            radial-gradient(at 0% 0%, hsla(253,16%,7%,0) 0, hsla(253,16%,7%,0) 50%), 
+            radial-gradient(at 50% 0%, hsla(225,39%,30%,0) 0, hsla(225,39%,30%,0) 50%), 
+            radial-gradient(at 100% 0%, hsla(339,49%,30%,0) 0, hsla(339,49%,30%,0) 50%);
+        background-image: 
+            radial-gradient(at 40% 20%, hsla(228, 100%, 96%, 1) 0px, transparent 50%),
+            radial-gradient(at 80% 0%, hsla(260, 100%, 97%, 1) 0px, transparent 50%),
+            radial-gradient(at 0% 50%, hsla(340, 100%, 97%, 1) 0px, transparent 50%);
       }
 
       /* Scrollbar Styling */
       .custom-scrollbar {
         scrollbar-width: thin;
-        scrollbar-color: rgba(99, 102, 241, 0.2) transparent;
+        scrollbar-color: rgba(99, 102, 241, 0.1) transparent;
       }
       .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background-color: rgba(99, 102, 241, 0.2); 
+        background-color: rgba(99, 102, 241, 0.1); 
         border-radius: 20px; 
       }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
-        background-color: rgba(99, 102, 241, 0.5); 
+        background-color: rgba(99, 102, 241, 0.3); 
       }
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
@@ -112,10 +126,22 @@
       .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
       .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
       .animate-check { animation: check-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .animate-float { animation: float 6s ease-in-out infinite; }
       
       .glass-modal {
-        background: rgba(255, 255, 255, 0.98);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
       }
 
       /* Utilities */
