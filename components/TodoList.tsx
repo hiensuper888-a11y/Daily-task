@@ -6,7 +6,7 @@ import {
   Edit3, CheckSquare, Square, ListChecks,
   PlusCircle, Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
-  MoreVertical
+  MoreVertical, Paperclip, FileText, Image as ImageIcon, Download, XCircle
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -83,6 +83,7 @@ const TaskItem = React.memo(({
     const subtasksCount = task.subtasks?.length || 0;
     const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
     const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
+    const attachmentsCount = task.attachments?.length || 0;
 
     return (
         <div 
@@ -112,6 +113,7 @@ const TaskItem = React.memo(({
                         {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
                         {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
                         {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
+                        {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-500"><Paperclip size={10}/> {attachmentsCount}</span>}
                         {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
                     </div>
 
@@ -178,6 +180,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
@@ -210,6 +213,63 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
+
+  // --- FILE HANDLING ---
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean = false) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach(file => {
+          if (file.size > 2 * 1024 * 1024) { // Limit 2MB
+              alert(`File "${file.name}" quá lớn. Vui lòng chọn file dưới 2MB.`);
+              return;
+          }
+
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const base64 = reader.result as string;
+              const newAttachment: Attachment = {
+                  id: Date.now().toString() + Math.random().toString(),
+                  name: file.name,
+                  type: file.type.startsWith('image/') ? 'image' : 'file',
+                  url: base64,
+                  size: file.size
+              };
+
+              if (isEditMode && editingTask) {
+                  setEditingTask(prev => prev ? {
+                      ...prev,
+                      attachments: [...(prev.attachments || []), newAttachment]
+                  } : null);
+              } else {
+                  setNewAttachments(prev => [...prev, newAttachment]);
+                  setShowInputDetails(true);
+              }
+          };
+          reader.readAsDataURL(file);
+      });
+      e.target.value = ''; // Reset input
+  };
+
+  const removeAttachment = (attId: string, isEditMode: boolean = false) => {
+      if (isEditMode && editingTask) {
+          setEditingTask(prev => prev ? {
+              ...prev,
+              attachments: (prev.attachments || []).filter(a => a.id !== attId)
+          } : null);
+      } else {
+          setNewAttachments(prev => prev.filter(a => a.id !== attId));
+      }
+  };
+
+  const downloadAttachment = (att: Attachment) => {
+      const link = document.createElement('a');
+      link.href = att.url;
+      link.download = att.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
 
   const addTask = () => {
     if (inputValue.trim() === '') return;
@@ -501,6 +561,42 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     </div>
                  )}
 
+                 {/* ATTACHMENTS SECTION IN EDIT MODAL */}
+                 <div className="space-y-3">
+                     <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Paperclip size={16}/> Tài liệu đính kèm</label>
+                        <button onClick={() => editFileInputRef.current?.click()} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><PlusCircle size={12}/> Thêm</button>
+                        <input type="file" multiple ref={editFileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, true)} />
+                     </div>
+                     
+                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                         {editingTask.attachments?.map(att => (
+                             <div key={att.id} className="relative group/att bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 hover:border-indigo-200 hover:shadow-sm transition-all">
+                                 <div className="flex-1 flex items-center justify-center bg-white rounded-lg overflow-hidden h-20 relative">
+                                     {att.type === 'image' ? (
+                                         <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                                     ) : (
+                                         <FileText size={32} className="text-slate-300" />
+                                     )}
+                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/att:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[1px]">
+                                         <button onClick={() => downloadAttachment(att)} className="p-1.5 bg-white/20 hover:bg-white text-white hover:text-indigo-600 rounded-full transition-colors"><Download size={14}/></button>
+                                     </div>
+                                 </div>
+                                 <div className="flex items-center justify-between">
+                                     <span className="text-[10px] font-bold text-slate-600 truncate max-w-[80%]">{att.name}</span>
+                                     <button onClick={() => removeAttachment(att.id, true)} className="text-slate-300 hover:text-rose-500 transition-colors"><XCircle size={14}/></button>
+                                 </div>
+                             </div>
+                         ))}
+                         {(!editingTask.attachments || editingTask.attachments.length === 0) && (
+                             <div onClick={() => editFileInputRef.current?.click()} className="col-span-full py-4 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 cursor-pointer hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/50 transition-all">
+                                 <Paperclip size={24} className="opacity-50"/>
+                                 <span className="text-xs font-bold">Chưa có tài liệu</span>
+                             </div>
+                         )}
+                     </div>
+                 </div>
+
                  {/* Subtasks Section */}
                  <div className="space-y-4">
                     <div className="flex justify-between items-center mb-1">
@@ -698,6 +794,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                       <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-xl border border-white/50 animate-slide-up origin-bottom">
                           <div className="flex flex-col gap-3">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chi tiết nhiệm vụ</label>
+                            
+                            {/* Attachments Preview in Capsule */}
+                            {newAttachments.length > 0 && (
+                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                    {newAttachments.map(att => (
+                                        <div key={att.id} className="relative group shrink-0">
+                                            <div className="w-12 h-12 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                                                {att.type === 'image' ? <img src={att.url} className="w-full h-full object-cover"/> : <FileText size={20} className="text-slate-400"/>}
+                                            </div>
+                                            <button onClick={() => removeAttachment(att.id)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm"><X size={10}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="flex gap-2">
                                 <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="bg-slate-50 rounded-xl text-xs px-3 py-2.5 border border-slate-100 outline-none focus:border-indigo-200 flex-1 font-medium text-slate-600" />
                                 <div className="flex bg-slate-50 rounded-xl p-1 shrink-0 border border-slate-100">
@@ -706,21 +817,30 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                     ))}
                                 </div>
                             </div>
-                            {activeGroup && (
-                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-2 bg-slate-50 px-2 py-1 rounded-lg">Giao cho:</span>
-                                    {activeGroup.members?.map(member => (
-                                        <button
-                                            key={member.id}
-                                            onClick={() => setAssignedTo(assignedTo === member.id ? '' : member.id)}
-                                            className={`relative shrink-0 w-8 h-8 rounded-full border-2 transition-all ${assignedTo === member.id ? 'border-indigo-500 scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                                        >
-                                            <img src={member.avatar} className="w-full h-full rounded-full bg-slate-100 object-cover" alt={member.name}/>
-                                            {assignedTo === member.id && <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white flex items-center justify-center"><Check size={6} className="text-white"/></div>}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            
+                            {/* Attachment Button & Assignment */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shrink-0">
+                                    <Paperclip size={14}/> Đính kèm
+                                </button>
+                                <input type="file" multiple ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e)} />
+
+                                {activeGroup && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mx-1">Giao:</span>
+                                        {activeGroup.members?.map(member => (
+                                            <button
+                                                key={member.id}
+                                                onClick={() => setAssignedTo(assignedTo === member.id ? '' : member.id)}
+                                                className={`relative shrink-0 w-8 h-8 rounded-full border-2 transition-all ${assignedTo === member.id ? 'border-indigo-500 scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                            >
+                                                <img src={member.avatar} className="w-full h-full rounded-full bg-slate-100 object-cover" alt={member.name}/>
+                                                {assignedTo === member.id && <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white flex items-center justify-center"><Check size={6} className="text-white"/></div>}
+                                            </button>
+                                        ))}
+                                    </>
+                                )}
+                            </div>
                           </div>
                       </div>
                   )}
