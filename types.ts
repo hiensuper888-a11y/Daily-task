@@ -74,6 +74,7 @@ export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 export type Language = 'vi' | 'en' | 'zh' | 'ja' | 'fr' | 'ko' | 'de' | 'es' | 'ru' | 'hi';
 
 export interface UserProfile {
+  uid?: string; // Unique ID from Firebase
   name: string;
   email: string;
   avatar: string;
