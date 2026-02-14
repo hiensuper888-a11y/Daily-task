@@ -602,7 +602,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                         {activeGroup ? (
                             <>
-                                <span className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><UserIcon size={24}/></span>
+                                {activeGroup.avatar ? (
+                                    <img src={activeGroup.avatar} alt={activeGroup.name} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm" />
+                                ) : (
+                                    <span className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><UserIcon size={24}/></span>
+                                )}
                                 {activeGroup.name}
                             </>
                         ) : t.todoHeader}

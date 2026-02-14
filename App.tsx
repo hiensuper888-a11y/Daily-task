@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon } from 'lucide-react';
 import { TodoList } from './components/TodoList';
 import { ImageEditor } from './components/ImageEditor';
 import { Reports } from './components/Reports';
@@ -25,7 +25,9 @@ const AppContent: React.FC = () => {
 
   // Form Inputs
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupImage, setNewGroupImage] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
+  const groupFileInputRef = useRef<HTMLInputElement>(null);
 
   // Current User (Simulated for demo)
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'User', email: 'guest', avatar: '', provider: null, isLoggedIn: false });
@@ -33,12 +35,24 @@ const AppContent: React.FC = () => {
 
   const activeGroup = myGroups.find(g => g.id === activeGroupId) || null;
 
+  const handleGroupImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setNewGroupImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+  };
+
   const handleCreateGroup = () => {
       if (!newGroupName.trim()) return;
       const newGroup: Group = {
           id: Date.now().toString(),
           name: newGroupName,
           leaderId: currentUserId,
+          avatar: newGroupImage, // Save the image
           members: [{
               id: currentUserId,
               name: userProfile.name || 'User',
@@ -51,6 +65,7 @@ const AppContent: React.FC = () => {
       };
       setMyGroups([...myGroups, newGroup]);
       setNewGroupName('');
+      setNewGroupImage('');
       setShowGroupModal(false);
       setActiveGroupId(newGroup.id);
       alert(t.groupCreated);
@@ -194,11 +209,15 @@ const AppContent: React.FC = () => {
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
-                      <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${activeGroupId === group.id ? 'bg-indigo-200 text-indigo-700' : 'bg-slate-200 text-slate-500'}`}>
-                              {group.name.substring(0,2).toUpperCase()}
-                          </div>
-                          <span className="text-sm truncate max-w-[100px]">{group.name}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                          {group.avatar ? (
+                              <img src={group.avatar} alt={group.name} className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"/>
+                          ) : (
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${activeGroupId === group.id ? 'bg-indigo-200 text-indigo-700' : 'bg-slate-200 text-slate-500'}`}>
+                                  {group.name.substring(0,2).toUpperCase()}
+                              </div>
+                          )}
+                          <span className="text-sm truncate">{group.name}</span>
                       </div>
                       <div className="flex items-center" onClick={(e) => { e.stopPropagation(); setShowShareModal(group); }}>
                           <Share2 size={14} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-500"/>
@@ -253,6 +272,30 @@ const AppContent: React.FC = () => {
                   <button onClick={() => setShowGroupModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X size={20}/></button>
                   <h3 className="text-xl font-bold text-slate-800 mb-4">{t.createGroup}</h3>
                   <div className="space-y-4">
+                      {/* Avatar Upload */}
+                      <div className="flex justify-center mb-2">
+                          <div 
+                            className="relative w-20 h-20 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all overflow-hidden group"
+                            onClick={() => groupFileInputRef.current?.click()}
+                          >
+                              {newGroupImage ? (
+                                  <img src={newGroupImage} alt="Group Avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                  <div className="flex flex-col items-center text-slate-400 group-hover:text-indigo-500">
+                                      <ImageIcon size={20} />
+                                      <span className="text-[9px] font-bold mt-1">Upload</span>
+                                  </div>
+                              )}
+                              <input 
+                                  type="file" 
+                                  ref={groupFileInputRef} 
+                                  className="hidden" 
+                                  accept="image/*" 
+                                  onChange={handleGroupImageUpload}
+                              />
+                          </div>
+                      </div>
+
                       <div>
                           <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">{t.groupName}</label>
                           <input 

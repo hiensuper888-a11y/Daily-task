@@ -62,6 +62,7 @@ export interface Group {
   name: string;
   description?: string;
   leaderId: string;
+  avatar?: string; // Group Avatar URL/Base64
   members: GroupMember[];
   joinCode: string; // Simple code for manual joining
   createdAt: number;
