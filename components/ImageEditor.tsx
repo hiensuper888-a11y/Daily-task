@@ -34,6 +34,9 @@ export const ImageEditor: React.FC = () => {
       setOriginalImage(reader.result as string);
     };
     reader.readAsDataURL(file);
+    
+    // Reset file input to allow selecting the same file again if needed
+    e.target.value = '';
   };
 
   const handleGenerate = async () => {

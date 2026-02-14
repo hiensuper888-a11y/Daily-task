@@ -77,6 +77,7 @@ const AppContent: React.FC = () => {
     // 2. Scan localStorage để lấy task của từng group
     myGroups.forEach(group => {
         // Key format: group_{id}_tasks (Group tasks are global/shared so no user prefix)
+        // FIX: Removed ${prefix}_ because group tasks are stored globally in TodoList.tsx
         const key = `group_${group.id}_tasks`;
         const stored = localStorage.getItem(key);
         if (stored) {
@@ -106,7 +107,7 @@ const AppContent: React.FC = () => {
               role: 'leader',
               joinedAt: Date.now()
           }],
-          joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          joinCode: Math.random().toString(36).substr(2, 8).toUpperCase(),
           createdAt: Date.now()
       };
       setMyGroups([...myGroups, newGroup]);
