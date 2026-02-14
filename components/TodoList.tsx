@@ -352,14 +352,32 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   className="w-full p-5 bg-white border border-slate-200 rounded-[1.8rem] text-lg font-bold text-slate-800 focus:ring-4 focus:ring-indigo-100 outline-none"
                 />
                  <div className="space-y-4 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
                             <ListChecks size={14}/> Các bước thực hiện
                         </label>
-                         <button onClick={addSubtask} className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
-                            <PlusCircle size={18}/>
-                        </button>
+                         <div className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100">
+                            {editingTask.subtasks?.filter(s => s.completed).length || 0}/{editingTask.subtasks?.length || 0}
+                         </div>
                     </div>
+                    
+                     <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                         {editingTask.subtasks?.map(st => (
+                            <div key={st.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 group transition-all hover:shadow-sm hover:border-indigo-100">
+                                <button onClick={() => toggleSubtask(st.id)} className={`transition-colors ${st.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-emerald-500'}`}>
+                                    {st.completed ? <CheckSquare size={18} strokeWidth={2.5} /> : <Square size={18} strokeWidth={2.5} />}
+                                </button>
+                                <span className={`flex-1 text-sm font-medium truncate ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{st.text}</span>
+                                <button onClick={() => deleteSubtask(st.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        ))}
+                         {(!editingTask.subtasks || editingTask.subtasks.length === 0) && (
+                             <div className="text-center py-4 text-xs text-slate-400 italic">Chưa có bước nhỏ nào.</div>
+                         )}
+                     </div>
+
                      <div className="flex gap-2">
                         <input 
                             type="text" 
@@ -367,19 +385,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             onChange={(e) => setNewSubtaskText(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
                             placeholder="Thêm bước nhỏ..."
-                            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs focus:ring-2 focus:ring-indigo-100 outline-none"
+                            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-4 focus:ring-indigo-100 outline-none transition-all"
                         />
+                        <button onClick={addSubtask} disabled={!newSubtaskText.trim()} className="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-slate-200">
+                            <PlusCircle size={20}/>
+                        </button>
                     </div>
-                     <div className="space-y-2">
-                         {editingTask.subtasks?.map(st => (
-                            <div key={st.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100">
-                                <button onClick={() => toggleSubtask(st.id)} className={`transition-colors ${st.completed ? 'text-emerald-500' : 'text-slate-300'}`}>
-                                    {st.completed ? <CheckSquare size={18} /> : <Square size={18} />}
-                                </button>
-                                <span className={`flex-1 text-sm font-medium truncate ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{st.text}</span>
-                            </div>
-                        ))}
-                     </div>
                  </div>
             </div>
             <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl p-8 border-t border-slate-100 flex gap-4">
