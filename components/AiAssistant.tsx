@@ -9,11 +9,11 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 // Memoized Chat Bubble Component
 const ChatBubble = memo(({ msg }: { msg: ChatMessage }) => {
     return (
-        <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-scale-in`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-sm ${msg.role === 'user' ? 'bg-slate-800' : 'bg-indigo-600'}`}>
-                {msg.role === 'user' ? <User size={14} className="text-white"/> : <Sparkles size={14} className="text-white"/>}
+        <div className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-slide-up`}>
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-md ${msg.role === 'user' ? 'bg-slate-800 text-white' : 'bg-gradient-to-tr from-indigo-500 to-violet-600 text-white'}`}>
+                {msg.role === 'user' ? <User size={16}/> : <Sparkles size={16}/>}
             </div>
-            <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm'}`}>
+            <div className={`p-4 rounded-[1.2rem] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-none' : 'bg-white/90 text-slate-700 border border-white/50 rounded-tl-none backdrop-blur-md'}`}>
                 {msg.text}
             </div>
         </div>
@@ -68,9 +68,9 @@ export const AiAssistant: React.FC = () => {
     return (
         <div className="flex flex-col h-full bg-[#f8fafc] rounded-none lg:rounded-[2.5rem] relative overflow-hidden">
              {/* Simple Header */}
-            <div className="bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div className="bg-white/70 backdrop-blur-xl px-6 py-4 border-b border-white/50 flex items-center justify-between shrink-0 z-20">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
                         <Sparkles size={20} className="text-white"/>
                     </div>
                     <div>
@@ -80,7 +80,7 @@ export const AiAssistant: React.FC = () => {
                         </span>
                     </div>
                 </div>
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl">
                     {(['gemini', 'chatgpt'] as AiModel[]).map((m) => (
                         <button key={m} onClick={() => setSelectedModel(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${selectedModel === m ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>{m}</button>
                     ))}
@@ -88,10 +88,10 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar relative z-10">
                 {messages.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
-                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center"><Bot size={40} className="opacity-20"/></div>
+                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-inner"><Bot size={48} className="opacity-20"/></div>
                         <p className="text-sm font-bold">{t.startChat}</p>
                     </div>
                 )}
@@ -100,7 +100,7 @@ export const AiAssistant: React.FC = () => {
                 ))}
                 {isLoading && (
                     <div className="flex gap-3 mr-auto animate-fade-in">
-                        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0"><Bot size={14} className="text-white"/></div>
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-md"><Bot size={16} className="text-white"/></div>
                         <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 flex gap-1 items-center shadow-sm">
                             <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
                             <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce delay-75"></span>
@@ -112,12 +112,12 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white border-t border-slate-100 shrink-0 pb-safe">
+            <div className="p-4 bg-white/70 backdrop-blur-xl border-t border-white/50 shrink-0 pb-safe z-20">
                 <div className="flex items-end gap-2 max-w-4xl mx-auto">
                     <button onClick={() => setMessages([])} className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={20}/></button>
                     {tasks.length > 0 && <button onClick={handleAnalyzeTasks} className="p-3 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-colors"><ListChecks size={20}/></button>}
                     
-                    <div className="flex-1 bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl transition-all flex items-center px-2">
+                    <div className="flex-1 bg-white border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl transition-all flex items-center px-2 shadow-sm">
                         <textarea
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}

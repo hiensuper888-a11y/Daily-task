@@ -326,33 +326,36 @@ const AppContent: React.FC = () => {
       
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
 
-      {/* TOP HEADER & GROUPS (Refined) */}
-      <div className="pt-safe px-4 pb-4 bg-white/60 backdrop-blur-xl border-b border-white/50 z-30 shrink-0 shadow-sm">
+      {/* TOP HEADER & GROUPS (Refined Glass) */}
+      <div className="pt-safe px-4 pb-4 bg-white/70 backdrop-blur-xl border-b border-white/50 z-30 shrink-0 shadow-sm transition-all duration-500">
           <div className="flex items-center justify-between mb-4 mt-2">
                <div className="flex items-center gap-4">
                    <div 
                       onClick={() => {setActiveTab('profile'); setActiveGroupId(null);}} 
-                      className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-md cursor-pointer hover:scale-105 transition-transform"
+                      className="w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-md cursor-pointer hover:scale-105 transition-transform"
                    >
                        <img src={userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`} alt="User" className="w-full h-full object-cover rounded-full border-2 border-white"/>
                    </div>
                    <div>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{new Date().toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short'})}</p>
-                       <h1 className="text-xl font-black text-slate-800 leading-none tracking-tight">{t.appTitle}</h1>
+                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                           {new Date().toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short'})}
+                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                       </p>
+                       <h1 className="text-xl font-black text-slate-800 leading-none tracking-tight mt-0.5">{t.appTitle}</h1>
                    </div>
                </div>
                
                <div className="flex gap-3">
                    <button 
                         onClick={() => setShowLangMenu(!showLangMenu)} 
-                        className="w-10 h-10 rounded-full bg-white/80 border border-white text-slate-500 flex items-center justify-center hover:bg-white shadow-sm transition-all hover:scale-105"
+                        className="w-10 h-10 rounded-full bg-white/60 border border-white text-slate-500 flex items-center justify-center hover:bg-white shadow-sm transition-all hover:scale-105 backdrop-blur-md"
                    >
                        <Globe size={18}/>
                    </button>
                    {activeGroup && (
                        <button 
                             onClick={() => {setShowSettingsModal(true); setSettingsTab('info')}}
-                            className="w-10 h-10 rounded-full bg-indigo-50/80 border border-indigo-100 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 shadow-sm transition-all hover:scale-105"
+                            className="w-10 h-10 rounded-full bg-indigo-50/80 border border-indigo-100 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 shadow-sm transition-all hover:scale-105 backdrop-blur-md"
                        >
                            <Settings size={18}/>
                        </button>
@@ -360,15 +363,15 @@ const AppContent: React.FC = () => {
                </div>
           </div>
 
-          {/* Horizontal Group Selector (Stories Style) */}
+          {/* Horizontal Group Selector */}
           <div className="flex items-center gap-4 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 snap-x">
               {/* Personal */}
               <button 
                   onClick={() => { setActiveTab('tasks'); setActiveGroupId(null); }}
                   className="flex flex-col items-center gap-2 min-w-[64px] group snap-start"
               >
-                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border-[3px] transition-all p-1 ${activeGroupId === null && activeTab === 'tasks' ? 'border-indigo-500' : 'border-transparent group-hover:border-slate-200'}`}>
-                      <div className={`w-full h-full rounded-[1.2rem] flex items-center justify-center transition-all shadow-sm ${activeGroupId === null && activeTab === 'tasks' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border-[2px] transition-all duration-300 p-1 ${activeGroupId === null && activeTab === 'tasks' ? 'border-indigo-500 scale-105' : 'border-transparent group-hover:border-slate-200'}`}>
+                      <div className={`w-full h-full rounded-[1.2rem] flex items-center justify-center transition-all shadow-sm ${activeGroupId === null && activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-white text-slate-400 border border-slate-100'}`}>
                           <UserCircle2 size={28}/>
                       </div>
                   </div>
@@ -382,11 +385,11 @@ const AppContent: React.FC = () => {
                     onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
                     className="flex flex-col items-center gap-2 min-w-[64px] group snap-start"
                   >
-                      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border-[3px] transition-all p-1 ${activeGroupId === group.id ? 'border-indigo-500' : 'border-transparent group-hover:border-slate-200'}`}>
+                      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center border-[2px] transition-all duration-300 p-1 ${activeGroupId === group.id ? 'border-indigo-500 scale-105' : 'border-transparent group-hover:border-slate-200'}`}>
                            {group.avatar ? (
                                <img src={group.avatar} className="w-full h-full rounded-[1.2rem] object-cover shadow-sm bg-white" alt="" />
                            ) : (
-                               <div className={`w-full h-full rounded-[1.2rem] flex items-center justify-center text-sm font-black shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-100'}`}>
+                               <div className={`w-full h-full rounded-[1.2rem] flex items-center justify-center text-sm font-black shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-white text-slate-600 border border-slate-100'}`}>
                                    {group.name.substring(0,2).toUpperCase()}
                                </div>
                            )}
@@ -396,15 +399,15 @@ const AppContent: React.FC = () => {
               ))}
 
               {/* Add Group */}
-              <div className="h-10 w-[1px] bg-slate-200 mx-2 shrink-0"></div>
+              <div className="h-10 w-[1px] bg-slate-300/50 mx-1 shrink-0"></div>
               <button onClick={handleOpenCreateGroup} className="flex flex-col items-center gap-2 min-w-[56px] snap-start">
-                   <div className="w-14 h-14 rounded-[1.2rem] bg-white border-2 border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all hover:scale-105">
+                   <div className="w-14 h-14 rounded-[1.2rem] bg-white/60 border-2 border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all hover:scale-105 backdrop-blur-sm">
                        <Plus size={24}/>
                    </div>
                    <span className="text-[10px] font-bold text-slate-400">{t.create}</span>
               </button>
               <button onClick={() => setShowJoinModal(true)} className="flex flex-col items-center gap-2 min-w-[56px] snap-start">
-                   <div className="w-14 h-14 rounded-[1.2rem] bg-white border-2 border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all hover:scale-105">
+                   <div className="w-14 h-14 rounded-[1.2rem] bg-white/60 border-2 border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all hover:scale-105 backdrop-blur-sm">
                        <ScanLine size={20}/>
                    </div>
                    <span className="text-[10px] font-bold text-slate-400">{t.joinGroup}</span>
@@ -445,8 +448,8 @@ const AppContent: React.FC = () => {
       </main>
 
       {/* FLOATING BOTTOM DOCK - NEW iOS STYLE */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-md px-6 pb-safe">
-          <nav className="glass-dock rounded-[2.5rem] p-2 flex justify-between items-center relative shadow-premium">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-[380px] px-2 pb-safe">
+          <nav className="glass-dock rounded-[2.2rem] p-2 flex justify-between items-center relative shadow-premium ring-1 ring-white/40">
               {[
                   { id: 'tasks', icon: CheckSquare, label: t.tasks },
                   { id: 'ai', icon: MessageSquare, label: 'AI' },
@@ -461,10 +464,10 @@ const AppContent: React.FC = () => {
                         onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
                         className="flex-1 relative h-14 flex flex-col items-center justify-center gap-1 group"
                     >
-                        <div className={`p-3 rounded-2xl transition-all duration-500 ease-out ${isActive ? 'bg-indigo-600 text-white -translate-y-5 shadow-lg shadow-indigo-500/40 ring-4 ring-white/80 scale-110' : 'text-slate-400 hover:text-indigo-500 hover:bg-indigo-50/50'}`}>
+                        <div className={`p-3 rounded-2xl transition-all duration-500 ease-out ${isActive ? 'bg-black text-white -translate-y-5 shadow-lg shadow-black/20 ring-4 ring-white/80 scale-110' : 'text-slate-400 hover:text-indigo-500 hover:bg-white/50'}`}>
                             <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                         </div>
-                        {isActive && <span className="absolute bottom-1.5 text-[9px] font-black text-indigo-600 uppercase tracking-wide animate-scale-in">{item.label}</span>}
+                        {isActive && <div className="absolute bottom-2 w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] animate-scale-in"></div>}
                     </button>
                   );
               })}
