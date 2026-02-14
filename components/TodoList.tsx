@@ -20,7 +20,7 @@ export interface TodoListProps {
   activeGroup: Group | null;
 }
 
-// MEMOIZED TASK ITEM
+// --- BEAUTIFIED TASK ITEM ---
 const TaskItem = React.memo(({ 
   task, 
   index,
@@ -56,16 +56,16 @@ const TaskItem = React.memo(({
 
         let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short' });
         let colorClass = 'text-slate-500 bg-slate-50 border-slate-100';
-        let icon = <CalendarClock size={10} />;
+        let icon = <CalendarClock size={12} />;
 
         if (isOverdue) {
             text = t.overdue;
-            colorClass = 'text-rose-600 bg-rose-50 border-rose-100 font-bold';
-            icon = <AlertCircle size={10} />;
+            colorClass = 'text-rose-600 bg-rose-50 border-rose-200 font-bold shadow-sm';
+            icon = <AlertCircle size={12} />;
         } else if (isSoon) {
             text = `${Math.ceil(diffHrs)}${t.hoursLeft}`;
-            colorClass = 'text-amber-600 bg-amber-50 border-amber-100 font-bold';
-            icon = <Timer size={10} />;
+            colorClass = 'text-amber-600 bg-amber-50 border-amber-200 font-bold shadow-sm';
+            icon = <Timer size={12} />;
         }
         return { text, colorClass, icon, isOverdue };
     };
@@ -76,7 +76,8 @@ const TaskItem = React.memo(({
     const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
     const attachmentsCount = task.attachments?.length || 0;
 
-    const priorityIndicator = useMemo(() => {
+    // Priority color strip
+    const priorityColor = useMemo(() => {
         switch(task.priority) {
             case 'high': return 'bg-rose-500';
             case 'medium': return 'bg-amber-500';
@@ -88,49 +89,59 @@ const TaskItem = React.memo(({
     return (
         <div 
             onClick={() => onEdit(task)}
-            className={`group relative p-4 rounded-[1.2rem] transition-all duration-300 cursor-pointer mb-3 border bg-white/90 backdrop-blur-sm ${
-                task.completed 
-                ? 'border-slate-100 opacity-60 bg-slate-50/50 grayscale-[0.5]' 
-                : 'border-white/60 shadow-[0_2px_20px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.08)] hover:-translate-y-1'
+            className={`group relative p-5 rounded-[1.5rem] transition-all duration-500 cursor-pointer mb-4 bg-white/80 backdrop-blur-xl border border-white/60 hover:border-indigo-200 hover:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 overflow-hidden ${
+                task.completed ? 'opacity-60 bg-slate-50/50 grayscale-[0.8]' : 'shadow-subtle'
             }`}
-            style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'both' }}
+            style={{ animationDelay: `${Math.min(index * 50, 400)}ms`, animationFillMode: 'both' }}
         >
-             <div className="flex items-start gap-3">
+             {/* Left Priority Strip */}
+             <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${priorityColor} opacity-80 group-hover:opacity-100 transition-opacity`}></div>
+
+             <div className="flex items-start gap-4 pl-2">
+                {/* Custom Checkbox */}
                 <button 
                   onClick={(e) => onToggle(task, e)} 
-                  className={`mt-1 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
+                  className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-[2.5px] ${
                     task.completed 
-                      ? 'bg-indigo-600 border-indigo-600 text-white' 
-                      : `bg-transparent border-slate-300 text-transparent hover:border-indigo-500`
+                      ? 'bg-gradient-to-tr from-indigo-500 to-purple-500 border-transparent text-white scale-110 shadow-glow' 
+                      : `bg-transparent border-slate-300 text-transparent hover:border-indigo-400`
                   }`}
                 >
-                    <Check size={12} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
+                    <Check size={14} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
                 </button>
 
-                <div className="flex-1 min-w-0 pr-8">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${priorityIndicator}`}></span>
-                        {deadlineInfo && <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] border ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] border ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                        {task.priority === 'high' && <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">HIGH</span>}
                     </div>
                     
-                    <p className={`text-[14px] font-semibold leading-snug transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.text}</p>
+                    <p className={`text-[15px] font-semibold leading-relaxed transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.text}</p>
                     
+                    {/* Metadata Row */}
                     {(subtasksCount > 0 || attachmentsCount > 0 || assignedMember) && (
-                        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-slate-50/80">
-                            {subtasksCount > 0 && <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${subtasksCompleted === subtasksCount ? 'text-emerald-600' : 'text-slate-400'}`}><ListChecks size={12}/> {subtasksCompleted}/{subtasksCount}</span>}
-                            {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400"><Paperclip size={12}/> {attachmentsCount}</span>}
-                            {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto" alt="assignee"/>}
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100/80">
+                            {subtasksCount > 0 && (
+                                <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${(subtasksCompleted/subtasksCount)*100}%` }}></div>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{subtasksCompleted}/{subtasksCount}</span>
+                                </div>
+                            )}
+                            {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-md"><Paperclip size={10}/> {attachmentsCount}</span>}
+                            {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto" alt="assignee" title={assignedMember.name}/>}
                         </div>
                     )}
                 </div>
              </div>
              
-             {/* Delete Action */}
+             {/* Delete Action (Show on hover or swipe - simplified to hover for desktop/tap target for mobile) */}
              <button 
                 onClick={(e) => onDelete(task.id, e)} 
                 className="absolute top-3 right-3 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
              >
-                <Trash2 size={16} />
+                <Trash2 size={18} />
              </button>
         </div>
     );
@@ -354,7 +365,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           progress = 0; // Reset if empty
       }
       
-      // Update completion status only if progress hits 100 or 0
       isCompleted = progress === 100 && updatedSubtasks.length > 0;
 
       setEditingTask({ 
@@ -758,7 +768,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       </div>
 
       {/* Task List Container */}
-      <div className="flex-1 overflow-y-auto px-4 pb-44 custom-scrollbar space-y-2 relative z-0 pt-2">
+      <div className="flex-1 overflow-y-auto px-4 pb-44 custom-scrollbar space-y-1 relative z-0 pt-2">
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-300 animate-scale-in">
             <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner"><Archive size={48} className="text-slate-300 opacity-50" /></div>
@@ -784,7 +794,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
       {/* FIXED FLOATING CAPSULE INPUT */}
       <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
-          <div className="w-full max-w-2xl bg-slate-900/95 backdrop-blur-2xl rounded-[2.5rem] p-2 pl-3 shadow-[0_8px_40px_-10px_rgba(0,0,0,0.3)] ring-1 ring-white/10 animate-slide-up flex items-center gap-3 group transition-all hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)]">
+          <div className="w-full max-w-2xl bg-slate-900/80 backdrop-blur-[24px] rounded-[2.5rem] p-2 pl-3 shadow-premium ring-1 ring-white/10 animate-slide-up flex items-center gap-3 group transition-all hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)]">
               <button 
                 onClick={() => setShowInputDetails(!showInputDetails)} 
                 className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-white text-black rotate-90' : 'bg-white/10 text-white hover:bg-white hover:text-black'}`}
