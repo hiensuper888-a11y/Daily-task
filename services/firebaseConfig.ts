@@ -165,27 +165,7 @@ export const searchUsers = async (query: string) => {
     const users = getUsers();
     const lowerQuery = query.toLowerCase();
 
-    // SEED DATA: If no users exist (except maybe self), create some demo users for testing functionality
-    if (Object.keys(users).length <= 1) {
-        const seeds = [
-            { name: 'Alice Nguyen', email: 'alice@demo.com' },
-            { name: 'Bob Tran', email: 'bob@demo.com' },
-            { name: 'Charlie Le', email: 'charlie@demo.com' }
-        ];
-        seeds.forEach(seed => {
-            if (!users[seed.email]) {
-                const uid = 'user_' + Math.random().toString(36).substring(2, 9);
-                users[seed.email] = {
-                    uid,
-                    email: seed.email,
-                    displayName: seed.name,
-                    photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${uid}`,
-                    createdAt: Date.now()
-                };
-            }
-        });
-        saveUsers(users);
-    }
+    // STRICT: ONLY Return existing users, DO NOT create fake/seed users.
     
     return Object.values(users)
         .filter((user: any) => 
