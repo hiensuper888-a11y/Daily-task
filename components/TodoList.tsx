@@ -18,14 +18,13 @@ interface TodoListProps {
 
 const PriorityBadge = ({ priority }: { priority: Priority }) => {
     const configs = {
-      high: { color: 'bg-rose-50 text-rose-600 ring-rose-500/20', icon: <Flame size={12} fill="currentColor" />, label: 'Cao' },
-      medium: { color: 'bg-amber-50 text-amber-600 ring-amber-500/20', icon: <Zap size={12} fill="currentColor" />, label: 'Trung bình' },
-      low: { color: 'bg-emerald-50 text-emerald-600 ring-emerald-500/20', icon: <CheckCircle size={12} />, label: 'Thấp' }
+      high: { color: 'bg-rose-100 text-rose-700', label: 'Cao' },
+      medium: { color: 'bg-amber-100 text-amber-700', label: 'TB' },
+      low: { color: 'bg-emerald-100 text-emerald-700', label: 'Thấp' }
     };
     const config = configs[priority] || configs.medium;
     return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${config.color} ring-1 shadow-sm`}>
-        {config.icon}
+      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider ${config.color}`}>
         {config.label}
       </span>
     );
@@ -98,16 +97,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const isSoon = diffHrs > 0 && diffHrs < 24;
 
     let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    let colorClass = 'text-slate-500 bg-slate-50 ring-slate-200';
+    let colorClass = 'text-slate-400 bg-slate-100';
     let icon = <CalendarClock size={12} />;
 
     if (isOverdue) {
-      text = t.overdue || 'Quá hạn';
-      colorClass = 'text-rose-600 bg-rose-50 ring-rose-200 font-bold';
+      text = 'Quá hạn';
+      colorClass = 'text-rose-600 bg-rose-50 font-bold';
       icon = <AlertCircle size={12} />;
     } else if (isSoon) {
       text = `${Math.ceil(diffHrs)}h nữa`;
-      colorClass = 'text-amber-600 bg-amber-50 ring-amber-200 font-bold';
+      colorClass = 'text-amber-600 bg-amber-50 font-bold';
       icon = <Timer size={12} />;
     }
     return { text, colorClass, icon, isOverdue };
@@ -187,83 +186,26 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     }));
   };
 
-  const addSubtask = () => {
-    if (!editingTask || !newSubtaskText.trim()) return;
-    const newSub: Subtask = {
-      id: Date.now(),
-      text: newSubtaskText.trim(),
-      completed: false
-    };
-    const updatedSubtasks = [...(editingTask.subtasks || []), newSub];
-    setEditingTask({ ...editingTask, subtasks: updatedSubtasks });
-    setNewSubtaskText('');
-  };
-
-  const toggleSubtask = (subId: number) => {
-    if (!editingTask) return;
-    const updatedSubtasks = (editingTask.subtasks || []).map(st => 
-      st.id === subId ? { ...st, completed: !st.completed } : st
-    );
-    const completedCount = updatedSubtasks.filter(st => st.completed).length;
-    const progress = Math.round((completedCount / updatedSubtasks.length) * 100);
-    setEditingTask({ 
-      ...editingTask, 
-      subtasks: updatedSubtasks, 
-      progress,
-      completed: progress === 100 
-    });
-  };
-
-  const deleteSubtask = (subId: number) => {
-    if (!editingTask) return;
-    const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId);
-    setEditingTask({ ...editingTask, subtasks: updatedSubtasks });
-  };
-
-  const deleteTask = (id: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (confirm("Xóa công việc này vĩnh viễn?")) {
-      setTasks(prev => prev.filter(t => t.id !== id));
-      if (editingTask?.id === id) setEditingTask(null);
-    }
-  };
+  // Subtask logic preserved (addSubtask, toggleSubtask, deleteSubtask)
+  const addSubtask = () => { if (!editingTask || !newSubtaskText.trim()) return; const newSub: Subtask = { id: Date.now(), text: newSubtaskText.trim(), completed: false }; const updatedSubtasks = [...(editingTask.subtasks || []), newSub]; setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); setNewSubtaskText(''); };
+  const toggleSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).map(st => st.id === subId ? { ...st, completed: !st.completed } : st); const completedCount = updatedSubtasks.filter(st => st.completed).length; const progress = Math.round((completedCount / updatedSubtasks.length) * 100); setEditingTask({ ...editingTask, subtasks: updatedSubtasks, progress, completed: progress === 100 }); };
+  const deleteSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId); setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); };
+  const deleteTask = (id: number, e?: React.MouseEvent) => { if (e) e.stopPropagation(); if (confirm("Xóa công việc này vĩnh viễn?")) { setTasks(prev => prev.filter(t => t.id !== id)); if (editingTask?.id === id) setEditingTask(null); } };
 
   const filteredTasks = useMemo(() => {
     const targetDateStr = getLocalDateString(viewDate);
     return tasks
       .filter(t => {
-        // 1. Archived Tasks (Always Global Search)
-        if (filterStatus === 'archived') {
-          if (!t.archived) return false;
-          if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
-          return true;
-        } 
-        
-        // 2. Filter out archived tasks for other views
+        if (filterStatus === 'archived') { if (!t.archived) return false; if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase()); return true; } 
         if (t.archived) return false;
-
-        // 3. Search Query (Global search for non-archived)
-        if (searchQuery && !t.text.toLowerCase().includes(searchQuery.toLowerCase())) {
-            return false;
-        }
-
-        // 4. Special Group Filters (Bypass Date Filter to show all pending items)
-        if (filterStatus === 'assigned_to_me') {
-            return t.assignedTo === currentUserId && !t.completed;
-        }
-        if (filterStatus === 'delegated') {
-            return t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
-        }
-
-        // 5. Date Filter
+        if (searchQuery && !t.text.toLowerCase().includes(searchQuery.toLowerCase())) { return false; }
+        if (filterStatus === 'assigned_to_me') { return t.assignedTo === currentUserId && !t.completed; }
+        if (filterStatus === 'delegated') { return t.assignedTo && t.assignedTo !== currentUserId && !t.completed; }
         const tDate = new Date(t.createdAt);
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
-        
-        // 6. Status Filters
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
-        
         return true;
       })
       .sort((a, b) => {
@@ -273,117 +215,87 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       });
   }, [tasks, viewDate, filterStatus, searchQuery, currentUserId]);
 
-  const changeMonth = (delta: number) => {
-    const newDate = new Date(calendarViewDate);
-    newDate.setMonth(calendarViewDate.getMonth() + delta);
-    setCalendarViewDate(newDate);
-  };
+  const changeMonth = (delta: number) => { const newDate = new Date(calendarViewDate); newDate.setMonth(calendarViewDate.getMonth() + delta); setCalendarViewDate(newDate); };
+  const calendarDays = useMemo(() => { const year = calendarViewDate.getFullYear(); const month = calendarViewDate.getMonth(); const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const days = []; for (let i = 0; i < firstDay; i++) days.push(null); for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i)); return days; }, [calendarViewDate]);
 
-  const calendarDays = useMemo(() => {
-    const year = calendarViewDate.getFullYear();
-    const month = calendarViewDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const days = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
-    return days;
-  }, [calendarViewDate]);
-
-  // Determine Header Style
   const headerStyle = useMemo(() => {
     const customBg = currentMember?.headerBackground;
-    if (customBg) {
-        const isImage = customBg.startsWith('data:') || customBg.startsWith('http');
-        const bgValue = isImage ? `url(${customBg})` : customBg;
-        return { 
-            background: bgValue,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            textShadow: '0 2px 10px rgba(0,0,0,0.5)'
-        };
-    }
+    if (customBg) { const isImage = customBg.startsWith('data:') || customBg.startsWith('http'); const bgValue = isImage ? `url(${customBg})` : customBg; return { background: bgValue, backgroundSize: 'cover', backgroundPosition: 'center', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }; }
     return {};
   }, [currentMember]);
   
   const headerClasses = useMemo(() => {
-    if (currentMember?.headerBackground) return "pt-8 pb-4 px-6 lg:px-8 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[2.5rem] lg:rounded-b-none mb-2";
-    return "pt-8 pb-4 px-6 lg:px-8 relative z-10 shrink-0 transition-all duration-500 rounded-b-[2.5rem] lg:rounded-b-none mb-2";
+    if (currentMember?.headerBackground) return "pt-8 pb-4 px-6 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[2rem] lg:rounded-b-[2rem] mb-2 mx-0 lg:mx-4 mt-0 lg:mt-4";
+    return "pt-6 pb-2 px-4 relative z-10 shrink-0 transition-all duration-500 rounded-b-[2rem] lg:rounded-b-none mb-2";
   }, [currentMember]);
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
+    <div className="flex flex-col h-full relative overflow-hidden bg-[#fcfcfc]">
       
       {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
-        <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-          <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col bg-white/95">
-              <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 pb-4 flex items-center justify-between border-b border-slate-100">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                  <Edit3 size={24} />
+        <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col border border-slate-100">
+              <div className="sticky top-0 bg-white/95 backdrop-blur-xl z-10 p-6 flex items-center justify-between border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                    <Edit3 size={20} />
+                    </div>
+                    <div>
+                    <h3 className="text-lg font-bold text-slate-800">Chi tiết công việc</h3>
+                    </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-black text-slate-800 tracking-tight">Chi tiết công việc</h3>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">ID: {editingTask.id}</p>
-                </div>
-              </div>
-              <button onClick={() => setEditingTask(null)} className="p-3 text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                <button onClick={() => setEditingTask(null)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 rounded-full"><X size={20}/></button>
             </div>
-            <div className="p-8 space-y-8">
-                {/* Simplified structure for brevity, logic maintained */}
+            <div className="p-6 space-y-6">
                 <input 
                   type="text" 
                   value={editingTask.text} 
                   onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} 
-                  className="w-full p-5 bg-white border border-slate-200 rounded-[1.8rem] text-lg font-bold text-slate-800 focus:ring-4 focus:ring-indigo-100 outline-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
                 />
-                 <div className="space-y-4 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                 <div className="space-y-4">
+                    <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] flex items-center gap-1.5">
                             <ListChecks size={14}/> Các bước thực hiện
                         </label>
-                         <div className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100">
+                         <div className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
                             {editingTask.subtasks?.filter(s => s.completed).length || 0}/{editingTask.subtasks?.length || 0}
                          </div>
                     </div>
                     
-                     <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                     <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
                          {editingTask.subtasks?.map(st => (
-                            <div key={st.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 group transition-all hover:shadow-sm hover:border-indigo-100">
+                            <div key={st.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 group hover:border-indigo-200 transition-colors">
                                 <button onClick={() => toggleSubtask(st.id)} className={`transition-colors ${st.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-emerald-500'}`}>
-                                    {st.completed ? <CheckSquare size={18} strokeWidth={2.5} /> : <Square size={18} strokeWidth={2.5} />}
+                                    {st.completed ? <CheckSquare size={20} strokeWidth={2.5} /> : <Square size={20} strokeWidth={2.5} />}
                                 </button>
-                                <span className={`flex-1 text-sm font-medium truncate ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{st.text}</span>
-                                <button onClick={() => deleteSubtask(st.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
-                                    <Trash2 size={14} />
+                                <span className={`flex-1 text-sm font-medium ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{st.text}</span>
+                                <button onClick={() => deleteSubtask(st.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-rose-500 bg-transparent hover:bg-rose-50 rounded-lg transition-all">
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         ))}
-                         {(!editingTask.subtasks || editingTask.subtasks.length === 0) && (
-                             <div className="text-center py-4 text-xs text-slate-400 italic">Chưa có bước nhỏ nào.</div>
-                         )}
+                         <div className="flex gap-2 mt-2">
+                            <input 
+                                type="text" 
+                                value={newSubtaskText}
+                                onChange={(e) => setNewSubtaskText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                                placeholder="Thêm bước nhỏ..."
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            <button onClick={addSubtask} disabled={!newSubtaskText.trim()} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors">
+                                <PlusCircle size={20}/>
+                            </button>
+                        </div>
                      </div>
-
-                     <div className="flex gap-2">
-                        <input 
-                            type="text" 
-                            value={newSubtaskText}
-                            onChange={(e) => setNewSubtaskText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
-                            placeholder="Thêm bước nhỏ..."
-                            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-4 focus:ring-indigo-100 outline-none transition-all"
-                        />
-                        <button onClick={addSubtask} disabled={!newSubtaskText.trim()} className="p-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-slate-200">
-                            <PlusCircle size={20}/>
-                        </button>
-                    </div>
                  </div>
             </div>
-            <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl p-8 border-t border-slate-100 flex gap-4">
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-xl p-6 border-t border-slate-100">
               <button 
                 onClick={updateTask} 
-                className={`w-full py-4 rounded-2xl text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 ${
+                className={`w-full py-4 rounded-xl text-white font-bold text-sm shadow-xl transition-all active:scale-95 ${
                   activeGroup ? 'bg-emerald-600 shadow-emerald-200' : 'bg-indigo-600 shadow-indigo-200'
                 }`}
               >
@@ -397,18 +309,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* CALENDAR MODAL */}
       {showCalendar && (
         <div onClick={() => setShowCalendar(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-          <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in bg-white/95">
-             <div className="flex items-center justify-between mb-8">
-              <button onClick={() => changeMonth(-1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronLeft size={20}/></button>
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-scale-in border border-slate-100">
+             <div className="flex items-center justify-between mb-6">
+              <button onClick={() => changeMonth(-1)} className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl"><ChevronLeft size={20}/></button>
               <div className="text-center">
-                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">{calendarViewDate.getFullYear()}</p>
-                <h4 className="text-xl font-black text-slate-900 tracking-tight">{calendarViewDate.toLocaleString(language, { month: 'long' })}</h4>
+                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{calendarViewDate.getFullYear()}</p>
+                <h4 className="text-lg font-bold text-slate-900">{calendarViewDate.toLocaleString(language, { month: 'long' })}</h4>
               </div>
-              <button onClick={() => changeMonth(1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronRight size={20}/></button>
+              <button onClick={() => changeMonth(1)} className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl"><ChevronRight size={20}/></button>
             </div>
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 gap-1 mb-4">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                <div key={i} className="text-center text-[10px] font-black text-slate-300 py-2">{d}</div>
+                <div key={i} className="text-center text-[10px] font-bold text-slate-400 py-2">{d}</div>
               ))}
               {calendarDays.map((date, i) => {
                 if (!date) return <div key={i} className="aspect-square"></div>;
@@ -418,10 +330,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   <button
                     key={i}
                     onClick={() => { setViewDate(date); setShowCalendar(false); }}
-                    className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all relative group ${
+                    className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all relative ${
                       isSelected 
-                      ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg' : 'bg-indigo-600 text-white shadow-lg')
-                      : 'text-slate-700 hover:bg-slate-100'
+                      ? (activeGroup ? 'bg-emerald-600 text-white shadow-md' : 'bg-indigo-600 text-white shadow-md')
+                      : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     {date.getDate()}
@@ -432,7 +344,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 );
               })}
             </div>
-             <button onClick={() => setShowCalendar(false)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 mt-2">Đóng</button>
+             <button onClick={() => setShowCalendar(false)} className="w-full py-3 text-slate-500 font-bold text-xs uppercase tracking-widest hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors">Đóng</button>
           </div>
         </div>
       )}
@@ -440,38 +352,31 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* Header Area */}
       <div className={headerClasses} style={headerStyle}>
         {/* Overlay for readability if image set */}
-        {currentMember?.headerBackground && <div className="absolute inset-0 bg-black/40 z-[-1]"></div>}
+        {currentMember?.headerBackground && <div className="absolute inset-0 bg-black/40 z-[-1] rounded-[inherit]"></div>}
         
-        <div className="flex flex-col gap-6 lg:gap-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
-            <div className="animate-slide-right w-full lg:w-auto">
-              <div className={`inline-flex items-center gap-2.5 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 lg:mb-3 shadow-sm border ${activeGroup ? (currentMember?.headerBackground ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-emerald-600 text-white border-emerald-500') : 'bg-indigo-600 text-white border-indigo-500'}`}>
-                {activeGroup ? <Users size={12} strokeWidth={3}/> : <User size={12} strokeWidth={3}/>}
-                {activeGroup ? 'Dự án Nhóm' : 'Không gian Cá nhân'}
-              </div>
-              <h1 className={`text-4xl lg:text-5xl font-black tracking-tighter transition-all duration-700 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>
-                {filterStatus === 'archived' ? 'Kho lưu trữ' : (activeGroup ? activeGroup.name : "Việc cần làm")}
-              </h1>
-            </div>
-            
-            <button 
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-end">
+             <div>
+                 <p className={`text-xs font-bold uppercase tracking-wider mb-1 opacity-70 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-500'}`}>
+                    {viewDate.toLocaleDateString(language, { weekday: 'long' })}, {viewDate.getDate()} {viewDate.toLocaleDateString(language, { month: 'long' })}
+                 </p>
+                 <h2 className={`text-3xl font-black tracking-tighter ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>
+                    {filterStatus === 'archived' ? 'Lưu trữ' : (activeGroup ? activeGroup.name : "Hôm nay")}
+                 </h2>
+             </div>
+             
+             <button 
               onClick={() => setShowCalendar(true)}
-              className={`flex items-center gap-3 backdrop-blur-md p-2 pl-4 pr-2 rounded-full border shadow-sm hover:shadow-md transition-all group w-full lg:w-auto justify-between lg:justify-center ${
-                currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white hover:bg-white/30' : 'bg-white/60 border-white hover:bg-white'
+              className={`p-2.5 rounded-xl border shadow-sm hover:shadow-md transition-all ${
+                currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white hover:bg-white/30' : 'bg-white border-slate-100 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <div className="text-left flex items-center gap-2">
-                  <span className={`text-[10px] font-black uppercase tracking-widest block transition-colors ${currentMember?.headerBackground ? 'text-white/70 group-hover:text-white' : 'text-slate-400 group-hover:text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { month: 'long' })}</span>
-                  <span className={`text-2xl font-black leading-none ${currentMember?.headerBackground ? 'text-white' : 'text-slate-900'}`}>{viewDate.getDate()}</span>
-              </div>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${currentMember?.headerBackground ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                 <CalendarIcon size={18} />
-              </div>
+               <CalendarIcon size={20} />
             </button>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 animate-fade-in">
-             <div className="flex items-center gap-2 overflow-x-auto pb-4 pt-2 scrollbar-none flex-1 -mx-6 px-6 lg:mx-0 lg:px-0 mask-image-gradient">
+          <div className="flex gap-3">
+             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none flex-1 -mx-4 px-4 mask-gradient-x">
               {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me', 'delegated'] : []), 'archived'] as FilterType[]).map(f => {
                 const isActive = filterStatus === f;
                 return (
@@ -479,14 +384,14 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     key={f} 
                     onClick={() => setFilterStatus(f)} 
                     className={`
-                      relative px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300
+                      px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 border
                       ${isActive 
                         ? (activeGroup 
-                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 scale-105' 
-                            : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105') 
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
+                            : 'bg-indigo-600 text-white border-indigo-600 shadow-md') 
                         : (currentMember?.headerBackground 
-                            ? 'bg-white/20 text-white hover:bg-white/30 border border-white/20' 
-                            : 'bg-white/60 text-slate-500 hover:text-slate-800 hover:bg-white border border-transparent hover:border-slate-100 scale-100')
+                            ? 'bg-white/10 text-white border-white/20 hover:bg-white/20' 
+                            : 'bg-white text-slate-500 border-slate-100 hover:border-slate-300 hover:text-slate-800')
                       }
                     `}
                   >
@@ -495,33 +400,37 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 );
               })}
             </div>
-            <div className="relative group w-full lg:w-[250px]">
-                <Search size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${currentMember?.headerBackground ? 'text-white/60 group-focus-within:text-white' : 'text-slate-400 group-focus-within:text-indigo-500'}`} />
-                <input 
-                    type="text" 
-                    placeholder="Tìm kiếm..." 
-                    value={searchQuery} 
-                    onChange={(e) => setSearchQuery(e.target.value)} 
-                    className={`w-full pl-10 pr-4 py-3 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 transition-all shadow-sm ${
-                        currentMember?.headerBackground 
-                        ? 'bg-white/20 border border-white/30 text-white placeholder:text-white/50 focus:ring-white/50 focus:bg-white/30' 
-                        : 'bg-white/60 border border-white text-slate-800 placeholder:text-slate-400 focus:ring-indigo-100'
-                    }`} 
-                />
-            </div>
+            
+            <button 
+                onClick={() => setSearchQuery(searchQuery ? '' : ' ')}
+                className={`p-2 rounded-full transition-colors ${searchQuery ? 'bg-indigo-100 text-indigo-600' : (currentMember?.headerBackground ? 'bg-white/10 text-white' : 'bg-white text-slate-400')}`}
+            >
+                {searchQuery ? <X size={18}/> : <Search size={18} />}
+            </button>
           </div>
+          
+          {searchQuery && (
+              <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="Nhập từ khóa..." 
+                  value={searchQuery === ' ' ? '' : searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                  className="w-full p-3 bg-white/90 backdrop-blur rounded-xl text-sm font-bold outline-none border border-indigo-100 focus:ring-2 focus:ring-indigo-500 shadow-lg animate-scale-in"
+              />
+          )}
         </div>
       </div>
 
       {/* Task List Container */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-8 pb-48 custom-scrollbar space-y-3 relative z-0 pt-2">
+      <div className="flex-1 overflow-y-auto px-4 pb-48 custom-scrollbar space-y-3 relative z-0 pt-2">
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-300 animate-scale-in">
-            <div className="w-24 h-24 bg-white/40 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-sm border border-white">
-              <Archive size={40} className="text-slate-300" />
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <Archive size={32} className="text-slate-300" />
             </div>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
-              {filterStatus === 'archived' ? 'Chưa có mục lưu trữ' : 'Danh sách trống'}
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {filterStatus === 'archived' ? 'Trống' : 'Thảnh thơi!'}
             </p>
           </div>
         ) : (
@@ -535,43 +444,42 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
               <div 
                 key={task.id} 
                 onClick={() => setEditingTask(task)}
-                className={`group bg-white/80 backdrop-blur-sm rounded-[1.5rem] p-4 border transition-all duration-300 cursor-pointer ${
-                  task.completed ? 'opacity-60 grayscale-[0.5] border-transparent shadow-none bg-slate-50/50' : 'shadow-sm border-white hover:shadow-lg hover:bg-white hover:-translate-y-0.5'
+                className={`group relative bg-white p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                  task.completed 
+                    ? 'opacity-60 border-transparent shadow-none bg-slate-50' 
+                    : 'border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-indigo-100 hover:-translate-y-0.5'
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3.5">
                   <button onClick={(e) => handleToggleClick(task, e)} className={`mt-0.5 transition-all btn-press ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-500'}`}>
-                    {task.completed ? <CheckCircle2 size={24} strokeWidth={2.5} fill="currentColor" className="text-emerald-100" /> : <Circle size={24} strokeWidth={2.5} />}
+                    {task.completed ? <CheckCircle2 size={22} strokeWidth={2.5} fill="currentColor" className="text-emerald-100" /> : <Circle size={22} strokeWidth={2.5} />}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <div className="space-y-1.5">
-                        <p className={`text-[15px] font-semibold tracking-tight transition-all leading-snug ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
-                          {task.text}
-                        </p>
+                    <p className={`text-[15px] font-semibold tracking-tight leading-snug mb-2 ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                        {task.text}
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center gap-2">
+                        {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
                         
-                        <div className="flex flex-wrap items-center gap-2">
-                          <PriorityBadge priority={task.priority || 'medium'} />
-                          {deadlineInfo && (
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ring-1 ${deadlineInfo.colorClass}`}>
-                              {deadlineInfo.icon} {deadlineInfo.text}
+                        {deadlineInfo && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${deadlineInfo.colorClass}`}>
+                            {deadlineInfo.icon} {deadlineInfo.text}
+                        </span>
+                        )}
+                        {subtasksCount > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-100">
+                                <ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}
                             </span>
-                          )}
-                           {subtasksCount > 0 && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                                  <ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}
-                              </span>
-                          )}
-                          {assignedMember && (
-                              <div className="flex items-center gap-1 pl-1">
-                                  <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm" alt="assignee"/>
-                              </div>
-                          )}
-                        </div>
+                        )}
+                        {assignedMember && (
+                            <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto" alt="assignee"/>
+                        )}
                     </div>
                   </div>
                    {!task.completed && (
-                       <button onClick={(e) => deleteTask(task.id, e)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all">
+                       <button onClick={(e) => deleteTask(task.id, e)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-500 bg-white/80 rounded-lg transition-all">
                            <Trash2 size={16} />
                        </button>
                    )}
@@ -581,17 +489,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         })}
       </div>
 
-      {/* QUICK ADD BAR - FLOATING CAPSULE */}
-      <div className="absolute bottom-24 lg:bottom-10 left-0 right-0 px-4 z-30 pointer-events-none pb-safe pt-4">
+      {/* FLOATING CAPSULE INPUT (Bottom for mobile thumb reach) */}
+      <div className="absolute bottom-24 lg:bottom-8 left-0 right-0 px-4 z-[30] pointer-events-none pb-safe">
         <div className="max-w-xl mx-auto pointer-events-auto">
-          <div className={`glass-modern rounded-[2.5rem] shadow-2xl transition-all duration-300 overflow-hidden ring-1 ring-white/50 ${
-            showInputDetails ? 'p-6 translate-y-[-10px] bg-white/95' : 'p-2 pr-3 bg-white/80 backdrop-blur-2xl'
+          <div className={`glass-modern bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-2xl transition-all duration-300 overflow-hidden ring-1 ring-slate-900/5 ${
+            showInputDetails ? 'p-5 translate-y-[-10px]' : 'p-1.5 pr-2'
           }`}>
             {showInputDetails && (
-              <div className="grid grid-cols-2 gap-4 mb-4 animate-fade-in">
+              <div className="grid grid-cols-2 gap-3 mb-4 animate-fade-in px-1 pt-1">
                   <div className="col-span-2 space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Hạn chót</label>
-                      <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-xs font-bold outline-none border border-slate-200 focus:border-indigo-500 transition-colors" />
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hạn chót</label>
+                      <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full p-2.5 bg-slate-50 rounded-xl text-xs font-bold outline-none border border-slate-200 focus:border-indigo-500 transition-colors" />
                   </div>
                   <div className="col-span-2 flex gap-2">
                        {(['low', 'medium', 'high'] as Priority[]).map(p => (
@@ -604,9 +512,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setShowInputDetails(!showInputDetails)} 
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-800 text-white rotate-180' : 'text-slate-400 hover:bg-slate-100'}`}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-100 text-slate-800' : 'text-slate-400 hover:bg-slate-50'}`}
               >
-                <SlidersHorizontal size={18} />
+                <SlidersHorizontal size={20} />
               </button>
               <input 
                 type="text" 
@@ -614,18 +522,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onChange={e => setInputValue(e.target.value)} 
                 onKeyDown={e => e.key === 'Enter' && addTask()} 
                 placeholder="Thêm việc mới..." 
-                className="flex-1 bg-transparent border-none px-4 py-3 text-base font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-semibold focus:outline-none transition-all mx-1" 
+                className="flex-1 bg-transparent border-none px-2 py-3 text-[16px] font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-medium focus:outline-none transition-all" 
               />
               <button 
                 onClick={addTask} 
                 disabled={!inputValue.trim()} 
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${
+                className={`w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all shadow-md ${
                   inputValue.trim() 
-                  ? (activeGroup ? 'bg-emerald-600' : 'bg-indigo-600') + ' text-white shadow-lg scale-105 active:scale-95' 
-                  : 'bg-slate-100 text-slate-300'
+                  ? (activeGroup ? 'bg-emerald-600' : 'bg-indigo-600') + ' text-white scale-100 hover:scale-105 active:scale-95 shadow-indigo-200' 
+                  : 'bg-slate-100 text-slate-300 scale-95 shadow-none'
                 }`}
               >
-                <Plus size={22} strokeWidth={3} />
+                <Plus size={24} strokeWidth={3} />
               </button>
             </div>
           </div>

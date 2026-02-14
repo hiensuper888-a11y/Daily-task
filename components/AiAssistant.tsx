@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Sparkles, User, Trash2, Zap, MessageSquare, ListChecks, Loader2, WifiOff } from 'lucide-react';
+import { Send, Bot, Sparkles, User, Trash2, Zap, MessageSquare, ListChecks, Loader2, WifiOff, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AiModel, ChatMessage, Task } from '../types';
 import { chatWithGemini } from '../services/geminiService';
@@ -17,227 +17,87 @@ export const AiAssistant: React.FC = () => {
     const isOnline = useOnlineStatus();
 
     const scrollToBottom = () => {
-        setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages, isLoading]);
+    useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
     const handleSendMessage = async (text?: string) => {
         if (!isOnline) return;
-        
         const messageText = text || inputValue;
         if (!messageText.trim()) return;
 
-        const userMsg: ChatMessage = {
-            id: Date.now().toString(),
-            role: 'user',
-            text: messageText,
-            timestamp: Date.now(),
-        };
-
+        const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', text: messageText, timestamp: Date.now() };
         const newMessages = [...messages, userMsg];
-        setMessages(newMessages);
-        setInputValue('');
-        setIsLoading(true);
+        setMessages(newMessages); setInputValue(''); setIsLoading(true);
 
         try {
-            const historyForApi = messages.map(m => ({
-                role: m.role,
-                parts: [{ text: m.text }]
-            }));
-
-            let responseText = "";
-            if (selectedModel === 'gemini') {
-                responseText = await chatWithGemini(userMsg.text, historyForApi as any);
-            } else if (selectedModel === 'chatgpt') {
-                 responseText = await chatWithGemini(userMsg.text, historyForApi as any);
-                 responseText = "(ChatGPT Mode) " + responseText;
-            } else if (selectedModel === 'grok') {
-                 responseText = await chatWithGemini(userMsg.text, historyForApi as any);
-                 responseText = "(Grok Mode) " + responseText;
-            }
-
-            const aiMsg: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: responseText,
-                timestamp: Date.now(),
-                modelUsed: selectedModel
-            };
-
+            const historyForApi = messages.map(m => ({ role: m.role, parts: [{ text: m.text }] }));
+            let responseText = await chatWithGemini(userMsg.text, historyForApi as any);
+            if (selectedModel !== 'gemini') responseText = `[${selectedModel.toUpperCase()} Mode] ${responseText}`;
+            
+            const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', text: responseText, timestamp: Date.now(), modelUsed: selectedModel };
             setMessages([...newMessages, aiMsg]);
         } catch (error) {
-            console.error(error);
-            const errorMsg: ChatMessage = {
-                id: Date.now().toString(),
-                role: 'model',
-                text: "Xin lỗi, tôi gặp sự cố khi xử lý yêu cầu. Vui lòng kiểm tra kết nối hoặc cấu hình API.",
-                timestamp: Date.now(),
-                modelUsed: selectedModel
-            };
-            setMessages([...newMessages, errorMsg]);
-        } finally {
-            setIsLoading(false);
-        }
+            setMessages([...newMessages, { id: Date.now().toString(), role: 'model', text: "Lỗi kết nối AI.", timestamp: Date.now() }]);
+        } finally { setIsLoading(false); }
     };
 
     const handleAnalyzeTasks = () => {
         if (!isOnline) return;
-
         const activeTasks = tasks.filter(t => !t.completed && !t.archived);
-        if (activeTasks.length === 0) {
-            const noTaskMsg: ChatMessage = {
-                id: Date.now().toString(),
-                role: 'model',
-                text: "Bạn không có công việc nào cần phân tích! Tuyệt vời!",
-                timestamp: Date.now(),
-                modelUsed: selectedModel
-            };
-            setMessages([...messages, noTaskMsg]);
-            return;
-        }
-
-        const taskListStr = activeTasks.map(t => 
-            `- [Ưu tiên: ${t.priority ? t.priority.toUpperCase() : 'MEDIUM'}] ${t.text} (Tiến độ: ${t.progress}%)`
-        ).join('\n');
-
-        const prompt = `Hãy phân tích danh sách công việc của tôi:\n\n${taskListStr}\n\nDựa trên danh sách này, hãy cung cấp:\n1. **Thứ tự ưu tiên**: Sắp xếp lại danh sách theo mức độ quan trọng.\n2. **Kế hoạch thực hiện**: Gợi ý trình tự làm việc hiệu quả nhất.\n3. **Lời khuyên**: Các mẹo cụ thể để giải quyết các việc quan trọng.`;
-        
-        handleSendMessage(prompt);
-    };
-
-    const clearChat = () => {
-        if(confirm("Xóa toàn bộ lịch sử trò chuyện?")) {
-            setMessages([]);
-        }
-    };
-
-    const getModelIcon = (model: AiModel) => {
-        switch(model) {
-            case 'gemini': return <Sparkles size={14} />;
-            case 'chatgpt': return <Zap size={14} />;
-            case 'grok': return <Bot size={14} />;
-        }
-    };
-
-    const getModelName = (model: AiModel) => {
-        switch(model) {
-            case 'gemini': return 'Gemini 3';
-            case 'chatgpt': return 'ChatGPT 4o';
-            case 'grok': return 'Grok 3';
-        }
+        if (activeTasks.length === 0) return handleSendMessage("Tôi không có công việc nào, hãy khen tôi!");
+        const taskListStr = activeTasks.map(t => `- [${t.priority?.toUpperCase() || 'M'}] ${t.text}`).join('\n');
+        handleSendMessage(`Phân tích danh sách việc cần làm:\n${taskListStr}\n\nHãy cho lời khuyên về thứ tự thực hiện.`);
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent relative">
-             {/* Header */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-rose-500 to-pink-600 p-6 md:p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10">
-                <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><Bot size={120} /></div>
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col h-full bg-[#f8fafc] rounded-none lg:rounded-[2.5rem] relative overflow-hidden">
+             {/* Simple Header */}
+            <div className="bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-200">
+                        <Sparkles size={20} className="text-white"/>
+                    </div>
                     <div>
-                        <h1 className="text-2xl font-black flex items-center gap-3 tracking-tight">
-                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                                <MessageSquare size={20} className="text-white" />
-                            </div>
-                            {t.aiHeader}
-                        </h1>
-                        <p className="text-rose-100 text-sm mt-2 font-medium opacity-90">{t.aiSubHeader}</p>
+                        <h2 className="text-lg font-black text-slate-800 leading-none">AI Chat</h2>
+                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1 mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Online
+                        </span>
                     </div>
-
-                    <div className="flex gap-2 self-start md:self-auto flex-wrap">
-                        <div className="bg-white/10 backdrop-blur-md p-1 rounded-xl flex gap-1 border border-white/20">
-                            {(['gemini', 'chatgpt', 'grok'] as AiModel[]).map((m) => (
-                                <button
-                                    key={m}
-                                    onClick={() => setSelectedModel(m)}
-                                    disabled={!isOnline}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                        selectedModel === m 
-                                        ? 'bg-white text-rose-600 shadow-sm' 
-                                        : 'text-rose-100 hover:bg-white/10'
-                                    } ${!isOnline ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {getModelIcon(m)}
-                                    {getModelName(m)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                </div>
+                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                    {(['gemini', 'chatgpt'] as AiModel[]).map((m) => (
+                        <button key={m} onClick={() => setSelectedModel(m)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${selectedModel === m ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>{m}</button>
+                    ))}
                 </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6 pb-32 md:pb-10">
-                {!isOnline && (
-                    <div className="bg-slate-800 text-white p-3 rounded-full text-xs font-bold flex items-center justify-center gap-2 mx-auto max-w-sm shadow-xl animate-scale-in">
-                        <WifiOff size={16} /> Cần kết nối Internet để sử dụng AI.
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                {messages.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center"><Bot size={40} className="opacity-20"/></div>
+                        <p className="text-sm font-bold">Bắt đầu trò chuyện với AI</p>
                     </div>
                 )}
-                {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-6 min-h-[300px] animate-fade-in">
-                        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center animate-float shadow-xl shadow-rose-100/50 ring-4 ring-white border border-rose-50">
-                            <Sparkles size={48} className="text-rose-400" />
+                {messages.map((msg) => (
+                    <div key={msg.id} className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-scale-in`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-sm ${msg.role === 'user' ? 'bg-slate-800' : 'bg-indigo-600'}`}>
+                            {msg.role === 'user' ? <User size={14} className="text-white"/> : <Sparkles size={14} className="text-white"/>}
                         </div>
-                        <div className="text-center space-y-2">
-                             <p className="text-lg font-bold text-slate-700">{t.welcomeAi}</p>
-                             <p className="text-sm text-slate-400 font-medium">Hỏi tôi bất cứ điều gì hoặc yêu cầu phân tích công việc.</p>
+                        <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm'}`}>
+                            {msg.text}
                         </div>
-                        {tasks.length > 0 && (
-                             <button 
-                                onClick={handleAnalyzeTasks}
-                                disabled={!isOnline}
-                                className={`mt-2 px-6 py-3 rounded-full text-sm font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:-translate-y-1 ${
-                                    isOnline 
-                                    ? 'bg-white text-rose-600 border border-rose-100 hover:bg-rose-50' 
-                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                }`}
-                             >
-                                <ListChecks size={18}/> {t.analyzeTasks}
-                             </button>
-                        )}
                     </div>
-                ) : (
-                    messages.map((msg, index) => (
-                        <div 
-                            key={msg.id} 
-                            className={`flex gap-4 max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} group animate-scale-in`}
-                            style={{ animationDelay: '0ms' }}
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm border-2 border-white ${
-                                msg.role === 'user' 
-                                ? 'bg-indigo-600 text-white' 
-                                : 'bg-rose-500 text-white'
-                            }`}>
-                                {msg.role === 'user' ? <User size={14}/> : <Bot size={16}/>}
-                            </div>
-                            <div className={`p-5 rounded-[1.5rem] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap relative transition-all hover:shadow-md ${
-                                msg.role === 'user' 
-                                ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-tr-none shadow-indigo-200' 
-                                : 'bg-white border border-white text-slate-700 rounded-tl-none shadow-slate-200/50'
-                            }`}>
-                                {msg.modelUsed && msg.role === 'model' && (
-                                    <div className="text-[10px] uppercase font-bold text-rose-400 mb-2 opacity-80 tracking-wider flex items-center gap-1.5 border-b border-rose-50 pb-2">
-                                        {getModelIcon(msg.modelUsed)} {getModelName(msg.modelUsed)}
-                                    </div>
-                                )}
-                                {msg.text}
-                            </div>
-                        </div>
-                    ))
-                )}
+                ))}
                 {isLoading && (
-                    <div className="flex gap-4 mr-auto max-w-[80%] animate-fade-in">
-                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 border border-rose-100 shadow-sm">
-                            <Bot size={16} className="text-rose-400"/>
-                        </div>
-                        <div className="p-4 px-6 rounded-[1.5rem] bg-white border border-white rounded-tl-none shadow-sm flex items-center gap-1.5 h-14">
-                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
-                            <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
+                    <div className="flex gap-3 mr-auto animate-fade-in">
+                        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0"><Bot size={14} className="text-white"/></div>
+                        <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-100 flex gap-1 items-center shadow-sm">
+                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce delay-75"></span>
+                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce delay-150"></span>
                         </div>
                     </div>
                 )}
@@ -245,51 +105,29 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 md:p-6 bg-gradient-to-t from-white via-white/80 to-transparent z-10 sticky bottom-0 md:relative md:rounded-b-[2.5rem] pb-safe">
-                <div className="flex items-end gap-3 max-w-4xl mx-auto bg-white/80 backdrop-blur-xl p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white ring-1 ring-slate-100/50">
-                     <button 
-                        onClick={clearChat}
-                        className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors w-12 h-12 flex items-center justify-center"
-                        title={t.clearChat}
-                    >
-                        <Trash2 size={20} />
-                    </button>
-                    {tasks.length > 0 && (
-                        <button 
-                            onClick={handleAnalyzeTasks}
-                            disabled={isLoading || !isOnline}
-                            className={`p-3 rounded-full transition-colors w-12 h-12 flex items-center justify-center ${!isOnline ? 'text-slate-300 cursor-not-allowed' : 'text-rose-500 hover:bg-rose-50'}`}
-                            title={t.analyzeTasks}
-                        >
-                            <ListChecks size={22} />
-                        </button>
-                    )}
-                    <div className="flex-1 bg-slate-50 hover:bg-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-rose-100 transition-all rounded-[1.5rem] flex items-center px-2 border border-transparent focus-within:border-rose-200">
+            <div className="p-4 bg-white border-t border-slate-100 shrink-0 pb-safe">
+                <div className="flex items-end gap-2 max-w-4xl mx-auto">
+                    <button onClick={() => setMessages([])} className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={20}/></button>
+                    {tasks.length > 0 && <button onClick={handleAnalyzeTasks} className="p-3 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-colors"><ListChecks size={20}/></button>}
+                    
+                    <div className="flex-1 bg-slate-50 border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl transition-all flex items-center px-2">
                         <textarea
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendMessage();
-                                }
-                            }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}}
                             disabled={!isOnline}
-                            placeholder={isOnline ? t.typeMessage : "Offline mode - Chat disabled"}
-                            className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[52px] resize-none text-[15px] font-medium text-slate-700 placeholder:text-slate-400 disabled:text-slate-400 disabled:cursor-not-allowed"
+                            placeholder="Nhập tin nhắn..."
+                            className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[48px] resize-none text-sm font-medium text-slate-700 placeholder:text-slate-400"
                             rows={1}
                         />
                     </div>
-                    <button
-                        onClick={() => handleSendMessage()}
-                        disabled={!inputValue.trim() || isLoading || !isOnline}
-                        className={`p-3 rounded-full transition-all shadow-md w-12 h-12 flex items-center justify-center ${
-                            !inputValue.trim() || isLoading || !isOnline
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                            : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:scale-110 active:scale-95 shadow-rose-200'
-                        }`}
+                    
+                    <button 
+                        onClick={() => handleSendMessage()} 
+                        disabled={!inputValue.trim() || isLoading}
+                        className={`p-3 rounded-xl transition-all shadow-md ${!inputValue.trim() ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}
                     >
-                        {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
+                        <Send size={20} />
                     </button>
                 </div>
             </div>
