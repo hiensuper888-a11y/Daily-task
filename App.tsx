@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, LayoutGrid } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, LayoutGrid, MoreHorizontal } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
@@ -19,13 +19,8 @@ const languages: { code: Language; label: string; flag: string }[] = [
 ];
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-full w-full bg-slate-50/50 backdrop-blur-sm z-50">
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative">
-        <Loader2 size={40} className="animate-spin text-indigo-600" />
-        <div className="absolute inset-0 animate-pulse bg-indigo-200 rounded-full blur-xl opacity-30"></div>
-      </div>
-    </div>
+  <div className="flex items-center justify-center h-full w-full">
+    <Loader2 size={32} className="animate-spin text-indigo-500" />
   </div>
 );
 
@@ -54,34 +49,6 @@ const deleteGlobalGroup = (groupId: string) => {
     const groups = getGlobalGroups().filter(g => g.id !== groupId);
     localStorage.setItem(GLOBAL_GROUPS_KEY, JSON.stringify(groups));
     window.dispatchEvent(new Event('storage'));
-};
-
-interface NavItemProps {
-  tab: AppTab;
-  icon: any;
-  label: string;
-  activeTab: AppTab;
-  activeGroupId: string | null;
-  setActiveTab: (tab: AppTab) => void;
-  setActiveGroupId: (id: string | null) => void;
-}
-
-const NavItem: React.FC<NavItemProps> = ({ tab, icon: Icon, label, activeTab, activeGroupId, setActiveTab, setActiveGroupId }) => {
-  const isActive = activeTab === tab && activeGroupId === null;
-  return (
-    <button
-      onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group relative overflow-hidden ${
-        isActive
-          ? `text-white shadow-lg shadow-indigo-500/25` 
-          : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'
-      }`}
-    >
-      {isActive && <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 animate-gradient-x rounded-2xl"></div>}
-      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-100' : 'group-hover:scale-110'}`} />
-      <span className="relative z-10 text-[14px] font-bold tracking-wide">{label}</span>
-    </button>
-  );
 };
 
 const AppContent: React.FC = () => {
@@ -343,9 +310,8 @@ const AppContent: React.FC = () => {
 
   if (!userProfile.isLoggedIn) {
       return (
-          <div className="h-[100dvh] w-full flex items-center justify-center bg-white overflow-hidden relative">
-              <div className="mesh-bg absolute inset-0 z-0 opacity-40"></div>
-              <div className="relative z-10 w-full h-full flex flex-col">
+          <div className="h-[100dvh] w-full flex items-center justify-center bg-slate-50 relative">
+              <div className="w-full max-w-md p-4">
                   <Suspense fallback={<LoadingFallback />}>
                       <Profile />
                   </Suspense>
@@ -355,103 +321,119 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden relative text-slate-900 bg-[#f8fafc]">
+    <div className="flex flex-col h-[100dvh] w-full bg-[#f8fafc] text-slate-900 overflow-hidden relative selection:bg-indigo-100 selection:text-indigo-900">
       
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
-      
-      {/* DESKTOP SIDEBAR - Glassmorphism Style */}
-      <aside className="hidden lg:flex flex-col w-[280px] m-4 mr-0 rounded-[2.5rem] glass-panel z-20 relative transition-all overflow-hidden h-[calc(100vh-2rem)] shadow-2xl border border-white/50">
-        <div className="p-8">
-          <div className="flex items-center gap-4 mb-10 cursor-pointer group" onClick={() => {setActiveTab('tasks'); setActiveGroupId(null);}}>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
-                <CheckSquare size={24} strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col">
-                <span className="text-xl font-black tracking-tight text-slate-800 leading-none group-hover:text-indigo-600 transition-colors">{t.appTitle}</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{t.workspace}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-1.5">
-             <NavItem tab="tasks" icon={Home} label={t.overview} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
-             <NavItem tab="ai" icon={MessageSquare} label={t.ai} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
-             <NavItem tab="reports" icon={Activity} label={t.reports} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
-             <NavItem tab="studio" icon={Wand2} label={t.studio} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
-             <NavItem tab="profile" icon={UserCircle2} label={t.profile} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
-          </div>
-        </div>
 
-        <div className="flex-1 px-4 overflow-y-auto custom-scrollbar pt-2">
-          <div className="flex items-center justify-between mb-4 px-4 mt-2">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.groupsHeader}</p>
-             <button onClick={handleOpenCreateGroup} className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all shadow-sm active:scale-95" title={t.create}><Plus size={14} strokeWidth={3}/></button>
+      {/* TOP HEADER & GROUPS (Clean, Stories Style) */}
+      <div className="pt-safe px-4 pb-2 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-30 shrink-0">
+          <div className="flex items-center justify-between mb-4 mt-2">
+               <div className="flex items-center gap-3">
+                   <div 
+                      onClick={() => {setActiveTab('profile'); setActiveGroupId(null);}} 
+                      className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden cursor-pointer active:scale-95 transition-transform"
+                   >
+                       <img src={userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`} alt="User" className="w-full h-full object-cover"/>
+                   </div>
+                   <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date().toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short'})}</p>
+                       <h1 className="text-lg font-black text-slate-800 leading-none">{t.appTitle}</h1>
+                   </div>
+               </div>
+               
+               <div className="flex gap-2">
+                   <button 
+                        onClick={() => setShowLangMenu(!showLangMenu)} 
+                        className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                   >
+                       <Globe size={18}/>
+                   </button>
+                   {activeGroup && (
+                       <button 
+                            onClick={() => {setShowSettingsModal(true); setSettingsTab('info')}}
+                            className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 transition-colors"
+                       >
+                           <Settings size={18}/>
+                       </button>
+                   )}
+               </div>
           </div>
 
-          <div className="space-y-1.5 pb-20 px-2">
-              {myGroups.map(group => (
-                  <div key={group.id} className="relative group/item">
-                    <button
-                        onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
-                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-300 ${
-                            activeGroupId === group.id
-                            ? `bg-white shadow-lg shadow-indigo-100 text-indigo-900 ring-1 ring-indigo-50` 
-                            : 'bg-transparent text-slate-600 hover:bg-white/60 hover:text-slate-900'
-                        }`}
-                    >
-                        {group.avatar ? (
-                            <img src={group.avatar} className={`w-9 h-9 rounded-xl object-cover shadow-sm ${activeGroupId === group.id ? 'ring-2 ring-indigo-100' : ''}`} alt="" />
-                        ) : (
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                {group.name.substring(0,2).toUpperCase()}
-                            </div>
-                        )}
-                        <span className={`text-sm font-bold truncate flex-1 text-left`}>{group.name}</span>
-                        {activeGroupId === group.id && <Settings size={16} className="text-indigo-400 hover:text-indigo-600 cursor-pointer animate-fade-in" onClick={(e) => {e.stopPropagation(); setShowSettingsModal(true); setSettingsTab('info');}} />}
-                    </button>
+          {/* Horizontal Group Selector (Stories Style) */}
+          <div className="flex items-center gap-4 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4">
+              {/* Personal */}
+              <button 
+                  onClick={() => { setActiveTab('tasks'); setActiveGroupId(null); }}
+                  className="flex flex-col items-center gap-1 min-w-[60px] group"
+              >
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all p-1 ${activeGroupId === null && activeTab === 'tasks' ? 'border-indigo-500' : 'border-transparent'}`}>
+                      <div className={`w-full h-full rounded-full flex items-center justify-center transition-all shadow-sm ${activeGroupId === null && activeTab === 'tasks' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                          <UserCircle2 size={24}/>
+                      </div>
                   </div>
+                  <span className={`text-[10px] font-bold truncate max-w-[64px] ${activeGroupId === null && activeTab === 'tasks' ? 'text-indigo-600' : 'text-slate-400'}`}>{t.personal}</span>
+              </button>
+
+              {/* Groups */}
+              {myGroups.map(group => (
+                  <button 
+                    key={group.id} 
+                    onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
+                    className="flex flex-col items-center gap-1 min-w-[60px] group"
+                  >
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all p-1 ${activeGroupId === group.id ? 'border-indigo-500' : 'border-transparent'}`}>
+                           {group.avatar ? (
+                               <img src={group.avatar} className="w-full h-full rounded-full object-cover shadow-sm bg-white" alt="" />
+                           ) : (
+                               <div className={`w-full h-full rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-100'}`}>
+                                   {group.name.substring(0,2).toUpperCase()}
+                               </div>
+                           )}
+                      </div>
+                      <span className={`text-[10px] font-bold truncate max-w-[64px] ${activeGroupId === group.id ? 'text-indigo-600' : 'text-slate-500'}`}>{group.name}</span>
+                  </button>
               ))}
-              <button onClick={() => setShowJoinModal(true)} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-4 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 group">
-                  <ScanLine size={16} className="group-hover:scale-110 transition-transform"/>
-                  <span>{t.joinCodeBtn}</span>
+
+              {/* Add Group */}
+              <div className="h-10 w-[1px] bg-slate-200 mx-1 shrink-0"></div>
+              <button onClick={handleOpenCreateGroup} className="flex flex-col items-center gap-1 min-w-[50px]">
+                   <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all">
+                       <Plus size={20}/>
+                   </div>
+                   <span className="text-[10px] font-bold text-slate-400">{t.create}</span>
+              </button>
+              <button onClick={() => setShowJoinModal(true)} className="flex flex-col items-center gap-1 min-w-[50px]">
+                   <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-all">
+                       <ScanLine size={18}/>
+                   </div>
+                   <span className="text-[10px] font-bold text-slate-400">{t.joinGroup}</span>
               </button>
           </div>
-        </div>
+      </div>
 
-        {/* Language & Settings Footer */}
-        <div className="p-6 border-t border-white/50 bg-white/30 backdrop-blur-md">
-            <button 
-                onClick={() => setShowLangMenu(!showLangMenu)} 
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/50 hover:bg-white border border-white transition-all text-slate-600 font-bold text-xs shadow-sm hover:shadow-md"
-            >
-                <Globe size={16} className="text-indigo-500" />
-                <span className="flex-1 text-left">{languages.find(l => l.code === language)?.label}</span>
-                <span className="text-lg">{languages.find(l => l.code === language)?.flag}</span>
-            </button>
-            
-            {showLangMenu && (
-                <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)}></div>
-                    <div className="absolute bottom-full left-6 right-6 mb-3 bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl border border-white p-2 max-h-[300px] overflow-y-auto custom-scrollbar animate-scale-in z-50 origin-bottom">
-                        {languages.map(lang => (
-                            <button
-                                key={lang.code}
-                                onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-bold ${language === lang.code ? 'bg-indigo-50 text-indigo-600 shadow-sm border border-indigo-100' : 'text-slate-600 hover:bg-slate-50 border border-transparent'}`}
-                            >
-                                <span className="text-xl shadow-sm rounded-md overflow-hidden">{lang.flag}</span>
-                                <span>{lang.label}</span>
-                                {language === lang.code && <Check size={16} className="ml-auto text-indigo-600"/>}
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-      </aside>
+      {/* Language Menu Dropdown */}
+      {showLangMenu && (
+        <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)}></div>
+            <div className="absolute top-16 right-4 w-40 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-scale-in origin-top-right">
+                {languages.map(lang => (
+                    <button
+                        key={lang.code}
+                        onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${language === lang.code ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                    >
+                        <span className="text-lg">{lang.flag}</span>
+                        <span>{lang.label}</span>
+                        {language === lang.code && <Check size={14} className="ml-auto"/>}
+                    </button>
+                ))}
+            </div>
+        </>
+      )}
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col relative h-full overflow-hidden z-10 lg:p-4 lg:pl-0">
-           <div className="flex-1 overflow-hidden animate-fade-in h-full relative lg:rounded-[2.5rem] bg-slate-50/50 lg:bg-transparent shadow-none lg:shadow-inner">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 relative overflow-hidden flex flex-col items-center">
+           <div className="w-full h-full max-w-3xl mx-auto relative animate-fade-in">
                <Suspense fallback={<LoadingFallback />}>
                    {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
                    activeTab === 'ai' ? <AiAssistant /> :
@@ -459,50 +441,42 @@ const AppContent: React.FC = () => {
                    activeTab === 'profile' ? <Profile /> : <ImageEditor />}
                </Suspense>
            </div>
+      </main>
 
-        {/* MOBILE FLOATING DOCK - Premium iOS Style */}
-        <div className="lg:hidden fixed bottom-6 left-4 right-4 z-[40]">
-            <div className="glass-modal rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl shadow-indigo-900/10 border border-white/60 bg-white/90 backdrop-blur-xl">
+      {/* FLOATING BOTTOM DOCK */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-md px-4 pb-safe">
+          <nav className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2rem] p-1.5 flex justify-between items-center relative">
               {[
-                  { id: 'tasks', icon: LayoutGrid, label: t.tasks },
-                  { id: 'reports', icon: BarChart3, label: 'TK' },
-                  { id: 'create', icon: Plus, special: true },
+                  { id: 'tasks', icon: CheckSquare, label: t.tasks },
                   { id: 'ai', icon: MessageSquare, label: 'AI' },
-                  { id: 'profile', icon: UserCircle2, label: t.profile }
+                  { id: 'studio', icon: Wand2, label: 'Studio' },
+                  { id: 'reports', icon: BarChart3, label: 'Stats' },
+                  { id: 'profile', icon: UserCircle2, label: t.profile },
               ].map((item) => {
-                  if (item.special) {
-                      return (
-                        <div key="create" className="relative -top-8 mx-1">
-                           <button onClick={activeGroupId ? () => {setShowSettingsModal(true); setSettingsTab('info')} : handleOpenCreateGroup} className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 border-[6px] border-[#f8fafc] flex items-center justify-center btn-bounce hover:scale-105 transition-transform active:scale-95">
-                                {activeGroupId ? <Settings size={28}/> : <Plus size={32} strokeWidth={3} />}
-                           </button>
-                        </div>
-                      );
-                  }
-                  
                   const isActive = activeTab === item.id;
                   return (
                     <button 
                         key={item.id}
                         onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
-                        className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                        className="flex-1 relative h-12 flex flex-col items-center justify-center gap-1 group"
                     >
-                        <div className={`relative ${isActive ? '-translate-y-0.5' : ''} transition-transform duration-300`}>
-                            <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                        <div className={`p-2 rounded-2xl transition-all duration-300 ${isActive ? 'bg-indigo-600 text-white -translate-y-4 shadow-lg shadow-indigo-500/30 ring-4 ring-white' : 'text-slate-400 hover:text-indigo-500 hover:bg-indigo-50'}`}>
+                            <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                         </div>
+                        {isActive && <span className="absolute bottom-1 text-[9px] font-bold text-indigo-600 animate-scale-in">{item.label}</span>}
                     </button>
                   );
               })}
-            </div>
-        </div>
-      </main>
+          </nav>
+      </div>
+
 
       {/* --- MODALS --- */}
       
       {/* Join Group Modal */}
       {showJoinModal && (
           <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
                   <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl mx-auto flex items-center justify-center text-indigo-600 mb-4 shadow-sm ring-4 ring-indigo-50">
@@ -527,7 +501,7 @@ const AppContent: React.FC = () => {
       {/* Group Creation Modal */}
       {showGroupModal && (
           <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
                   <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.createGroupHeader}</h3>
@@ -557,7 +531,7 @@ const AppContent: React.FC = () => {
       {/* Settings Modal */}
       {showSettingsModal && activeGroup && (
           <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] overflow-hidden border border-white/60">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] overflow-hidden border border-white/60">
                   <div className="p-6 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-xl z-10">
                       <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-4">
