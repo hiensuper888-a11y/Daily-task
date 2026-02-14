@@ -230,6 +230,7 @@ export const Profile: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
+    e.target.value = ''; // Reset input to allow re-selection
   };
 
   // --- UI RENDERERS ---

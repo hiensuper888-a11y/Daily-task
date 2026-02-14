@@ -368,6 +368,7 @@ const AppContent: React.FC = () => {
                                     reader.onloadend = () => setNewGroupImage(reader.result as string);
                                     reader.readAsDataURL(file);
                                   }
+                                  e.target.value = ''; // Reset input to allow re-selection
                               }} />
                           </div>
                       </div>
