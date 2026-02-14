@@ -52,7 +52,8 @@ export const createUserWithEmailAndPassword = async (_auth: any, email: string, 
         throw err;
     }
 
-    const uid = 'user_' + Math.random().toString(36).substr(2, 9);
+    // Replace deprecated substr with substring
+    const uid = 'user_' + Math.random().toString(36).substring(2, 9);
     const newUser = {
         uid,
         email,
@@ -128,7 +129,8 @@ export const signInWithPopup = async (_auth: any, provider: any) => {
     let user = users[email];
     if (!user) {
         user = {
-            uid: `social_${providerName}_` + Math.random().toString(36).substr(2, 9),
+            // Replace deprecated substr with substring
+            uid: `social_${providerName}_` + Math.random().toString(36).substring(2, 9),
             email,
             password: 'social-login-no-pass',
             emailVerified: true, // Social accounts are trusted
@@ -152,4 +154,27 @@ export const updateProfile = async (user: any, updates: { displayName?: string; 
         saveUsers(users);
         auth.currentUser = users[user.email];
     }
+};
+
+/**
+ * Searches for users by email, display name, or UID.
+ * Simulates a backend search query.
+ */
+export const searchUsers = async (query: string) => {
+    await new Promise(resolve => setTimeout(resolve, 400)); // Simulate delay
+    const users = getUsers();
+    const lowerQuery = query.toLowerCase();
+    
+    return Object.values(users)
+        .filter((user: any) => 
+            (user.email && user.email.toLowerCase().includes(lowerQuery)) ||
+            (user.displayName && user.displayName.toLowerCase().includes(lowerQuery)) ||
+            (user.uid && user.uid === query)
+        )
+        .map((user: any) => ({
+            uid: user.uid,
+            name: user.displayName || 'Unnamed User',
+            email: user.email,
+            avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`
+        }));
 };

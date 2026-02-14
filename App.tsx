@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight, Activity } from 'lucide-react';
+import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight, Activity, Search, AlertCircle, LogIn } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
 import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
+import { searchUsers } from './services/firebaseConfig';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
 const ImageEditor = React.lazy(() => import('./components/ImageEditor').then(module => ({ default: module.ImageEditor })));
@@ -42,13 +43,26 @@ const AppContent: React.FC = () => {
   
   const [myGroups, setMyGroups] = useRealtimeStorage<Group[]>('my_groups', []);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  
+  // Modals
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false); // New modal for group settings
 
+  // Create Group State
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupImage, setNewGroupImage] = useState('');
+  
+  // Member Management State
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [foundUsers, setFoundUsers] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'Người dùng', email: 'guest', avatar: '', provider: null, isLoggedIn: false });
-  const currentUserId = userProfile.email || 'guest';
+  
+  // FIX: Use SESSION_KEY to get the actual unique ID (UID) used by authentication and TodoList.
+  const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+  
   const activeGroup = myGroups.find(g => g.id === activeGroupId) || null;
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
@@ -68,16 +82,10 @@ const AppContent: React.FC = () => {
     };
   }, []);
 
-  // Logic tổng hợp task từ tất cả project để thông báo deadline
-  // Sử dụng SESSION_KEY để lấy đúng prefix ID của user đang đăng nhập
+  // Logic tổng hợp task
   const allCurrentTasks = useMemo(() => {
-    // 1. Lấy task cá nhân
     const all = [...personalTasks];
-    
-    // 2. Scan localStorage để lấy task của từng group
     myGroups.forEach(group => {
-        // Key format: group_{id}_tasks (Group tasks are global/shared so no user prefix)
-        // FIX: Removed ${prefix}_ because group tasks are stored globally in TodoList.tsx
         const key = `group_${group.id}_tasks`;
         const stored = localStorage.getItem(key);
         if (stored) {
@@ -87,11 +95,21 @@ const AppContent: React.FC = () => {
             } catch (e) { /* ignore */ }
         }
     });
-
     return all;
   }, [personalTasks, myGroups, currentUserId, storageVersion]);
 
   const { notifications, dismissNotification } = useDeadlineNotifications(allCurrentTasks);
+
+  // --- Group Functions ---
+
+  const handleOpenCreateGroup = () => {
+      if (!userProfile.isLoggedIn) {
+          alert(t.loginHeader + " - Bạn cần đăng nhập để tạo nhóm!");
+          setActiveTab('profile');
+          return;
+      }
+      setShowGroupModal(true);
+  };
 
   const handleCreateGroup = () => {
       if (!newGroupName.trim()) return;
@@ -107,7 +125,6 @@ const AppContent: React.FC = () => {
               role: 'leader',
               joinedAt: Date.now()
           }],
-          // Replace deprecated substr with substring (index 2 to 8 = 6 chars)
           joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           createdAt: Date.now()
       };
@@ -117,6 +134,71 @@ const AppContent: React.FC = () => {
       setShowGroupModal(false);
       setActiveGroupId(newGroup.id);
       setActiveTab('tasks');
+  };
+
+  const handleDeleteGroup = () => {
+      if (!activeGroup) return;
+      if (activeGroup.leaderId !== currentUserId) {
+          alert("Chỉ trưởng nhóm mới có thể xóa nhóm.");
+          return;
+      }
+      if (confirm(`Bạn có chắc chắn muốn xóa nhóm "${activeGroup.name}"? Hành động này không thể hoàn tác.`)) {
+          // Remove tasks from storage
+          localStorage.removeItem(`group_${activeGroup.id}_tasks`);
+          // Remove group from list
+          const updatedGroups = myGroups.filter(g => g.id !== activeGroup.id);
+          setMyGroups(updatedGroups);
+          setActiveGroupId(null);
+          setShowSettingsModal(false);
+          setActiveTab('tasks');
+      }
+  };
+
+  const handleSearchUsers = async () => {
+      if (!memberSearchQuery.trim()) return;
+      setIsSearching(true);
+      try {
+          const results = await searchUsers(memberSearchQuery);
+          // Filter out users already in the group
+          const existingMemberIds = activeGroup?.members.map(m => m.id) || [];
+          setFoundUsers(results.filter((u: any) => !existingMemberIds.includes(u.uid)));
+      } catch (error) {
+          console.error(error);
+      } finally {
+          setIsSearching(false);
+      }
+  };
+
+  const handleAddMember = (user: any) => {
+      if (!activeGroup) return;
+      const newMember = {
+          id: user.uid,
+          name: user.name,
+          avatar: user.avatar,
+          role: 'member' as const,
+          joinedAt: Date.now()
+      };
+      const updatedGroup = {
+          ...activeGroup,
+          members: [...activeGroup.members, newMember]
+      };
+      setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
+      // Remove from search results
+      setFoundUsers(foundUsers.filter(u => u.uid !== user.uid));
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+      if (!activeGroup) return;
+      if (activeGroup.leaderId !== currentUserId) return;
+      if (memberId === activeGroup.leaderId) return; // Cannot remove leader
+
+      if(confirm("Xóa thành viên này khỏi nhóm?")) {
+          const updatedGroup = {
+              ...activeGroup,
+              members: activeGroup.members.filter(m => m.id !== memberId)
+          };
+          setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
+      }
   };
 
   const NavItem = ({ tab, icon: Icon, label }: any) => (
@@ -175,30 +257,41 @@ const AppContent: React.FC = () => {
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] opacity-50">Dự án Nhóm</p>
              <div className="flex gap-1.5">
                 <button onClick={() => setShowJoinModal(true)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Tham gia"><ScanLine size={14}/></button>
-                <button onClick={() => setShowGroupModal(true)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Tạo mới"><Plus size={14}/></button>
+                <button onClick={handleOpenCreateGroup} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Tạo mới"><Plus size={14}/></button>
              </div>
           </div>
 
           <div className="space-y-2">
               {myGroups.map(group => (
-                  <button
-                    key={group.id}
-                    onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
-                    className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-500 border-2 ${
-                        activeGroupId === group.id
-                        ? `bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-100` 
-                        : 'text-slate-600 bg-white border-transparent hover:border-emerald-100 hover:shadow-sm'
-                    }`}
-                  >
-                      {group.avatar ? (
-                          <img src={group.avatar} alt={group.name} className="w-8 h-8 rounded-xl object-cover shrink-0 border border-white/20"/>
-                      ) : (
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 ${activeGroupId === group.id ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>
-                              {group.name.substring(0,2).toUpperCase()}
-                          </div>
-                      )}
-                      <span className="text-sm font-bold truncate tracking-tight">{group.name}</span>
-                  </button>
+                  <div key={group.id} className="relative group/item">
+                    <button
+                        onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
+                        className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-500 border-2 ${
+                            activeGroupId === group.id
+                            ? `bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-100` 
+                            : 'text-slate-600 bg-white border-transparent hover:border-emerald-100 hover:shadow-sm'
+                        }`}
+                    >
+                        {group.avatar ? (
+                            <img src={group.avatar} alt={group.name} className="w-8 h-8 rounded-xl object-cover shrink-0 border border-white/20"/>
+                        ) : (
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 ${activeGroupId === group.id ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>
+                                {group.name.substring(0,2).toUpperCase()}
+                            </div>
+                        )}
+                        <span className="text-sm font-bold truncate tracking-tight">{group.name}</span>
+                    </button>
+                    
+                    {/* Settings Icon - Show only for active group and if leader */}
+                    {activeGroupId === group.id && group.leaderId === currentUserId && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setShowSettingsModal(true); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-emerald-100 hover:bg-emerald-500 hover:text-white transition-colors"
+                        >
+                            <Settings size={14} />
+                        </button>
+                    )}
+                  </div>
               ))}
           </div>
         </div>
@@ -246,10 +339,19 @@ const AppContent: React.FC = () => {
                 {activeTab === item.id && <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${activeGroupId ? 'bg-emerald-600' : 'bg-indigo-600'}`}></div>}
               </button>
           ))}
+          {/* Mobile Settings button for active group */}
+          {activeGroupId && activeGroup?.leaderId === currentUserId && (
+              <button 
+                onClick={() => setShowSettingsModal(true)}
+                className="p-4 rounded-2xl text-emerald-600 bg-emerald-50 relative"
+              >
+                 <Settings size={24} strokeWidth={2.5} />
+              </button>
+          )}
         </div>
       </main>
 
-      {/* Group Modal with modern design */}
+      {/* Group Create Modal */}
       {showGroupModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
@@ -271,6 +373,117 @@ const AppContent: React.FC = () => {
                       </div>
                       <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all outline-none" placeholder="Tên nhóm của bạn..." />
                       <button onClick={handleCreateGroup} className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all uppercase tracking-[0.2em] text-[11px]">Tạo không gian làm việc</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Group Settings Modal */}
+      {showSettingsModal && activeGroup && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+              <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in border border-white flex flex-col max-h-[85vh]">
+                  <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-[2.5rem]">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900">Quản lý nhóm</h3>
+                          <p className="text-sm text-slate-400 font-medium">{activeGroup.name}</p>
+                      </div>
+                      <button onClick={() => setShowSettingsModal(false)} className="p-2 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
+                  </div>
+
+                  <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                      
+                      {/* Invite / Add Member Section */}
+                      <div className="space-y-4">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thêm thành viên</label>
+                          <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
+                                  <input 
+                                    type="text" 
+                                    value={memberSearchQuery}
+                                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
+                                    placeholder="Nhập tên, email hoặc ID..." 
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                  />
+                              </div>
+                              <button 
+                                onClick={handleSearchUsers}
+                                disabled={isSearching || !memberSearchQuery}
+                                className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                              >
+                                  {isSearching ? <Loader2 size={18} className="animate-spin"/> : "Tìm"}
+                              </button>
+                          </div>
+                          
+                          {foundUsers.length > 0 && (
+                              <div className="bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
+                                  {foundUsers.map(user => (
+                                      <div key={user.uid} className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0">
+                                          <div className="flex items-center gap-3">
+                                              <img src={user.avatar} className="w-8 h-8 rounded-full bg-white" alt="avatar"/>
+                                              <div>
+                                                  <p className="text-sm font-bold text-slate-800">{user.name}</p>
+                                                  <p className="text-xs text-slate-500">{user.email}</p>
+                                              </div>
+                                          </div>
+                                          <button 
+                                            onClick={() => handleAddMember(user)}
+                                            className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
+                                            title="Thêm"
+                                          >
+                                              <Plus size={16}/>
+                                          </button>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
+                      </div>
+
+                      {/* Members List */}
+                      <div className="space-y-4">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex justify-between">
+                              <span>Thành viên ({activeGroup.members.length})</span>
+                              <span className="text-slate-300">Mã: {activeGroup.joinCode}</span>
+                          </label>
+                          <div className="space-y-2">
+                              {activeGroup.members.map((member) => (
+                                  <div key={member.id} className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                                      <div className="flex items-center gap-3">
+                                          <img src={member.avatar} className="w-10 h-10 rounded-xl object-cover" alt={member.name}/>
+                                          <div>
+                                              <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                                  {member.name}
+                                                  {member.role === 'leader' && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Leader</span>}
+                                              </p>
+                                              <p className="text-[10px] text-slate-400 font-mono">ID: {member.id.slice(0, 8)}...</p>
+                                          </div>
+                                      </div>
+                                      
+                                      {member.role !== 'leader' && (
+                                          <button 
+                                            onClick={() => handleRemoveMember(member.id)}
+                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                            title="Xóa khỏi nhóm"
+                                          >
+                                              <UserMinus size={18}/>
+                                          </button>
+                                      )}
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+
+                      {/* Danger Zone */}
+                      <div className="pt-6 border-t border-slate-100">
+                          <button 
+                            onClick={handleDeleteGroup}
+                            className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                              <Trash2 size={18}/> Xóa nhóm vĩnh viễn
+                          </button>
+                      </div>
+
                   </div>
               </div>
           </div>

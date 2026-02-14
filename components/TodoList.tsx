@@ -107,7 +107,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         if (file.type.startsWith('video/')) type = 'video';
 
         const attachment: Attachment = {
-          id: Math.random().toString(36).substr(2, 9),
+          // Replace deprecated substr with substring
+          id: Math.random().toString(36).substring(2, 9),
           name: file.name,
           type: type,
           url: reader.result as string,

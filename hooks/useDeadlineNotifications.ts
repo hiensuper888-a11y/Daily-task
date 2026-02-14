@@ -30,7 +30,8 @@ export function useDeadlineNotifications(tasks: Task[]) {
         // Check for Overdue
         if (deadline < now && !notifiedTaskIds.current.has(taskKeyOverdue)) {
           newNotifications.push({
-            id: Math.random().toString(36).substr(2, 9),
+            // Replace deprecated substr with substring
+            id: Math.random().toString(36).substring(2, 9),
             taskId: task.id,
             taskText: task.text,
             type: 'overdue',
@@ -43,7 +44,8 @@ export function useDeadlineNotifications(tasks: Task[]) {
         // Check for Upcoming (within 1 hour)
         else if (deadline > now && deadline <= upcomingThreshold && !notifiedTaskIds.current.has(taskKeyUpcoming)) {
           newNotifications.push({
-            id: Math.random().toString(36).substr(2, 9),
+            // Replace deprecated substr with substring
+            id: Math.random().toString(36).substring(2, 9),
             taskId: task.id,
             taskText: task.text,
             type: 'upcoming',
