@@ -107,7 +107,8 @@ const AppContent: React.FC = () => {
               role: 'leader',
               joinedAt: Date.now()
           }],
-          joinCode: Math.random().toString(36).substr(2, 8).toUpperCase(),
+          // Replace deprecated substr with substring (index 2 to 8 = 6 chars)
+          joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           createdAt: Date.now()
       };
       setMyGroups([...myGroups, newGroup]);
