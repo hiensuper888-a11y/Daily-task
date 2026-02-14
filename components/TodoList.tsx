@@ -15,7 +15,7 @@ import { playSuccessSound } from '../utils/sound';
 import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
-interface TodoListProps {
+export interface TodoListProps {
   activeGroup: Group | null;
 }
 
@@ -222,7 +222,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
-      Array.from(files).forEach((file: File) => {
+      Array.from(files).forEach((file: any) => {
           if (file.size > 2 * 1024 * 1024) { // Limit 2MB
               alert(`File "${file.name}" quá lớn. Vui lòng chọn file dưới 2MB.`);
               return;
