@@ -7,7 +7,7 @@ import {
   Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
   Paperclip, FileText, Loader2,
-  MoreVertical
+  MoreVertical, Sparkles
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -117,7 +117,7 @@ const TaskItem = React.memo(({
                     
                     {(subtasksCount > 0 || attachmentsCount > 0 || assignedMember) && (
                         <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-slate-50/80">
-                            {subtasksCount > 0 && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400"><ListChecks size={12}/> {subtasksCompleted}/{subtasksCount}</span>}
+                            {subtasksCount > 0 && <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${subtasksCompleted === subtasksCount ? 'text-emerald-600' : 'text-slate-400'}`}><ListChecks size={12}/> {subtasksCompleted}/{subtasksCount}</span>}
                             {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400"><Paperclip size={12}/> {attachmentsCount}</span>}
                             {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto" alt="assignee"/>}
                         </div>
@@ -125,10 +125,10 @@ const TaskItem = React.memo(({
                 </div>
              </div>
              
-             {/* Delete Action (Explicit Button for Mobile/Desktop) */}
+             {/* Delete Action */}
              <button 
                 onClick={(e) => onDelete(task.id, e)} 
-                className="absolute top-3 right-3 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                className="absolute top-3 right-3 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
              >
                 <Trash2 size={16} />
              </button>
@@ -137,7 +137,6 @@ const TaskItem = React.memo(({
 });
 
 export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
-  // Determine correct storage key based on active group
   const storageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
   const isGlobal = !!activeGroup;
 
@@ -207,40 +206,47 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
 
-  // --- FILE HANDLING ---
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean = false) => {
+  // --- FILE HANDLING (Optimized for Batch) ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEditMode: boolean = false) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
-      Array.from(files).forEach((file: any) => {
-          if (file.size > 2 * 1024 * 1024) { // Limit 2MB
-              alert(`File "${file.name}" quá lớn. Vui lòng chọn file dưới 2MB.`);
-              return;
-          }
-
-          const reader = new FileReader();
-          reader.onloadend = () => {
-              const base64 = reader.result as string;
-              const newAttachment: Attachment = {
-                  id: Date.now().toString() + Math.random().toString(),
-                  name: file.name,
-                  type: file.type.startsWith('image/') ? 'image' : 'file',
-                  url: base64,
-                  size: file.size
-              };
-
-              if (isEditMode && editingTask) {
-                  setEditingTask(prev => prev ? {
-                      ...prev,
-                      attachments: [...(prev.attachments || []), newAttachment]
-                  } : null);
-              } else {
-                  setNewAttachments(prev => [...prev, newAttachment]);
-                  setShowInputDetails(true);
+      const newAtts: Attachment[] = [];
+      const filePromises = Array.from(files).map(file => {
+          return new Promise<void>((resolve) => {
+              if (file.size > 5 * 1024 * 1024) { // 5MB Limit
+                  alert(`File "${file.name}" quá lớn (Max 5MB).`);
+                  resolve();
+                  return;
               }
-          };
-          reader.readAsDataURL(file);
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                  newAtts.push({
+                      id: Date.now().toString() + Math.random().toString(),
+                      name: file.name,
+                      type: file.type.startsWith('image/') ? 'image' : 'file',
+                      url: reader.result as string,
+                      size: file.size
+                  });
+                  resolve();
+              };
+              reader.readAsDataURL(file);
+          });
       });
+
+      await Promise.all(filePromises);
+
+      if (newAtts.length > 0) {
+          if (isEditMode && editingTask) {
+              setEditingTask(prev => prev ? {
+                  ...prev,
+                  attachments: [...(prev.attachments || []), ...newAtts]
+              } : null);
+          } else {
+              setNewAttachments(prev => [...prev, ...newAtts]);
+              setShowInputDetails(true);
+          }
+      }
       e.target.value = ''; // Reset input
   };
 
@@ -269,11 +275,101 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       }
   };
 
+  const handleAiGenerateSubtasks = async () => {
+      if (!editingTask || !isOnline) return;
+      setIsAiProcessing(true);
+      try {
+          const steps = await generateSubtasksWithGemini(editingTask.text);
+          const newSubtasks: Subtask[] = steps.map(step => ({
+              id: Date.now() + Math.random(),
+              text: step,
+              completed: false
+          }));
+          const updatedSubtasks = [...(editingTask.subtasks || []), ...newSubtasks];
+          
+          const completedCount = updatedSubtasks.filter(st => st.completed).length;
+          const progress = updatedSubtasks.length > 0 ? Math.round((completedCount / updatedSubtasks.length) * 100) : editingTask.progress;
+
+          setEditingTask(prev => prev ? { 
+              ...prev, 
+              subtasks: updatedSubtasks,
+              progress: progress,
+              completed: progress === 100
+          } : null);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsAiProcessing(false);
+      }
+  };
+
+  const addSubtask = () => { 
+      if (!editingTask || !newSubtaskText.trim()) return; 
+      const newSub: Subtask = { id: Date.now(), text: newSubtaskText.trim(), completed: false }; 
+      const updatedSubtasks = [...(editingTask.subtasks || []), newSub]; 
+      
+      const completedCount = updatedSubtasks.filter(st => st.completed).length;
+      const progress = Math.round((completedCount / updatedSubtasks.length) * 100);
+
+      setEditingTask({ 
+          ...editingTask, 
+          subtasks: updatedSubtasks,
+          progress: progress,
+          completed: progress === 100
+      }); 
+      setNewSubtaskText(''); 
+  };
+  
+  const toggleSubtask = (subId: number) => { 
+      if (!editingTask) return; 
+      const updatedSubtasks = (editingTask.subtasks || []).map(st => st.id === subId ? { ...st, completed: !st.completed } : st); 
+      
+      const completedCount = updatedSubtasks.filter(st => st.completed).length;
+      const progress = updatedSubtasks.length > 0 ? Math.round((completedCount / updatedSubtasks.length) * 100) : 0;
+      const isCompleted = progress === 100;
+
+      if (isCompleted && !editingTask.completed) playSuccessSound();
+      
+      setEditingTask({ 
+          ...editingTask, 
+          subtasks: updatedSubtasks,
+          progress: progress,
+          completed: isCompleted,
+          completedAt: isCompleted ? new Date().toISOString() : undefined,
+          completedBy: isCompleted ? currentUserId : undefined
+      }); 
+  };
+  
+  const deleteSubtask = (subId: number) => { 
+      if (!editingTask) return; 
+      const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId);
+      
+      let progress = editingTask.progress;
+      let isCompleted = editingTask.completed;
+
+      if (updatedSubtasks.length > 0) {
+          const completedCount = updatedSubtasks.filter(st => st.completed).length;
+          progress = Math.round((completedCount / updatedSubtasks.length) * 100);
+      } else {
+          progress = 0; // Reset if empty
+      }
+      
+      // Update completion status only if progress hits 100 or 0
+      isCompleted = progress === 100 && updatedSubtasks.length > 0;
+
+      setEditingTask({ 
+          ...editingTask, 
+          subtasks: updatedSubtasks, 
+          progress, 
+          completed: isCompleted,
+          completedAt: isCompleted ? new Date().toISOString() : undefined
+      }); 
+  };
+
   const addTask = () => {
     if (inputValue.trim() === '') return;
     if (activeGroup && !isLeader) { alert(t.leaderOnly); return; }
     
-    // Determine creation date based on current view or explicit selection
     const taskDate = new Date(viewDate);
     if (isToday(viewDate)) {
       const now = new Date();
@@ -290,17 +386,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       archived: false,
       priority: newPriority,
       groupId: activeGroup?.id,
-      assignedTo: assignedTo || (activeGroup ? undefined : currentUserId), // Self assign if personal
+      assignedTo: assignedTo || (activeGroup ? undefined : currentUserId), 
       createdBy: currentUserId, 
       attachments: newAttachments,
       subtasks: [],
       comments: []
     };
 
-    // Update State Immediately
     setTasks(prev => [newTask, ...prev]);
     
-    // Reset Form
     setInputValue('');
     setDeadline('');
     setAssignedDate('');
@@ -368,7 +462,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           completedAt: newCompleted ? new Date().toISOString() : undefined,
           completedBy: newCompleted ? currentUserId : undefined,
           completionNote: newCompleted ? note : undefined,
-          progress: newCompleted ? 100 : task.progress
+          progress: newCompleted ? 100 : 0
         };
       }
       return task;
@@ -388,9 +482,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const filteredTasks = useMemo(() => {
     const targetDateStr = getLocalDateString(viewDate);
     
-    // 1. Filter
     let result = tasks.filter(t => {
-        // Archived Filter
         if (filterStatus === 'archived') { 
           if (!t.archived) return false; 
           if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase()); 
@@ -398,10 +490,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         } 
         if (t.archived) return false;
 
-        // Search Filter
         if (searchQuery && !t.text.toLowerCase().includes(searchQuery.toLowerCase())) { return false; }
 
-        // Assignment Filters
         if (filterStatus === 'assigned_to_me') { 
           return t.assignedTo === currentUserId && !t.completed; 
         }
@@ -412,21 +502,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           return t.assignedTo && t.assignedTo !== currentUserId && !t.completed; 
         }
 
-        // Date Filter
         const tDate = new Date(t.createdAt);
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
         
-        // Status Filter
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
         
         return true;
     });
 
-    // 2. Sort
     return result.sort((a, b) => {
-        // Always push completed tasks to bottom unless we are in 'completed' or 'archived' view
         if (filterStatus !== 'completed' && filterStatus !== 'archived') {
             if (a.completed !== b.completed) return a.completed ? 1 : -1;
         }
@@ -531,6 +617,47 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         <span className="text-sm font-bold text-indigo-600">{editingTask.progress || 0}%</span>
                     </div>
                     <input type="range" min="0" max="100" value={editingTask.progress || 0} onChange={(e) => setEditingTask({...editingTask, progress: Number(e.target.value), completed: Number(e.target.value) === 100})} className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"/>
+                </div>
+
+                {/* Subtasks Section */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.subtasksHeader || 'Checklist'}</label>
+                        {isOnline && (
+                            <button onClick={handleAiGenerateSubtasks} disabled={isAiProcessing} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
+                                {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>} {t.breakdownAi || 'Auto-Breakdown'}
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                        {editingTask.subtasks?.map(subtask => (
+                            <div key={subtask.id} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl group/sub transition-all hover:shadow-sm">
+                                <button onClick={() => toggleSubtask(subtask.id)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${subtask.completed ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 hover:border-indigo-400'}`}>
+                                    {subtask.completed && <Check size={12} className="text-white" />}
+                                </button>
+                                <span className={`flex-1 text-sm font-medium ${subtask.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{subtask.text}</span>
+                                <button onClick={() => deleteSubtask(subtask.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover/sub:opacity-100 transition-all p-1 rounded-lg hover:bg-red-50"><Trash2 size={16}/></button>
+                            </div>
+                        ))}
+                        {(!editingTask.subtasks || editingTask.subtasks.length === 0) && (
+                            <div className="text-center py-4 text-slate-400 text-xs italic">{t.addSubtaskPlaceholder || 'No subtasks yet.'}</div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={newSubtaskText} 
+                            onChange={(e) => setNewSubtaskText(e.target.value)} 
+                            onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                            placeholder={t.addSubtaskPlaceholder || 'Add a step...'} 
+                            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                        />
+                        <button onClick={addSubtask} className="p-3 bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white rounded-xl transition-all shadow-sm">
+                            <Plus size={20}/>
+                        </button>
+                    </div>
                 </div>
                  
                  {activeGroup && (

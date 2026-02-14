@@ -14,10 +14,8 @@ interface ReportsProps {
 }
 
 export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
-  // Initialize view mode. If a group is active, default to group view, otherwise personal.
   const [viewMode, setViewMode] = useState<ViewMode>(activeGroup ? 'group' : 'personal');
 
-  // Sync view mode when activeGroup changes (e.g. user switches group in sidebar)
   useEffect(() => {
       if (activeGroup) {
           setViewMode('group');
@@ -26,18 +24,13 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       }
   }, [activeGroup?.id]);
 
-  // Determine if we are effectively in group view (requires both mode set to group AND an active group present)
   const isGroupView = viewMode === 'group' && !!activeGroup;
   
-  // DYNAMIC STORAGE KEY: This is the core fix. 
-  // It swaps the key immediately when viewMode changes.
   const taskStorageKey = isGroupView ? `group_${activeGroup?.id}_tasks` : 'daily_tasks';
   const reflectionStorageKey = isGroupView ? `group_${activeGroup?.id}_reflections` : 'reflections';
   
-  // If viewing group, use global key (true). If personal, use user-specific key (false).
   const isGlobalStorage = isGroupView;
 
-  // Hooks to fetch data based on the dynamic key
   const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobalStorage);
   const [reflections, setReflections] = useRealtimeStorage<ReflectionMap>(reflectionStorageKey, {}, isGlobalStorage);
   
@@ -48,7 +41,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   
   const { t, language } = useLanguage();
 
-  // Calculate Date Range
   const getDateRange = useCallback(() => {
     const now = new Date();
     let start = new Date(now);
@@ -77,7 +69,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     return { start, end };
   }, [period, customStart, customEnd]);
 
-  // Reflection Key based on date
   const currentReflectionKey = useMemo(() => {
      const { end } = getDateRange();
      return end.toISOString().split('T')[0];
@@ -93,7 +84,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
      }));
   };
 
-  // Calculate Chart Data
   const chartData = useMemo(() => {
     const { start: currStart, end: currEnd } = getDateRange();
     const duration = currEnd.getTime() - currStart.getTime();
@@ -150,7 +140,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     };
   }, [tasks, getDateRange]);
 
-  // Calculate Group Stats (Leaderboard)
   const groupStats = useMemo(() => {
       if (!isGroupView || !activeGroup) return null;
 
@@ -179,7 +168,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const diff = chartData.currentScore - chartData.prevScore;
   const isPositive = diff >= 0;
 
-  // Chart Rendering Helpers
   const generateAreaPath = (points: {value: number}[], width: number, height: number) => {
       if (points.length < 2) return "";
       const stepX = width / (points.length - 1);
@@ -208,7 +196,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const sanitize = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const getReportContextName = () => isGroupView && activeGroup ? activeGroup.name : t.personal;
 
-  // --- EXPORT FUNCTIONS ---
   const exportToExcel = () => {
     const data = chartData.filteredTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
@@ -227,7 +214,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
         csvContent += `Needs Improvement,"${reflection.improvement ? reflection.improvement.replace(/"/g, '""') : 'N/A'}"\n\n`;
     }
     
-    // Header
     csvContent += `${t.dateTime},${t.taskContent},${t.status},${t.progress},${t.subtasksHeader},${t.assignedTo},${t.completedBy}\n`;
     
     data.forEach(task => {
@@ -310,13 +296,11 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       const pres = new PptxGenJS();
       const contextName = getReportContextName();
       
-      // Title Slide
       let slide = pres.addSlide();
       slide.addText(t.reportHeader, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
       slide.addText(`${isGroupView ? 'Group' : 'Personal'}: ${contextName}`, { x: 1, y: 1.5, fontSize: 18, color: '6366F1' });
       slide.addText(`Period: ${period.toUpperCase()}`, { x: 1, y: 2, fontSize: 14, color: '888888' });
       
-      // Stats Slide
       slide = pres.addSlide();
       slide.addText('Performance Overview', { x: 0.5, y: 0.5, fontSize: 18, bold: true });
       slide.addText(`Productivity Score: ${chartData.currentScore}%`, { x: 1, y: 1.5, fontSize: 16 });
@@ -338,6 +322,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -353,7 +338,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent relative">
-      {/* Header */}
       <div className={`relative overflow-hidden bg-gradient-to-r p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10 transition-colors duration-500 ${isGroupView ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-violet-600'}`}>
         <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><PieChart size={120} /></div>
         
@@ -368,7 +352,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                 </p>
             </div>
             
-            {/* VIEW MODE TOGGLE - CRITICAL FOR SWITCHING CONTEXT */}
             {activeGroup && (
                 <div className="bg-black/20 backdrop-blur-md p-1 rounded-xl flex items-center self-start md:self-center border border-white/10 shadow-inner">
                     <button onClick={() => setViewMode('personal')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
@@ -382,11 +365,9 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
         </div>
       </div>
 
-      {/* Content Wrapper */}
       <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar pb-28 md:pb-8">
         <div className="max-w-6xl mx-auto w-full space-y-6">
             
-            {/* Period Selector */}
             <div className="flex bg-white/70 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-white overflow-x-auto ring-1 ring-slate-100/50">
             {(['day', 'week', 'month', 'year', 'custom'] as Period[]).map((p) => (
                 <button key={p} onClick={() => setPeriod(p)} className={`flex-1 min-w-[70px] py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${period === p ? (isGroupView ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md shadow-indigo-500/20' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
@@ -395,7 +376,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
             ))}
             </div>
 
-            {/* Area Chart Comparison */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in flex flex-col justify-between shadow-premium" style={{animationDelay: '0.1s'}}>
                     <div className="flex items-center justify-between mb-8">
@@ -412,7 +392,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                         </div>
                     </div>
                     
-                    {/* SVG Chart */}
                     <div className="w-full h-56 relative group/chart">
                         <svg viewBox="0 0 100 50" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                             <defs>
@@ -456,7 +435,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     </div>
                 </div>
 
-                {/* Leaderboard or Reflection */}
                 {isGroupView && groupStats ? (
                     <div className="glass-card rounded-[2.5rem] p-8 flex flex-col animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
                         <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -499,7 +477,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                 )}
             </div>
 
-            {/* DETAILED TASK TABLE */}
             <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
                  <div className="flex items-center justify-between mb-6">
                     <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -522,7 +499,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                              {chartData.filteredTasks.length === 0 ? (
                                  <tr><td colSpan={4} className="py-8 text-center text-slate-400 italic">{t.noData}</td></tr>
                              ) : (
-                                 chartData.filteredTasks.slice(0, 10).map(task => { // Show top 10 preview
+                                 chartData.filteredTasks.slice(0, 10).map(task => { 
                                      const member = isGroupView ? activeGroup?.members.find(m => m.id === task.assignedTo) : null;
                                      return (
                                         <tr key={task.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
@@ -554,7 +531,6 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                  </div>
             </div>
 
-            {/* Export & Share */}
             <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in shadow-premium" style={{animationDelay: '0.3s'}}>
                 <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
                     <Share2 size={18} className="text-emerald-500"/> {t.export}

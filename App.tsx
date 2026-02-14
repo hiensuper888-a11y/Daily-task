@@ -236,6 +236,7 @@ const AppContent: React.FC = () => {
           setShowSettingsModal(false); 
           setActiveTab('tasks'); 
           localStorage.removeItem(`group_${groupId}_tasks`); 
+          localStorage.removeItem(`group_${groupId}_reflections`);
           deleteGlobalGroup(groupId);
           setMyGroups(prev => prev.filter(g => g.id !== groupId)); 
           alert(t.groupDeleted);
