@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, Chat } from "@google/genai";
+import { GoogleGenAI, Chat, Type } from "@google/genai";
 
 // Declare process for TypeScript since @types/node might not be present
 declare const process: { env: { API_KEY: string } };
@@ -91,5 +90,55 @@ export const chatWithGemini = async (
     } catch (error) {
         console.error("Chat API Error:", error);
         return "Xin lỗi, tôi không thể kết nối với dịch vụ AI ngay bây giờ.";
+    }
+};
+
+/**
+ * Generates a list of subtasks based on a main task description.
+ * Uses Gemini 3 Flash for fast structured output.
+ */
+export const generateSubtasksWithGemini = async (taskDescription: string): Promise<string[]> => {
+    if (!ai) throw new Error("API Key missing");
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: `Break down this task into 3-6 actionable, concise subtasks (steps). Task: "${taskDescription}"`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.STRING
+                    }
+                }
+            }
+        });
+
+        const jsonStr = response.text?.trim();
+        if (!jsonStr) return [];
+        return JSON.parse(jsonStr);
+    } catch (error) {
+        console.error("Gemini Subtask Error:", error);
+        return [];
+    }
+};
+
+/**
+ * Refines text to be more professional and concise.
+ */
+export const refineTaskTextWithGemini = async (text: string): Promise<string> => {
+    if (!ai) throw new Error("API Key missing");
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: `Rewrite the following task description to be more professional, actionable, and concise (keep the same language): "${text}"`,
+        });
+
+        return response.text?.trim() || text;
+    } catch (error) {
+        console.error("Gemini Refine Error:", error);
+        return text;
     }
 };

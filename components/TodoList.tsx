@@ -6,12 +6,14 @@ import {
   Edit3, CheckSquare, Square, ListChecks,
   PlusCircle, Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
-  MoreVertical, Paperclip, FileText, Image as ImageIcon, Download, XCircle
+  MoreVertical, Paperclip, FileText, Image as ImageIcon, Download, XCircle, Wand2, Sparkles, Loader2
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
+import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 interface TodoListProps {
   activeGroup: Group | null;
@@ -166,6 +168,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   // Editing State
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newSubtaskText, setNewSubtaskText] = useState('');
+  
+  // AI Loading States
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const isOnline = useOnlineStatus();
 
   // UI State
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
@@ -269,6 +275,41 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+  };
+
+  // --- AI HANDLERS ---
+  const handleAiRefineText = async () => {
+      if (!editingTask || !isOnline) return;
+      setIsAiProcessing(true);
+      try {
+          const refined = await refineTaskTextWithGemini(editingTask.text);
+          setEditingTask(prev => prev ? { ...prev, text: refined } : null);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsAiProcessing(false);
+      }
+  };
+
+  const handleAiGenerateSubtasks = async () => {
+      if (!editingTask || !isOnline) return;
+      setIsAiProcessing(true);
+      try {
+          const steps = await generateSubtasksWithGemini(editingTask.text);
+          const newSubtasks: Subtask[] = steps.map(step => ({
+              id: Date.now() + Math.random(),
+              text: step,
+              completed: false
+          }));
+          setEditingTask(prev => prev ? { 
+              ...prev, 
+              subtasks: [...(prev.subtasks || []), ...newSubtasks] 
+          } : null);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsAiProcessing(false);
+      }
   };
 
   const addTask = () => {
@@ -520,8 +561,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             </div>
             <div className="p-8 space-y-8">
                 {/* Task Title Input */}
-                <div className="group">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nội dung công việc</label>
+                <div className="group relative">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Nội dung công việc</label>
+                        {isOnline && (
+                             <button onClick={handleAiRefineText} disabled={isAiProcessing} className="text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
+                                 {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Wand2 size={12}/>} Tối ưu hóa (AI)
+                             </button>
+                        )}
+                    </div>
                     <textarea rows={2} value={editingTask.text} onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} className="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-indigo-200 focus:bg-white text-lg font-semibold text-slate-800 focus:ring-0 outline-none resize-none placeholder:text-slate-300 transition-all shadow-sm"/>
                 </div>
 
@@ -601,7 +649,14 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                  <div className="space-y-4">
                     <div className="flex justify-between items-center mb-1">
                         <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><ListChecks size={16}/> Các bước thực hiện</label>
-                         <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{editingTask.subtasks?.filter(s => s.completed).length || 0}/{editingTask.subtasks?.length || 0}</div>
+                         <div className="flex items-center gap-2">
+                             {isOnline && (
+                                <button onClick={handleAiGenerateSubtasks} disabled={isAiProcessing || !editingTask.text} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
+                                    {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>} Tự động chia nhỏ (AI)
+                                </button>
+                             )}
+                             <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{editingTask.subtasks?.filter(s => s.completed).length || 0}/{editingTask.subtasks?.length || 0}</div>
+                         </div>
                     </div>
                      <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
                          {editingTask.subtasks?.map(st => (
