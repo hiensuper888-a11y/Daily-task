@@ -79,7 +79,7 @@ export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 
 export type Language = 'vi' | 'en';
 
-export type SortOption = 'priority' | 'date_new' | 'date_old' | 'deadline';
+export type SortOption = 'manual' | 'priority' | 'date_new' | 'date_old' | 'deadline';
 
 export interface UserProfile {
   uid?: string; // Unique ID from Firebase

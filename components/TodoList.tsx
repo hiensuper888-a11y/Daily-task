@@ -7,7 +7,7 @@ import {
   Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
   Paperclip, FileText, Loader2,
-  MoreVertical, Sparkles, Flag
+  MoreVertical, Sparkles, Flag, GripVertical
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -30,7 +30,11 @@ const TaskItem = React.memo(({
   onToggle, 
   onDelete, 
   onEdit, 
-  onProgressChange
+  onProgressChange,
+  isDraggable,
+  onDragStart,
+  onDragOver,
+  onDrop
 }: { 
   task: Task, 
   index: number,
@@ -40,7 +44,11 @@ const TaskItem = React.memo(({
   onToggle: (task: Task, e?: React.MouseEvent) => void,
   onDelete: (id: number, e?: React.MouseEvent) => void,
   onEdit: (task: Task) => void,
-  onProgressChange: (id: number, progress: number) => void
+  onProgressChange: (id: number, progress: number) => void,
+  isDraggable: boolean,
+  onDragStart: (e: React.DragEvent, id: number) => void,
+  onDragOver: (e: React.DragEvent) => void,
+  onDrop: (e: React.DragEvent, id: number) => void
 }) => {
     
     const { t } = useLanguage();
@@ -110,17 +118,27 @@ const TaskItem = React.memo(({
 
     return (
         <div 
+            draggable={isDraggable}
+            onDragStart={(e) => onDragStart(e, task.id)}
+            onDragOver={onDragOver}
+            onDrop={(e) => onDrop(e, task.id)}
             onClick={() => onEdit(task)}
             className={`group relative pl-4 pr-4 py-4 rounded-2xl transition-all duration-300 cursor-pointer mb-3 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-lg hover:-translate-y-0.5 overflow-hidden ${
                 task.completed ? 'opacity-60 grayscale-[0.5] bg-slate-50/50' : pStyles.bg
-            }`}
+            } ${isDraggable ? 'active:cursor-grabbing cursor-grab' : ''}`}
             style={{ animationDelay: `${Math.min(index * 50, 400)}ms`, animationFillMode: 'both' }}
         >
              {/* Priority Indicator Strip */}
              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${pStyles.border} transition-colors`}></div>
 
              <div className="flex items-start gap-3.5">
-                {/* Custom Checkbox */}
+                {/* Drag Handle or Checkbox */}
+                {isDraggable && (
+                    <div className="mt-1 text-slate-300 group-hover:text-slate-500 transition-colors cursor-grab active:cursor-grabbing">
+                        <GripVertical size={20} />
+                    </div>
+                )}
+
                 <button 
                   onClick={(e) => onToggle(task, e)} 
                   className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-[2px] shadow-sm relative overflow-hidden shrink-0 ${
@@ -201,6 +219,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newSubtaskText, setNewSubtaskText] = useState('');
   
+  // Drag and Drop State
+  const [dragId, setDragId] = useState<number | null>(null);
+  
   // AI Loading States
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const isOnline = useOnlineStatus();
@@ -257,7 +278,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       if (!files || files.length === 0) return;
 
       const newAtts: Attachment[] = [];
-      const filePromises = Array.from(files).map(file => {
+      const filePromises = Array.from(files).map((file: File) => {
           return new Promise<void>((resolve) => {
               if (file.size > 5 * 1024 * 1024) { 
                   alert(`File "${file.name}" quá lớn (Max 5MB).`);
@@ -304,6 +325,34 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       } else {
           setNewAttachments(prev => prev.filter(a => a.id !== attId));
       }
+  };
+
+  // --- DRAG AND DROP HANDLERS ---
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+      setDragId(id);
+      e.dataTransfer.effectAllowed = "move";
+      // Optional: Set ghost image or just let default behavior work
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault(); // Necessary to allow dropping
+      e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+      e.preventDefault();
+      if (dragId === null || dragId === targetId) return;
+
+      const sourceIndex = tasks.findIndex(t => t.id === dragId);
+      const targetIndex = tasks.findIndex(t => t.id === targetId);
+
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+          const newTasks = [...tasks];
+          const [movedTask] = newTasks.splice(sourceIndex, 1);
+          newTasks.splice(targetIndex, 0, movedTask);
+          setTasks(newTasks);
+      }
+      setDragId(null);
   };
 
   // --- AI HANDLERS ---
@@ -570,6 +619,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         }
 
         switch (sortOption) {
+            case 'manual':
+                return 0; // Maintain array order
             case 'priority': {
                 const pMap = { high: 3, medium: 2, low: 1 };
                 const pA = pMap[a.priority || 'medium'];
@@ -626,6 +677,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const sortOptionsConfig: Record<SortOption, { label: string, icon: any }> = {
+      manual: { label: t.sortManual || 'Manual', icon: GripVertical },
       priority: { label: t.sortPriority || 'Priority', icon: Flag },
       date_new: { label: t.newest || 'Newest', icon: ArrowDownWideNarrow },
       date_old: { label: t.oldest || 'Oldest', icon: ArrowUpWideNarrow },
@@ -875,6 +927,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onDelete={deleteTask}
                 onEdit={handleEditClick}
                 onProgressChange={handleProgressChange}
+                isDraggable={sortOption === 'manual' && filterStatus === 'all' && !searchQuery}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
              />
           ))
         )}
