@@ -71,7 +71,7 @@ export interface Group {
   createdAt: number;
 }
 
-export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'archived';
+export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'delegated' | 'archived';
 
 export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 

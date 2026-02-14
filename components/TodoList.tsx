@@ -287,7 +287,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
         if (t.archived) return false;
+        
+        // Group specific filters
         if (filterStatus === 'assigned_to_me') return t.assignedTo === currentUserId && !t.completed;
+        if (filterStatus === 'delegated') return t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
+        
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
         if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
@@ -478,7 +482,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
           <div className="flex flex-col md:flex-row gap-4 animate-fade-in">
              <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-2 scrollbar-none flex-1 -mx-6 px-6 lg:mx-0 lg:px-0 mask-image-gradient">
-              {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me'] : []), 'archived'] as FilterType[]).map(f => {
+              {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me', 'delegated'] : []), 'archived'] as FilterType[]).map(f => {
                 const isActive = filterStatus === f;
                 return (
                   <button 

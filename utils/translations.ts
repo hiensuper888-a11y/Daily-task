@@ -1,4 +1,5 @@
 
+
 import { Language } from "../types";
 
 const enTranslations = {
@@ -151,6 +152,7 @@ const enTranslations = {
   addNotePlaceholder: "Describe what you did...",
   submitCompletion: "Submit & Complete",
   assigned_to_me: "Assigned to Me",
+  delegated: "Delegated",
   leader: "Leader",
   member: "Member",
   groupCreated: "Group created successfully!",
@@ -309,6 +311,7 @@ const viTranslations = {
   addNotePlaceholder: "Mô tả kết quả công việc...",
   submitCompletion: "Hoàn thành & Báo cáo",
   assigned_to_me: "Việc của tôi",
+  delegated: "Đã giao",
   leader: "Trưởng nhóm",
   member: "Thành viên",
   groupCreated: "Tạo nhóm thành công!",
