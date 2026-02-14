@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare, Paperclip, FileText, Image as ImageIcon, Video, Send, Download, Eye } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare, Paperclip, FileText, Image as ImageIcon, Video, Send, Download, Eye, Users } from 'lucide-react';
 import { Task, FilterType, Priority, Subtask, Group, UserProfile, Attachment, Comment } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -10,9 +10,7 @@ interface TodoListProps {
 }
 
 export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
-  // Determine storage key based on whether we are in a group or personal mode
   const storageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
-  // If activeGroup is present, we force "globalKey" to true in useRealtimeStorage to share data
   const isGlobal = !!activeGroup;
 
   const [tasks, setTasks] = useRealtimeStorage<Task[]>(storageKey, [], isGlobal);
@@ -21,63 +19,40 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [inputValue, setInputValue] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   
-  // Enhanced Input States
   const [assignedDate, setAssignedDate] = useState<string>(''); 
   const [deadline, setDeadline] = useState<string>('');
   const [estimatedTime, setEstimatedTime] = useState<number | undefined>(undefined);
   const [showInputDetails, setShowInputDetails] = useState(false);
-  const [assignedTo, setAssignedTo] = useState<string>(''); // For Group Mode
+  const [assignedTo, setAssignedTo] = useState<string>(''); 
 
-  // Sorting
   const [sortBy, setSortBy] = useState<'priority' | 'deadline' | 'created'>('priority');
   const [showSortMenu, setShowSortMenu] = useState(false);
 
-  // Edit Mode State
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
 
-  // Task Detail Modal State
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const commentListRef = useRef<HTMLDivElement>(null);
 
-  // Completion Note Modal State
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
   const [completionNote, setCompletionNote] = useState('');
 
-  // Filtering & Sorting
   const [filterStatus, setFilterStatus] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // View Navigation State
   const [viewDate, setViewDate] = useState<Date>(new Date());
   
-  const [subtaskInputs, setSubtaskInputs] = useState<Record<number, string>>({});
-
   const { t, language } = useLanguage();
 
-  // Get current user ID to check permissions
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
-  
-  // Check permission: Leader ID OR Role is 'leader'
   const currentMember = activeGroup?.members.find(m => m.id === currentUserId);
   const isLeader = activeGroup?.leaderId === currentUserId || currentMember?.role === 'leader';
 
-  // Helper: Format Date for Input (YYYY-MM-DDTHH:mm)
   const toLocalISOString = (date: Date) => {
     const pad = (num: number) => num.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
-
-  const safeDateToInput = (isoString?: string) => {
-      if (!isoString) return '';
-      try {
-          // Check if ISO string is valid
-          const d = new Date(isoString);
-          if (isNaN(d.getTime())) return '';
-          return toLocalISOString(d);
-      } catch (e) { return ''; }
   };
 
   const formatDisplayDate = (isoString?: string) => {
@@ -93,21 +68,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       });
   };
 
-  const formatEstimate = (mins: number) => {
-      if (mins < 60) return `${mins} ${t.minutes}`;
-      const hrs = Math.floor(mins / 60);
-      const m = mins % 60;
-      return m > 0 ? `${hrs}h ${m}m` : `${hrs} ${t.hours}`;
-  };
-
   const formatDeadline = (isoString: string) => {
       const target = new Date(isoString);
       const now = new Date();
       if(isNaN(target.getTime())) return null;
-
       const diffMs = target.getTime() - now.getTime();
       const diffHrs = diffMs / (1000 * 60 * 60);
-      
       const isOverdue = diffMs < 0;
       const isSoon = diffHrs > 0 && diffHrs < 24;
 
@@ -120,20 +86,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           colorClass = 'text-rose-600 bg-rose-50 border-rose-200 font-bold';
           icon = <AlertCircle size={12} />;
       } else if (isSoon) {
-          const hrsLeft = Math.ceil(diffHrs);
-          text = `${hrsLeft}h left`;
+          text = `${Math.ceil(diffHrs)}h còn lại`;
           colorClass = 'text-amber-600 bg-amber-50 border-amber-200 font-bold';
           icon = <Timer size={12} />;
       }
-
-      return { text, fullDate: target.toLocaleString(), colorClass, icon, isOverdue };
+      return { text, colorClass, icon, isOverdue };
   };
 
   const isToday = (date: Date) => {
     const today = new Date();
-    return date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear();
+    return date.toDateString() === today.toDateString();
   };
 
   const navigateDate = (days: number) => {
@@ -142,30 +104,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setViewDate(newDate);
   };
 
-  // --- TASK MANAGEMENT ---
-
   const addTask = () => {
     if (inputValue.trim() === '') return;
-    
-    // Permission check for groups
     if (activeGroup && !isLeader) {
-        alert("Only Group Leaders can create tasks.");
+        alert("Chỉ trưởng nhóm mới có thể tạo nhiệm vụ.");
         return;
     }
     
     let createdDateStr = '';
-    
     if (assignedDate) {
         createdDateStr = new Date(assignedDate).toISOString();
     } else {
         const now = new Date();
         let baseDate = new Date(viewDate);
-        if (isToday(viewDate)) {
-            createdDateStr = now.toISOString();
-        } else {
-            baseDate.setHours(9, 0, 0); 
-            createdDateStr = baseDate.toISOString();
-        }
+        if (isToday(viewDate)) createdDateStr = now.toISOString();
+        else { baseDate.setHours(9, 0, 0); createdDateStr = baseDate.toISOString(); }
     }
 
     const newTask: Task = {
@@ -190,31 +143,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setDeadline('');
     setAssignedDate('');
     setEstimatedTime(undefined);
-    setNewPriority('medium');
     setAssignedTo('');
   };
 
   const updateTask = (updatedTask: Task) => {
       setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
-      // Also update selectedTask if it's the one being edited
-      if (selectedTask && selectedTask.id === updatedTask.id) {
-          setSelectedTask(updatedTask);
-      }
+      if (selectedTask?.id === updatedTask.id) setSelectedTask(updatedTask);
   };
 
   const handleToggleClick = (task: Task) => {
-      if (task.completed) {
-          // Re-open task
-          toggleTask(task.id, false);
-      } else {
-          if (activeGroup) {
-              // Group mode: Open Note Modal
-              setCompletingTaskId(task.id);
-              setCompletionNote('');
-          } else {
-              // Personal mode: Just complete
-              toggleTask(task.id, true);
-          }
+      if (task.completed) toggleTask(task.id, false);
+      else {
+          if (activeGroup) { setCompletingTaskId(task.id); setCompletionNote(''); }
+          else toggleTask(task.id, true);
       }
   };
 
@@ -238,53 +179,29 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             completedAt: completionTime,
             completedBy: newCompleted ? currentUserId : undefined,
             completionNote: newCompleted ? note : undefined,
-            progress: newCompleted ? 100 : (task.subtasks?.length ? calculateProgressFromSubtasks(task.subtasks) : 0),
-            subtasks: newCompleted 
-                ? task.subtasks?.map(s => ({ ...s, completed: true })) 
-                : task.subtasks 
+            progress: newCompleted ? 100 : 0
         };
       }
       return task;
     }));
   };
 
-  const calculateProgressFromSubtasks = (subtasks: Subtask[]) => {
-      if (!subtasks || subtasks.length === 0) return 0;
-      const completed = subtasks.filter(s => s.completed).length;
-      return Math.round((completed / subtasks.length) * 100);
-  };
-
   const updateProgress = (id: number, val: string) => {
     const progress = parseInt(val, 10);
     const isCompleted = progress === 100;
-    
     if (isCompleted && activeGroup) {
-        // If sliding to 100% in group mode, trigger note modal
-        setCompletingTaskId(id);
-        setCompletionNote('');
+        setCompletingTaskId(id); setCompletionNote('');
         return; 
     }
-
-    setTasks(tasks.map(t => {
-        if (t.id === id) {
-            const newCompletedAt = isCompleted ? (t.completedAt || new Date().toISOString()) : undefined;
-            return { 
-                ...t, 
-                progress, 
-                completed: isCompleted, 
-                completedAt: newCompletedAt,
-                completedBy: isCompleted ? currentUserId : undefined
-            };
-        }
-        return t;
-    }));
-    
+    setTasks(tasks.map(t => t.id === id ? { ...t, progress, completed: isCompleted, completedAt: isCompleted ? new Date().toISOString() : undefined, completedBy: isCompleted ? currentUserId : undefined } : t));
     if (progress === 100) playSuccessSound();
   };
 
   const deleteTask = (id: number) => {
-      setTasks(tasks.filter(t => t.id !== id));
-      if (selectedTask?.id === id) setSelectedTask(null);
+      if (confirm("Xóa nhiệm vụ này?")) {
+        setTasks(tasks.filter(t => t.id !== id));
+        if (selectedTask?.id === id) setSelectedTask(null);
+      }
   };
 
   const saveEdit = () => {
@@ -295,98 +212,49 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       }
   };
 
-  const cancelEdit = () => {
-      setEditingTaskId(null);
-      setEditText('');
-  };
-
-  // --- DETAIL MODAL LOGIC (Attachments & Comments) ---
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!selectedTask || !e.target.files?.length) return;
-      
       const file = e.target.files[0];
       const reader = new FileReader();
-
       reader.onload = (event) => {
           const result = event.target?.result as string;
-          
           let type: 'image' | 'video' | 'file' = 'file';
           if (file.type.startsWith('image/')) type = 'image';
           if (file.type.startsWith('video/')) type = 'video';
-
-          const newAttachment: Attachment = {
-              id: Date.now().toString(),
-              type,
-              name: file.name,
-              url: result, // In a real app, upload to cloud and get URL
-              size: file.size
-          };
-
-          const updatedTask = {
-              ...selectedTask,
-              attachments: [...(selectedTask.attachments || []), newAttachment]
-          };
-          updateTask(updatedTask);
+          const newAttachment: Attachment = { id: Date.now().toString(), type, name: file.name, url: result, size: file.size };
+          updateTask({ ...selectedTask, attachments: [...(selectedTask.attachments || []), newAttachment] });
       };
-
-      // Read file (Use DataURL for Images/Small items demo, usually would upload to server)
       reader.readAsDataURL(file);
   };
 
   const handleAddComment = () => {
       if (!selectedTask || !newComment.trim()) return;
-
-      const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`;
-
       const comment: Comment = {
           id: Date.now().toString(),
           userId: currentUserId,
           userName: userProfile.name || 'User',
-          userAvatar: userProfile.avatar || fallbackAvatar,
+          userAvatar: userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`,
           text: newComment,
           timestamp: Date.now(),
           role: activeGroup ? (isLeader ? 'leader' : 'member') : undefined
       };
-
-      const updatedTask = {
-          ...selectedTask,
-          comments: [...(selectedTask.comments || []), comment]
-      };
-      updateTask(updatedTask);
+      updateTask({ ...selectedTask, comments: [...(selectedTask.comments || []), comment] });
       setNewComment('');
-      
-      // Auto-scroll to bottom of comments
-      setTimeout(() => {
-          if (commentListRef.current) {
-              commentListRef.current.scrollTo({ top: commentListRef.current.scrollHeight, behavior: 'smooth' });
-          }
-      }, 100);
+      setTimeout(() => commentListRef.current?.scrollTo({ top: commentListRef.current.scrollHeight, behavior: 'smooth' }), 100);
   };
 
   const removeAttachment = (attachmentId: string) => {
       if (!selectedTask) return;
-      const updatedTask = {
-          ...selectedTask,
-          attachments: selectedTask.attachments?.filter(a => a.id !== attachmentId)
-      };
-      updateTask(updatedTask);
+      updateTask({ ...selectedTask, attachments: selectedTask.attachments?.filter(a => a.id !== attachmentId) });
   };
-
-  // ---------------------------------------------
 
   const filteredTasks = useMemo(() => {
     return tasks
       .filter(t => {
         const tDate = new Date(t.createdAt);
-        const isSameDay = tDate.getDate() === viewDate.getDate() &&
-                          tDate.getMonth() === viewDate.getMonth() &&
-                          tDate.getFullYear() === viewDate.getFullYear();
+        const isSameDay = tDate.toDateString() === viewDate.toDateString();
         if (!isSameDay || t.archived) return false;
-        
-        if (filterStatus === 'assigned_to_me') {
-             return t.assignedTo === currentUserId && !t.completed;
-        }
+        if (filterStatus === 'assigned_to_me') return t.assignedTo === currentUserId && !t.completed;
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
         if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
@@ -394,27 +262,14 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       })
       .sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        
-        // Sorting Logic
         if (sortBy === 'deadline') {
-            if (!a.deadline && !b.deadline) {
-                 const pMap = { high: 3, medium: 2, low: 1 };
-                 return (pMap[b.priority || 'medium'] || 2) - (pMap[a.priority || 'medium'] || 2);
-            }
-            if (!a.deadline) return 1;
-            if (!b.deadline) return -1;
+            if (!a.deadline && !b.deadline) return 0;
+            if (!a.deadline) return 1; if (!b.deadline) return -1;
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         } 
-        
-        if (sortBy === 'created') {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-
+        if (sortBy === 'created') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         const pMap = { high: 3, medium: 2, low: 1 };
-        const pA = pMap[a.priority || 'medium'];
-        const pB = pMap[b.priority || 'medium'];
-        if (pA !== pB) return pB - pA;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return pMap[b.priority || 'medium'] - pMap[a.priority || 'medium'];
       });
   }, [tasks, viewDate, filterStatus, searchQuery, sortBy, currentUserId]);
 
@@ -428,22 +283,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   }, [tasks, viewDate]);
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative transition-colors duration-500">
       
       {/* Note Completion Modal */}
       {completingTaskId && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in">
-                  <h3 className="text-lg font-bold text-slate-800 mb-4">{t.completionNote}</h3>
+              <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-scale-in">
+                  <h3 className="text-xl font-black text-slate-800 mb-2">Báo cáo kết quả</h3>
+                  <p className="text-slate-500 text-sm mb-6 font-medium">Nhiệm vụ đã hoàn thành! Hãy ghi lại một vài lưu ý nếu cần.</p>
                   <textarea 
                     value={completionNote}
                     onChange={(e) => setCompletionNote(e.target.value)}
-                    placeholder={t.addNotePlaceholder}
-                    className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none text-sm"
+                    placeholder="Ghi chú kết quả..."
+                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-6 focus:outline-none focus:ring-2 focus:ring-emerald-200 resize-none text-sm font-medium"
                   />
-                  <div className="flex gap-2 justify-end">
-                      <button onClick={() => setCompletingTaskId(null)} className="px-4 py-2 text-slate-500 font-bold text-sm hover:bg-slate-100 rounded-xl">Cancel</button>
-                      <button onClick={confirmCompletion} className="px-6 py-2 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200">{t.submitCompletion}</button>
+                  <div className="flex gap-3">
+                      <button onClick={() => setCompletingTaskId(null)} className="flex-1 py-4 text-slate-500 font-black text-sm hover:bg-slate-50 rounded-2xl transition-colors">Hủy</button>
+                      <button onClick={confirmCompletion} className="flex-[2] py-4 bg-emerald-600 text-white font-black text-sm rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">GỬI BÁO CÁO</button>
                   </div>
               </div>
           </div>
@@ -452,95 +308,68 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* --- TASK DETAIL MODAL --- */}
       {selectedTask && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 md:p-4 bg-black/60 backdrop-blur-md animate-fade-in">
-           <div className="bg-white rounded-3xl w-full max-w-4xl h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl animate-scale-in">
-               
-               {/* Left: Task Info */}
-               <div className="flex-1 flex flex-col border-r border-slate-100 h-full overflow-hidden">
-                   <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
-                        <div className="flex-1 pr-4">
-                           <div className="flex items-center gap-2 mb-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+           <div className="bg-white rounded-[2rem] w-full max-w-5xl h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl animate-scale-in border border-white">
+               <div className="flex-1 flex flex-col border-r border-slate-100 h-full overflow-hidden bg-white">
+                   <div className="p-8 border-b border-slate-50 flex justify-between items-start bg-slate-50/30">
+                        <div className="flex-1 pr-6">
+                           <div className="flex items-center gap-3 mb-3">
+                              <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
                                   selectedTask.priority === 'high' ? 'bg-rose-100 text-rose-600' : 
                                   selectedTask.priority === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
                               }`}>
-                                  {selectedTask.priority}
+                                  Mức: {selectedTask.priority}
                               </span>
-                              {selectedTask.completed && <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600">Completed</span>}
+                              {selectedTask.completed && <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-600">Đã xong</span>}
                            </div>
-                           <h2 className={`text-2xl font-black text-slate-800 leading-tight ${selectedTask.completed ? 'line-through decoration-2 decoration-slate-300 text-slate-400' : ''}`}>{selectedTask.text}</h2>
+                           <h2 className={`text-2xl font-black text-slate-800 leading-tight ${selectedTask.completed ? 'opacity-40' : ''}`}>{selectedTask.text}</h2>
                         </div>
-                        <button onClick={() => setSelectedTask(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
-                            <X size={24} />
-                        </button>
+                        <button onClick={() => setSelectedTask(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"><X size={24} /></button>
                    </div>
-
-                   <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-8">
-                       {/* Metadata */}
-                       <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                           <div className="flex items-center gap-2"><CalendarIcon size={16}/> Created: {formatDisplayDate(selectedTask.createdAt)}</div>
-                           {selectedTask.deadline && <div className="flex items-center gap-2 text-orange-600"><Clock size={16}/> Deadline: {formatDisplayDate(selectedTask.deadline)}</div>}
-                           {activeGroup && selectedTask.assignedTo && (
-                               <div className="flex items-center gap-2">
-                                   <UserIcon size={16}/> 
-                                   Assigned to: <span className="font-bold text-slate-700">{activeGroup.members.find(m => m.id === selectedTask.assignedTo)?.name || 'Unknown'}</span>
-                               </div>
+                   <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ngày tạo</p>
+                               <div className="font-bold text-slate-700 flex items-center gap-2"><CalendarIcon size={16} className="text-indigo-500"/> {formatDisplayDate(selectedTask.createdAt)}</div>
+                           </div>
+                           {selectedTask.deadline && (
+                            <div className="bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
+                                <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">Hạn chót</p>
+                                <div className="font-bold text-orange-700 flex items-center gap-2"><Clock size={16} className="text-orange-500"/> {formatDisplayDate(selectedTask.deadline)}</div>
+                            </div>
                            )}
                        </div>
 
-                       {/* Completion Info */}
                        {selectedTask.completed && selectedTask.completionNote && (
-                           <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                               <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Completion Report</p>
-                               <p className="text-slate-700 italic">"{selectedTask.completionNote}"</p>
+                           <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100">
+                               <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Báo cáo hoàn thành</p>
+                               <p className="text-slate-700 italic leading-relaxed font-medium">"{selectedTask.completionNote}"</p>
                            </div>
                        )}
 
-                       {/* Attachments Section */}
                        <div>
-                           <div className="flex items-center justify-between mb-3">
-                               <h3 className="font-bold text-slate-800 flex items-center gap-2"><Paperclip size={18} className="text-indigo-500"/> Attachments</h3>
-                               <button onClick={() => fileInputRef.current?.click()} className="text-xs bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1">
-                                   <Plus size={14}/> Add File
+                           <div className="flex items-center justify-between mb-5">
+                               <h3 className="font-black text-slate-800 flex items-center gap-2 text-base"><Paperclip size={20} className="text-indigo-500"/> Tài liệu đính kèm</h3>
+                               <button onClick={() => fileInputRef.current?.click()} className="text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-4 py-2 rounded-xl font-black transition-all flex items-center gap-2 uppercase tracking-wide">
+                                   <Plus size={14}/> Thêm tệp
                                </button>
                                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} multiple accept="image/*,video/*,.pdf,.doc,.docx" />
                            </div>
                            
-                           {(!selectedTask.attachments || selectedTask.attachments.length === 0) ? (
-                               <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl text-slate-400 text-sm">
-                                   No attachments yet
-                               </div>
+                           {!selectedTask.attachments?.length ? (
+                               <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-3xl text-slate-400 text-sm font-medium">Chưa có tài liệu đính kèm</div>
                            ) : (
-                               <div className="grid grid-cols-2 gap-3">
+                               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                    {selectedTask.attachments.map(att => (
-                                       <div key={att.id} className="relative group border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all bg-white">
+                                       <div key={att.id} className="relative group border border-slate-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-indigo-100 transition-all bg-white">
                                            {att.type === 'image' ? (
-                                               <div className="aspect-video bg-slate-100 relative">
-                                                   <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
-                                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                       <a href={att.url} download={att.name} className="p-2 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-full backdrop-blur-sm"><Download size={16}/></a>
-                                                   </div>
-                                               </div>
-                                           ) : att.type === 'video' ? (
-                                               <div className="aspect-video bg-slate-900 flex items-center justify-center text-white relative">
-                                                   <Video size={32} opacity={0.5}/>
-                                                   <video src={att.url} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                                                   <Play size={24} className="absolute z-10"/>
-                                               </div>
+                                               <div className="aspect-square relative"><img src={att.url} className="w-full h-full object-cover" /></div>
                                            ) : (
-                                               <div className="p-4 flex items-center gap-3">
-                                                   <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500"><FileText size={20}/></div>
-                                                   <div className="flex-1 min-w-0">
-                                                       <p className="text-xs font-bold text-slate-700 truncate">{att.name}</p>
-                                                       <p className="text-[10px] text-slate-400">{(att.size ? (att.size/1024).toFixed(1) + ' KB' : 'File')}</p>
-                                                   </div>
+                                               <div className="p-4 flex flex-col items-center justify-center aspect-square gap-3">
+                                                   <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 transition-all"><FileText size={24}/></div>
+                                                   <p className="text-[10px] font-bold text-slate-600 truncate w-full text-center px-2">{att.name}</p>
                                                </div>
                                            )}
-                                           <button 
-                                                onClick={() => removeAttachment(att.id)}
-                                                className="absolute top-1 right-1 bg-white/80 hover:bg-red-500 hover:text-white text-slate-400 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all z-20"
-                                           >
-                                               <X size={14}/>
-                                           </button>
+                                           <button onClick={() => removeAttachment(att.id)} className="absolute top-2 right-2 bg-white/90 hover:bg-red-500 hover:text-white text-slate-400 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all shadow-lg"><X size={14}/></button>
                                        </div>
                                    ))}
                                </div>
@@ -549,67 +378,46 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                    </div>
                </div>
 
-               {/* Right: Comments/Activity */}
-               <div className="w-full md:w-[350px] bg-slate-50 flex flex-col h-[50vh] md:h-full">
-                   <div className="p-4 border-b border-slate-200 font-bold text-slate-700 flex items-center gap-2 bg-white">
-                       <MessageSquare size={18} className="text-indigo-500"/> Activity & Comments
+               <div className="w-full md:w-[380px] bg-slate-50 flex flex-col h-[50vh] md:h-full">
+                   <div className="p-6 border-b border-slate-200 font-black text-slate-800 flex items-center gap-2 bg-white text-sm">
+                       <MessageSquare size={18} className="text-indigo-500"/> HOẠT ĐỘNG & THẢO LUẬN
                    </div>
                    
-                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref={commentListRef}>
-                       {(!selectedTask.comments || selectedTask.comments.length === 0) ? (
-                           <div className="text-center text-slate-400 text-xs py-10">No comments yet. Be the first!</div>
+                   <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar" ref={commentListRef}>
+                       {!selectedTask.comments?.length ? (
+                           <div className="text-center text-slate-400 text-xs py-12 font-medium">Chưa có bình luận nào.<br/>Hãy bắt đầu cuộc hội thoại!</div>
                        ) : (
-                           selectedTask.comments.map(comment => {
-                               const commentDate = new Date(comment.timestamp);
-                               const dateDisplay = isToday(commentDate) 
-                                   ? commentDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-                                   : commentDate.toLocaleDateString([], {month: 'short', day: 'numeric', hour:'2-digit', minute:'2-digit'});
-                                   
-                               return (
-                                   <div key={comment.id} className={`flex gap-3 ${comment.userId === currentUserId ? 'flex-row-reverse' : ''}`}>
-                                       <div className="flex-shrink-0">
-                                           <img 
-                                                src={comment.userAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.userId}`} 
-                                                alt={comment.userName} 
-                                                className="w-8 h-8 rounded-full border border-white shadow-sm bg-slate-200" 
-                                           />
+                           selectedTask.comments.map(comment => (
+                               <div key={comment.id} className={`flex gap-3 ${comment.userId === currentUserId ? 'flex-row-reverse' : ''}`}>
+                                   <img src={comment.userAvatar} className="w-9 h-9 rounded-xl border-2 border-white shadow-sm shrink-0 bg-white" />
+                                   <div className={`flex flex-col max-w-[80%] ${comment.userId === currentUserId ? 'items-end' : 'items-start'}`}>
+                                       <div className="flex items-center gap-2 mb-1 px-1">
+                                           <span className="text-[10px] font-black text-slate-500">{comment.userName}</span>
+                                           <span className="text-[9px] text-slate-400 font-bold">{new Date(comment.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                                        </div>
-                                       <div className={`flex flex-col max-w-[85%] ${comment.userId === currentUserId ? 'items-end' : 'items-start'}`}>
-                                           <div className="flex items-center gap-2 mb-1">
-                                               <span className="text-[10px] font-bold text-slate-600">{comment.userName}</span>
-                                               {comment.role === 'leader' && <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 rounded font-bold uppercase">Leader</span>}
-                                               <span className="text-[9px] text-slate-400">{dateDisplay}</span>
-                                           </div>
-                                           <div className={`px-3 py-2 rounded-2xl text-sm ${
-                                               comment.userId === currentUserId 
-                                               ? 'bg-indigo-600 text-white rounded-tr-none' 
-                                               : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
-                                           }`}>
-                                               {comment.text}
-                                           </div>
+                                       <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-sm font-medium ${
+                                           comment.userId === currentUserId 
+                                           ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                           : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
+                                       }`}>
+                                           {comment.text}
                                        </div>
                                    </div>
-                               );
-                           })
+                               </div>
+                           ))
                        )}
                    </div>
 
-                   <div className="p-3 bg-white border-t border-slate-200">
-                       <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-transparent focus-within:border-indigo-300 focus-within:bg-white transition-all">
+                   <div className="p-4 bg-white border-t border-slate-100">
+                       <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100 transition-all border border-transparent focus-within:border-indigo-100">
                            <input 
                                value={newComment}
                                onChange={(e) => setNewComment(e.target.value)}
-                               onKeyDown={(e) => { if(e.key === 'Enter') handleAddComment() }}
-                               placeholder="Write a comment..."
-                               className="flex-1 bg-transparent border-none text-sm px-3 focus:ring-0 placeholder:text-slate-400"
+                               onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                               placeholder="Viết phản hồi..."
+                               className="flex-1 bg-transparent border-none text-[13px] px-3 focus:ring-0 placeholder:text-slate-400 font-medium"
                            />
-                           <button 
-                                onClick={handleAddComment}
-                                disabled={!newComment.trim()}
-                                className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-                           >
-                               <Send size={16} />
-                           </button>
+                           <button onClick={handleAddComment} disabled={!newComment.trim()} className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:bg-slate-200 transition-all active:scale-95 shadow-lg shadow-indigo-100"><Send size={18} /></button>
                        </div>
                    </div>
                </div>
@@ -618,126 +426,80 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       )}
 
       {/* --- HEADER --- */}
-      <div className="px-6 py-6 pb-2 relative z-10">
+      <div className="px-8 pt-8 pb-4 relative z-10">
         <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-start animate-fade-in">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <div className="flex justify-between items-start">
+                <div className="animate-fade-in">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1.5 uppercase tracking-widest ${activeGroup ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                            {activeGroup ? <Users size={12}/> : <UserIcon size={12}/>}
+                            {activeGroup ? 'Chế độ nhóm' : 'Chế độ cá nhân'}
+                        </div>
+                    </div>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
                         {activeGroup ? (
                             <>
                                 {activeGroup.avatar ? (
-                                    <img src={activeGroup.avatar} alt={activeGroup.name} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm" />
+                                    <img src={activeGroup.avatar} alt={activeGroup.name} className="w-10 h-10 rounded-xl object-cover shadow-lg border-2 border-white" />
                                 ) : (
-                                    <span className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><UserIcon size={24}/></span>
+                                    <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Users size={20}/></div>
                                 )}
                                 {activeGroup.name}
                             </>
-                        ) : t.todoHeader}
+                        ) : "Nhiệm vụ của tôi"}
                     </h1>
-                    <p className="text-slate-500 font-medium text-sm mt-1 flex items-center gap-2">
-                        <span className="bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-md text-xs font-bold">
-                           {stats.completed} / {stats.total} {t.items}
+                    <div className="flex items-center gap-3 mt-3">
+                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black ${activeGroup ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>
+                           {stats.completed}/{stats.total} {t.items}
                         </span>
-                        <span>•</span>
-                        <span className="text-slate-400">{stats.progress}% {t.done}</span>
-                    </p>
-                </div>
-                {/* Clean Progress Ring */}
-                <div className="relative w-14 h-14 group cursor-pointer hover:scale-105 transition-transform">
-                     <svg className="w-full h-full -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
-                        <path className="text-slate-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                        <path className="text-indigo-600 transition-all duration-1000 ease-out" strokeDasharray={`${stats.progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-indigo-700">
-                        {stats.progress}%
+                        <div className="h-1 w-20 bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full transition-all duration-1000 ${activeGroup ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{width: `${stats.progress}%`}}></div>
+                        </div>
+                        <span className="text-[11px] font-black text-slate-400">{stats.progress}%</span>
                     </div>
+                </div>
+                
+                <div className="relative w-16 h-16 animate-scale-in">
+                     <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                        <path className="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                        <path className={`${activeGroup ? 'text-emerald-500' : 'text-indigo-600'} transition-all duration-1000 ease-out`} strokeDasharray={`${stats.progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-black ${activeGroup ? 'text-emerald-700' : 'text-indigo-700'}`}>{stats.progress}%</div>
                 </div>
             </div>
 
-            {/* Filter and Sort Bar */}
             <div className="flex flex-col gap-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
-                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-1.5 shadow-sm border border-slate-200 flex items-center justify-between">
-                    <button onClick={() => navigateDate(-1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
-                        <ChevronLeft size={20} />
-                    </button>
-                    
-                    <div className="flex flex-col items-center cursor-pointer group relative">
-                        <input 
-                            type="date" 
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                            onChange={(e) => {
-                                if(e.target.value) setViewDate(new Date(e.target.value));
-                            }}
-                            value={toLocalISOString(viewDate).split('T')[0]}
-                        />
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5 group-hover:text-indigo-500 transition-colors">
-                            {isToday(viewDate) ? t.today : viewDate.toLocaleDateString(language, { weekday: 'long' })}
-                        </span>
-                        <span className="text-base font-bold text-slate-800 flex items-center gap-2">
-                            {viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </span>
+                <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                    <button onClick={() => navigateDate(-1)} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-all"><ChevronLeft size={20} /></button>
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{isToday(viewDate) ? t.today : viewDate.toLocaleDateString(language, { weekday: 'long' })}</span>
+                        <span className="text-sm font-black text-slate-800">{viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long' })}</span>
                     </div>
-
-                    <button onClick={() => navigateDate(1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
-                        <ChevronRight size={20} />
-                    </button>
+                    <button onClick={() => navigateDate(1)} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-all"><ChevronRight size={20} /></button>
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 pr-1">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
                     {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me'] : [])] as FilterType[]).map(f => (
                         <button
                             key={f}
                             onClick={() => setFilterStatus(f)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold capitalize whitespace-nowrap transition-all ${
+                            className={`px-5 py-2.5 rounded-xl text-xs font-black capitalize whitespace-nowrap transition-all ${
                                 filterStatus === f 
-                                ? 'bg-slate-800 text-white shadow-md' 
-                                : 'bg-white/60 text-slate-500 border border-transparent hover:bg-white hover:border-slate-100'
+                                ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100') 
+                                : 'bg-white text-slate-500 border border-slate-100 hover:border-slate-200'
                             }`}
                         >
                             {t[f]}
                         </button>
                     ))}
-                    
-                    {/* Sorting Dropdown */}
-                    <div className="relative">
-                        <button 
-                            onClick={() => setShowSortMenu(!showSortMenu)}
-                            className={`p-2 rounded-xl transition-all flex items-center gap-1.5 ${showSortMenu ? 'bg-indigo-100 text-indigo-700' : 'bg-white/60 text-slate-400 hover:bg-white hover:text-slate-600'}`}
-                            title={t.sortBy}
-                        >
-                            <ArrowUpDown size={16} />
-                        </button>
-                        {showSortMenu && (
-                            <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 p-1 z-30 min-w-[140px] animate-fade-in">
-                                {[
-                                    { id: 'priority', icon: ArrowDownWideNarrow, label: t.sortPriority },
-                                    { id: 'deadline', icon: Clock, label: t.deadline },
-                                    { id: 'created', icon: CalendarDays, label: t.sortDate }
-                                ].map((opt) => (
-                                    <button
-                                        key={opt.id}
-                                        onClick={() => { setSortBy(opt.id as any); setShowSortMenu(false); }}
-                                        className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                                            sortBy === opt.id ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <opt.icon size={14} /> {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {showSortMenu && <div className="fixed inset-0 z-20" onClick={() => setShowSortMenu(false)}></div>}
-                    </div>
-
-                    <div className="w-px h-6 bg-slate-200/50 mx-1 shrink-0"></div>
-                    <div className="relative flex-1 group min-w-[100px]">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <div className="relative ml-auto min-w-[200px]">
+                        <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input 
                             type="text" 
-                            placeholder="Search..." 
+                            placeholder="Tìm kiếm..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-white/60 border border-transparent hover:border-slate-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-400"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-400"
                         />
                     </div>
                 </div>
@@ -746,144 +508,38 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       </div>
 
       {/* --- TASK LIST --- */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-40 custom-scrollbar z-0">
+      <div className="flex-1 overflow-y-auto px-8 pb-40 custom-scrollbar z-0">
         {filteredTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-slate-400 animate-scale-in">
-                <div className="w-20 h-20 bg-slate-100/80 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                    <Archive size={32} className="text-slate-300" />
-                </div>
-                <p className="text-sm font-bold text-slate-500">{t.emptyTasks}</p>
+            <div className="flex flex-col items-center justify-center py-24 text-slate-300">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4"><Archive size={32} strokeWidth={1.5} /></div>
+                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{t.emptyTasks}</p>
             </div>
         ) : (
-            <div className="space-y-3 pb-4">
+            <div className="space-y-3">
                 {filteredTasks.map((task, index) => {
                     const isEditing = editingTaskId === task.id;
                     const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
                     const isOverdue = deadlineInfo?.isOverdue && !task.completed;
-                    
-                    // Group: Get assigned user info
                     const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
-                    const completedMember = activeGroup?.members.find(m => m.id === task.completedBy);
-
-                    const priorityColors = {
-                        high: 'bg-rose-500',
-                        medium: 'bg-amber-400',
-                        low: 'bg-emerald-400'
-                    };
 
                     return (
-                        <div 
-                            key={task.id}
-                            style={{ animationDelay: `${index * 0.05}s` }}
-                            className={`animate-fade-in group relative bg-white/90 backdrop-blur-md rounded-2xl p-0 border transition-all duration-300 ${
-                                isEditing ? 'border-indigo-500 shadow-xl z-20 scale-[1.01]' :
-                                task.completed 
-                                ? 'border-transparent opacity-60 hover:opacity-100' 
-                                : isOverdue 
-                                    ? 'border-rose-200 bg-rose-50/30' 
-                                    : 'border-white hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5'
-                            } shadow-sm`}
-                        >
-                            {/* Visual Priority Indicator */}
-                            <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${priorityColors[task.priority || 'medium']} opacity-80`}></div>
-
-                            <div className="p-4 pl-5">
-                                <div className="flex items-start gap-3 relative z-10">
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleToggleClick(task); }}
-                                        className={`mt-0.5 shrink-0 transition-all duration-300 ${
-                                            task.completed 
-                                            ? 'text-emerald-500 scale-110' 
-                                            : 'text-slate-300 hover:text-indigo-600 hover:scale-110'
-                                        }`}
-                                    >
-                                        {task.completed ? <CheckCircle2 size={22} className="fill-emerald-50" /> : <Circle size={22} strokeWidth={2.5} />}
-                                    </button>
-                                    
-                                    <div className="flex-1 min-w-0" onClick={() => setSelectedTask(task)}>
-                                        {isEditing ? (
-                                            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                                                <input 
-                                                    value={editText}
-                                                    onChange={(e) => setEditText(e.target.value)}
-                                                    className="w-full text-lg font-bold text-slate-800 border-b border-indigo-200 focus:border-indigo-500 focus:outline-none bg-transparent pb-1"
-                                                    autoFocus
-                                                />
-                                                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                                                    <button onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><XCircle size={20}/></button>
-                                                    <button onClick={saveEdit} className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"><Save size={16}/> Save</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="flex justify-between items-start gap-2 cursor-pointer">
-                                                    <p className={`text-[15px] font-semibold leading-snug transition-all ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                                        {task.text}
-                                                    </p>
-                                                    
-                                                    <div className="flex items-center gap-1">
-                                                        {assignedMember && !task.completed && (
-                                                            <img src={assignedMember.avatar} alt={assignedMember.name} className="w-6 h-6 rounded-full border border-white shadow-sm" title={`Assigned to ${assignedMember.name}`}/>
-                                                        )}
-                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-200" onClick={(e) => e.stopPropagation()}>
-                                                            <button onClick={() => { setEditingTaskId(task.id); setEditText(task.text); }} className="text-slate-300 hover:text-indigo-500 p-1.5 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={15} /></button>
-                                                            <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={15} /></button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* Metadata Chips */}
-                                                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
-                                                        <CalendarDays size={10} /> {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric'})}
-                                                    </span>
-
-                                                    {task.attachments && task.attachments.length > 0 && (
-                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100">
-                                                            <Paperclip size={10} /> {task.attachments.length}
-                                                        </span>
-                                                    )}
-
-                                                    {task.comments && task.comments.length > 0 && (
-                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
-                                                            <MessageSquare size={10} /> {task.comments.length}
-                                                        </span>
-                                                    )}
-
-                                                    {deadlineInfo && (
-                                                        <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${deadlineInfo.colorClass}`}>
-                                                            {deadlineInfo.icon} {deadlineInfo.text}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                
-                                                {/* Completion Note */}
-                                                {task.completed && (task.completedBy || task.completionNote) && (
-                                                    <div className="mt-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 flex items-start gap-2 text-xs">
-                                                        <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5"/>
-                                                        <div>
-                                                            {completedMember && <span className="font-bold text-emerald-700 mr-1">{completedMember.name}</span>}
-                                                            <span className="text-slate-600 italic">{task.completionNote}</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Progress Bar */}
-                                                {!task.completed && (
-                                                    <div className="mt-3 flex items-center gap-2 group/slider" onClick={(e) => e.stopPropagation()}>
-                                                        <div className="relative flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div className={`absolute h-full rounded-full transition-all duration-500 relative overflow-hidden ${isOverdue ? 'bg-rose-500' : 'bg-indigo-500'}`} style={{width: `${task.progress}%`}}>
-                                                                <div className="absolute inset-0 animate-shimmer opacity-40"></div>
-                                                            </div>
-                                                            {(!task.subtasks || task.subtasks.length === 0) && (
-                                                                <input type="range" min="0" max="100" value={task.progress} onChange={(e) => updateProgress(task.id, e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-[10px] font-mono font-bold text-slate-400 w-8 text-right">{task.progress}%</span>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
+                        <div key={task.id} style={{ animationDelay: `${index * 0.05}s` }} className={`animate-fade-in group bg-white rounded-3xl p-5 border transition-all duration-300 ${task.completed ? 'opacity-60 border-transparent' : 'border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1'}`}>
+                            <div className="flex items-start gap-4">
+                                <button onClick={() => handleToggleClick(task)} className={`mt-1 transition-all duration-300 ${task.completed ? 'text-emerald-500 scale-110' : 'text-slate-200 hover:text-indigo-500'}`}>
+                                    {task.completed ? <CheckCircle2 size={24} className="fill-emerald-50" /> : <Circle size={24} strokeWidth={2.5} />}
+                                </button>
+                                <div className="flex-1 min-w-0" onClick={() => setSelectedTask(task)}>
+                                    <div className="flex justify-between items-start gap-3 cursor-pointer">
+                                        <p className={`text-[15px] font-black leading-snug transition-all ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.text}</p>
+                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                            <button onClick={() => { setEditingTaskId(task.id); setEditText(task.text); }} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors"><Edit2 size={16} /></button>
+                                            <button onClick={() => deleteTask(task.id)} className="p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-500 rounded-xl transition-colors"><Trash2 size={16} /></button>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 mt-3">
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${task.priority === 'high' ? 'text-rose-500 bg-rose-50' : task.priority === 'medium' ? 'text-amber-500 bg-amber-50' : 'text-emerald-500 bg-emerald-50'}`}>{task.priority}</span>
+                                        {deadlineInfo && <span className={`text-[10px] font-black flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                                        {assignedMember && <div className="flex items-center gap-1.5 ml-auto"><span className="text-[10px] font-black text-slate-400 uppercase">Giao cho:</span><img src={assignedMember.avatar} className="w-5 h-5 rounded-lg border border-white shadow-sm" /></div>}
                                     </div>
                                 </div>
                             </div>
@@ -894,153 +550,41 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         )}
       </div>
 
-      {/* --- FLOATING INPUT BAR (Only visible if Personal or (Group + Leader)) --- */}
       {(!activeGroup || isLeader) && (
-        <div className="absolute bottom-6 left-0 right-0 px-4 md:px-6 z-30 pointer-events-none">
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-                <div className={`glass rounded-[2rem] transition-all duration-300 border border-white/50 bg-white/80 backdrop-blur-xl ${showInputDetails ? 'p-4 shadow-2xl ring-1 ring-indigo-500/10' : 'p-2 shadow-xl shadow-indigo-900/10'}`}>
-                    
+        <div className="absolute bottom-8 left-0 right-0 px-8 z-30 pointer-events-none">
+            <div className="max-w-4xl mx-auto pointer-events-auto">
+                <div className={`bg-white rounded-[2.5rem] transition-all duration-300 border border-slate-100 shadow-2xl ${showInputDetails ? 'p-6' : 'p-3'}`}>
                     {showInputDetails && (
-                        <div className="flex flex-wrap items-center gap-3 mb-4 animate-fade-in border-b border-slate-100 pb-4">
-                            {/* Assigned Date Picker */}
-                            <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${assignedDate ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
-                                <div className="relative flex items-center">
-                                    <button 
-                                        type="button"
-                                        className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${assignedDate ? 'text-indigo-700' : 'text-slate-500'}`}
-                                    >
-                                        <CalendarDays size={14} className={assignedDate ? "text-indigo-600" : "text-slate-400"} /> 
-                                        <span>{assignedDate ? formatDisplayDate(assignedDate) : t.setAssignedDate || 'Start Date'}</span>
-                                    </button>
-                                    <input 
-                                        type="datetime-local" 
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        value={assignedDate}
-                                        onChange={(e) => setAssignedDate(e.target.value)}
-                                    />
-                                </div>
-                                {assignedDate && (
-                                    <button onClick={() => setAssignedDate('')} className="pr-2 pl-1 text-indigo-400 hover:text-red-500 relative z-20">
-                                        <X size={12} />
-                                    </button>
-                                )}
+                        <div className="flex flex-wrap items-center gap-4 mb-5 animate-fade-in border-b border-slate-50 pb-5">
+                            <div className="relative group">
+                                <button className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${assignedDate ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500'}`}>
+                                    <CalendarDays size={14} /> {assignedDate ? formatDisplayDate(assignedDate) : "Ngày bắt đầu"}
+                                </button>
+                                <input type="datetime-local" className="absolute inset-0 opacity-0 cursor-pointer" value={assignedDate} onChange={e => setAssignedDate(e.target.value)} />
                             </div>
-
-                            {/* Deadline Picker */}
-                            <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${deadline ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
-                                <div className="relative flex items-center">
-                                    <button 
-                                        type="button"
-                                        className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${deadline ? 'text-orange-700' : 'text-slate-500'}`}
-                                    >
-                                        <CalendarClock size={14} className={deadline ? "text-orange-600" : "text-slate-400"} /> 
-                                        <span>{deadline ? formatDisplayDate(deadline) : t.setDeadline}</span>
-                                    </button>
-                                    <input 
-                                        type="datetime-local" 
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        value={deadline}
-                                        onChange={(e) => setDeadline(e.target.value)}
-                                    />
-                                </div>
-                                {deadline && (
-                                    <button onClick={() => setDeadline('')} className="pr-2 pl-1 text-orange-400 hover:text-red-500 relative z-20">
-                                        <X size={12} />
-                                    </button>
-                                )}
+                            <div className="relative group">
+                                <button className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${deadline ? 'bg-rose-600 text-white' : 'bg-slate-50 text-slate-500'}`}>
+                                    <CalendarClock size={14} /> {deadline ? formatDisplayDate(deadline) : "Hạn chót"}
+                                </button>
+                                <input type="datetime-local" className="absolute inset-0 opacity-0 cursor-pointer" value={deadline} onChange={e => setDeadline(e.target.value)} />
                             </div>
-
-                            {/* Estimate Time */}
-                            <div className={`flex items-center gap-1 border rounded-xl p-1 pl-3 transition-colors ${estimatedTime ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
-                                <Hourglass size={14} className={estimatedTime ? "text-violet-500" : "text-slate-400"}/>
-                                <select 
-                                    className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${estimatedTime ? 'text-violet-700' : 'text-slate-600'}`}
-                                    value={estimatedTime || ''}
-                                    onChange={(e) => setEstimatedTime(e.target.value ? parseInt(e.target.value) : undefined)}
-                                >
-                                    <option value="">{t.setEstimate}</option>
-                                    <option value="15">15 {t.minutes}</option>
-                                    <option value="30">30 {t.minutes}</option>
-                                    <option value="45">45 {t.minutes}</option>
-                                    <option value="60">1 {t.hours}</option>
-                                    <option value="120">2 {t.hours}</option>
-                                    <option value="240">4 {t.hours}</option>
-                                </select>
-                                {estimatedTime && (
-                                    <button onClick={() => setEstimatedTime(undefined)} className="p-1 text-violet-400 hover:text-red-500"><X size={12} /></button>
-                                )}
-                            </div>
-
-                            {/* Group Assignment Selector (Only for Leaders) */}
                             {activeGroup && isLeader && (
-                                <div className="flex items-center gap-1 border rounded-xl p-1 pl-3 bg-slate-50 border-slate-100">
-                                    <UserIcon size={14} className={assignedTo ? "text-indigo-500" : "text-slate-400"}/>
-                                    <select 
-                                        className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${assignedTo ? 'text-indigo-700' : 'text-slate-600'}`}
-                                        value={assignedTo}
-                                        onChange={(e) => setAssignedTo(e.target.value)}
-                                    >
-                                        <option value="">{t.assignTo}</option>
-                                        {activeGroup.members.map(m => (
-                                            <option key={m.id} value={m.id}>{m.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <select className="bg-slate-50 text-[11px] font-black uppercase tracking-widest px-4 py-2.5 rounded-2xl border-none focus:ring-2 focus:ring-indigo-100" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                                    <option value="">Giao cho...</option>
+                                    {activeGroup.members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                </select>
                             )}
-
-                            {/* Priority Selector */}
-                            <div className="flex gap-1 ml-auto">
+                            <div className="flex gap-1.5 ml-auto">
                                 {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                                    <button
-                                        key={p}
-                                        onClick={() => setNewPriority(p)}
-                                        className={`w-8 h-8 rounded-full transition-all flex items-center justify-center border shadow-sm ${
-                                            newPriority === p 
-                                            ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
-                                            : 'bg-white border-slate-100 text-slate-300 hover:text-slate-500 hover:bg-slate-50'
-                                        }`}
-                                        title={t[p] || p}
-                                    >
-                                        <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : "currentColor"} />
-                                    </button>
+                                    <button key={p} onClick={() => setNewPriority(p)} className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center font-black text-[10px] uppercase ${newPriority === p ? (p === 'high' ? 'bg-rose-500 text-white shadow-lg' : p === 'medium' ? 'bg-amber-500 text-white shadow-lg' : 'bg-emerald-500 text-white shadow-lg') : 'bg-slate-50 text-slate-400'}`}>{p[0]}</button>
                                 ))}
                             </div>
                         </div>
                     )}
-
-                    {/* Input Row */}
-                    <div className="flex items-center gap-2">
-                        <button 
-                            onClick={() => setShowInputDetails(!showInputDetails)}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border ${
-                                showInputDetails 
-                                ? 'bg-indigo-600 text-white border-indigo-600 rotate-90 shadow-md' 
-                                : 'bg-slate-100 text-slate-500 border-transparent hover:bg-indigo-50 hover:text-indigo-600'
-                            }`}
-                        >
-                            <SlidersHorizontal size={18} />
-                        </button>
-
-                        <input 
-                            type="text" 
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
-                            placeholder={t.addTaskPlaceholder}
-                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 h-10 px-2"
-                        />
-
-                        <button 
-                            onClick={addTask}
-                            disabled={!inputValue.trim()}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                                inputValue.trim() 
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 hover:bg-indigo-700 active:scale-95' 
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            }`}
-                        >
-                            <Plus size={22} strokeWidth={2.5} />
-                        </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setShowInputDetails(!showInputDetails)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${showInputDetails ? 'bg-slate-100 text-slate-800 rotate-90' : 'bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'}`}><SlidersHorizontal size={20} /></button>
+                        <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()} placeholder={t.addTaskPlaceholder} className="flex-1 bg-transparent border-none focus:ring-0 text-base font-bold text-slate-800 placeholder:text-slate-300 h-12 px-2" />
+                        <button onClick={addTask} disabled={!inputValue.trim()} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${inputValue.trim() ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200 active:scale-90' : 'bg-slate-100 text-slate-300'}`}><Plus size={28} strokeWidth={2.5} /></button>
                     </div>
                 </div>
             </div>
