@@ -3,6 +3,7 @@ import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadshee
 import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
+// @ts-ignore
 import PptxGenJS from 'pptxgenjs';
 
 type Period = 'day' | 'week' | 'month' | 'year' | 'custom';

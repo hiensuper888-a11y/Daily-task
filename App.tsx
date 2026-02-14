@@ -59,6 +59,36 @@ const deleteGlobalGroup = (groupId: string) => {
     window.dispatchEvent(new Event('storage'));
 };
 
+interface NavItemProps {
+  tab: AppTab;
+  icon: any;
+  label: string;
+  activeTab: AppTab;
+  activeGroupId: string | null;
+  setActiveTab: (tab: AppTab) => void;
+  setActiveGroupId: (id: string | null) => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ tab, icon: Icon, label, activeTab, activeGroupId, setActiveTab, setActiveGroupId }) => {
+  const isActive = activeTab === tab && activeGroupId === null;
+  return (
+    <button
+      onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
+      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 font-bold group mb-1 ${
+        isActive
+          ? `bg-indigo-50 text-indigo-700` 
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'} />
+        <span className="text-sm">{label}</span>
+      </div>
+      {isActive && <ChevronRight size={14} className="text-indigo-400"/>}
+    </button>
+  );
+};
+
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('tasks');
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -260,26 +290,6 @@ const AppContent: React.FC = () => {
   const startEditingMember = (member: GroupMember) => { setEditingMemberId(member.id); setEditMemberTitle(member.customTitle || ''); setEditMemberNote(member.note || ''); };
   const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); };
 
-  const NavItem = ({ tab, icon: Icon, label }: any) => {
-    const isActive = activeTab === tab && activeGroupId === null;
-    return (
-      <button
-        onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
-        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 font-bold group mb-1 ${
-          isActive
-            ? `bg-indigo-50 text-indigo-700` 
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'} />
-          <span className="text-sm">{label}</span>
-        </div>
-        {isActive && <ChevronRight size={14} className="text-indigo-400"/>}
-      </button>
-    );
-  };
-
   if (!userProfile.isLoggedIn) {
       return (
           <div className="h-[100dvh] w-full flex items-center justify-center bg-white overflow-hidden relative">
@@ -312,11 +322,11 @@ const AppContent: React.FC = () => {
           </div>
           
           <div className="space-y-0.5">
-             <NavItem tab="tasks" icon={Home} label="Tổng quan" />
-             <NavItem tab="ai" icon={MessageSquare} label={t.ai} />
-             <NavItem tab="reports" icon={Activity} label={t.reports} />
-             <NavItem tab="studio" icon={Wand2} label={t.studio} />
-             <NavItem tab="profile" icon={UserCircle2} label={t.profile} />
+             <NavItem tab="tasks" icon={Home} label="Tổng quan" activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
+             <NavItem tab="ai" icon={MessageSquare} label={t.ai} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
+             <NavItem tab="reports" icon={Activity} label={t.reports} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
+             <NavItem tab="studio" icon={Wand2} label={t.studio} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
+             <NavItem tab="profile" icon={UserCircle2} label={t.profile} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
           </div>
         </div>
 
