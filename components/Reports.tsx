@@ -23,6 +23,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const [period, setPeriod] = useState<Period>('day');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  
   // State for chart interactivity
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
@@ -93,6 +94,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     const currentScore = calculateScore(currentTasks);
     const prevScore = calculateScore(prevTasks);
 
+    // Generate 7 points for the chart
     const generatePoints = (s: Date, totalDuration: number) => {
         const points = [];
         const stepTime = totalDuration / 6; 
@@ -101,6 +103,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
              const tStart = new Date(s.getTime() + (stepTime * i));
              const tEnd = new Date(tStart.getTime() + stepTime); 
              
+             // Filter tasks in this specific slice
              const sliceTasks = tasks.filter(t => {
                  const d = new Date(t.createdAt);
                  return d >= tStart && d < tEnd;
@@ -250,6 +253,24 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     }
   };
 
+  // Add CSS for drawing animation
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes draw-path {
+        from { stroke-dashoffset: 1000; }
+        to { stroke-dashoffset: 0; }
+      }
+      .animate-draw-path {
+        stroke-dasharray: 1000;
+        stroke-dashoffset: 1000;
+        animation: draw-path 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
   return (
     <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent relative">
       {/* Header */}
@@ -353,11 +374,11 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                         <svg viewBox="0 0 100 50" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                             <defs>
                                 <linearGradient id="gradientCurrent" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0.4" />
+                                    <stop offset="0%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0.5" />
                                     <stop offset="100%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0" />
                                 </linearGradient>
                                 <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+                                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
                                     <feMerge>
                                         <feMergeNode in="coloredBlur"/>
                                         <feMergeNode in="SourceGraphic"/>
@@ -366,20 +387,23 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                             </defs>
 
                             {/* Previous Period (Dotted) */}
-                            <path d={generateAreaPath(chartData.prevPoints, 100, 50)} fill="#f1f5f9" />
+                            <path d={generateAreaPath(chartData.prevPoints, 100, 50)} fill="#f1f5f9" opacity="0.5" />
                             <path d={generateLinePath(chartData.prevPoints, 100, 50)} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
                             
-                            {/* Current Period (Animated) */}
-                            <path d={generateAreaPath(chartData.currentPoints, 100, 50)} fill="url(#gradientCurrent)" opacity="0.9" className="animate-fade-in" />
+                            {/* Current Period (Animated Area) */}
+                            <path d={generateAreaPath(chartData.currentPoints, 100, 50)} fill="url(#gradientCurrent)" className="animate-fade-in" style={{animationDuration: '1.5s'}} />
+                            
+                            {/* Current Period (Animated Line) */}
                             <path 
                                 key={`line-${period}-${activeGroup?.id}`}
                                 d={generateLinePath(chartData.currentPoints, 100, 50)} 
                                 fill="none" 
                                 stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
-                                strokeWidth="2" 
+                                strokeWidth="2.5" 
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 className="animate-draw-path"
+                                filter="url(#glow)"
                             />
 
                             {/* Interaction Layer & Tooltips */}
@@ -387,14 +411,15 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                 const x = index * (100 / (chartData.currentPoints.length - 1));
                                 const y = 50 - (point.value / 100) * 50;
                                 const isHovered = hoveredIndex === index;
+                                const isRightSide = index > 4;
 
                                 return (
                                     <g key={index} onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)}>
                                         {/* Invisible Trigger Zone */}
                                         <rect 
-                                            x={x - 5} 
+                                            x={x - 8} 
                                             y="0" 
-                                            width="10" 
+                                            width="16" 
                                             height="50" 
                                             fill="transparent" 
                                             className="cursor-crosshair"
@@ -407,33 +432,33 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                                 <line 
                                                     x1={x} y1={y} x2={x} y2="50" 
                                                     stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
-                                                    strokeWidth="0.5" 
+                                                    strokeWidth="1" 
                                                     strokeDasharray="2,2" 
                                                     opacity="0.6"
                                                 />
                                                 
                                                 {/* Glowing Dot */}
                                                 <circle 
-                                                    cx={x} cy={y} r="2.5" 
+                                                    cx={x} cy={y} r="3" 
                                                     fill="white" 
                                                     stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
-                                                    strokeWidth="1.5"
+                                                    strokeWidth="2"
                                                     filter="url(#glow)"
                                                 />
 
-                                                {/* Tooltip Box */}
-                                                <g transform={`translate(${index > 4 ? x - 25 : x - 10}, ${y - 12})`}>
+                                                {/* Tooltip Box - Floating Glass Card */}
+                                                <g transform={`translate(${isRightSide ? x - 35 : x - 10}, ${y - 15})`} className="drop-shadow-lg">
                                                     <rect 
-                                                        x="0" y="0" width="35" height="14" rx="3" 
+                                                        x="0" y="0" width="45" height="16" rx="4" 
                                                         fill="white" 
+                                                        fillOpacity="0.95"
                                                         stroke={activeGroup ? "#ccfbf1" : "#e0e7ff"}
                                                         strokeWidth="0.5"
-                                                        filter="drop-shadow(0 2px 4px rgb(0 0 0 / 0.1))"
                                                     />
-                                                    <text x="17.5" y="6" textAnchor="middle" fontSize="3" fontWeight="bold" fill="#334155">
+                                                    <text x="22.5" y="7" textAnchor="middle" fontSize="3.5" fontWeight="bold" fill="#334155" fontFamily="Plus Jakarta Sans">
                                                         {point.value}%
                                                     </text>
-                                                    <text x="17.5" y="10" textAnchor="middle" fontSize="2.5" fill="#94a3b8">
+                                                    <text x="22.5" y="12" textAnchor="middle" fontSize="2.5" fontWeight="500" fill="#94a3b8" fontFamily="Plus Jakarta Sans">
                                                         {point.date.getDate()}/{point.date.getMonth() + 1}
                                                     </text>
                                                 </g>
