@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users } from 'lucide-react';
 import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -7,18 +7,36 @@ import { useLanguage } from '../contexts/LanguageContext';
 import PptxGenJS from 'pptxgenjs';
 
 type Period = 'day' | 'week' | 'month' | 'year' | 'custom';
+type ViewMode = 'personal' | 'group';
 
 interface ReportsProps {
     activeGroup?: Group | null;
 }
 
 export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
-  const taskStorageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
-  const reflectionStorageKey = activeGroup ? `group_${activeGroup.id}_reflections` : 'reflections';
-  const isGlobal = !!activeGroup;
+  // Determine initial view mode based on whether a group is active
+  const [viewMode, setViewMode] = useState<ViewMode>(activeGroup ? 'group' : 'personal');
 
-  const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobal);
-  const [reflections, setReflections] = useRealtimeStorage<ReflectionMap>(reflectionStorageKey, {}, isGlobal);
+  // Update view mode if activeGroup prop changes (e.g. user navigation)
+  useEffect(() => {
+      if (activeGroup) {
+          setViewMode('group');
+      } else {
+          setViewMode('personal');
+      }
+  }, [activeGroup]);
+
+  // Derived keys based on View Mode
+  const isGroupView = viewMode === 'group' && !!activeGroup;
+  
+  // If Group View: Use group specific keys and isGlobal=true
+  // If Personal View: Use generic keys and isGlobal=false (user specific)
+  const taskStorageKey = isGroupView ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
+  const reflectionStorageKey = isGroupView ? `group_${activeGroup.id}_reflections` : 'reflections';
+  const isGlobalStorage = isGroupView;
+
+  const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobalStorage);
+  const [reflections, setReflections] = useRealtimeStorage<ReflectionMap>(reflectionStorageKey, {}, isGlobalStorage);
   
   const [period, setPeriod] = useState<Period>('day');
   const [customStart, setCustomStart] = useState('');
@@ -169,10 +187,15 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   // Helper for text sanitization in XML/HTML
   const sanitize = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+  const getReportContextName = () => {
+      if (isGroupView && activeGroup) return activeGroup.name;
+      return t.personal;
+  };
+
   const exportToExcel = () => {
     const data = getFilteredTasks();
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
-    const contextName = activeGroup ? activeGroup.name : t.personal;
+    const contextName = getReportContextName();
     
     let csvContent = "\uFEFF"; 
     csvContent += `Report Context,${contextName}\n`;
@@ -194,7 +217,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const exportToWord = () => {
       const data = getFilteredTasks();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
-      const contextName = activeGroup ? activeGroup.name : t.personal;
+      const contextName = getReportContextName();
       
       let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>Report</title></head><body>`;
@@ -217,7 +240,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const exportToXML = () => {
       const data = getFilteredTasks();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
-      const contextName = activeGroup ? activeGroup.name : 'Personal';
+      const contextName = getReportContextName();
       
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<report>\n';
       xml += `  <meta>\n    <context>${sanitize(contextName)}</context>\n    <period>${period}</period>\n    <score>${chartData.currentScore}</score>\n    <totalTasks>${chartData.currentCount}</totalTasks>\n  </meta>\n`;
@@ -234,7 +257,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const exportToPowerPoint = async () => {
       const pres = new PptxGenJS();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
-      const contextName = activeGroup ? activeGroup.name : t.personal;
+      const contextName = getReportContextName();
       
       let slide = pres.addSlide();
       slide.addText(`Productivity Report - ${period.toUpperCase()}`, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
@@ -283,15 +306,40 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   return (
     <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent relative">
       {/* Header */}
-      <div className={`relative overflow-hidden bg-gradient-to-r p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10 ${activeGroup ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-violet-600'}`}>
+      <div className={`relative overflow-hidden bg-gradient-to-r p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10 transition-colors duration-500 ${isGroupView ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-violet-600'}`}>
         <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><PieChart size={120} /></div>
-        <h1 className="text-3xl font-black flex items-center gap-3 relative z-10 tracking-tight">
-          <BarChart3 size={32} className={activeGroup ? "text-emerald-200" : "text-indigo-200"} />
-          {t.reportHeader}
-        </h1>
-        <p className={`${activeGroup ? "text-emerald-100" : "text-indigo-100"} text-sm mt-2 font-medium opacity-90 relative z-10 tracking-wide`}>
-            {activeGroup ? `${t.reportSubHeader} - ${activeGroup.name}` : t.reportSubHeader}
-        </p>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div>
+                <h1 className="text-3xl font-black flex items-center gap-3 tracking-tight">
+                    <BarChart3 size={32} className={isGroupView ? "text-emerald-200" : "text-indigo-200"} />
+                    {t.reportHeader}
+                </h1>
+                <p className={`${isGroupView ? "text-emerald-100" : "text-indigo-100"} text-sm mt-2 font-medium opacity-90 tracking-wide`}>
+                    {isGroupView ? activeGroup?.name : t.personal}
+                </p>
+            </div>
+
+            {/* View Mode Toggle - Only shown if activeGroup exists */}
+            {activeGroup && (
+                <div className="bg-black/20 backdrop-blur-md p-1 rounded-xl flex items-center self-start md:self-center border border-white/10">
+                    <button 
+                        onClick={() => setViewMode('personal')} 
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                    >
+                        <User size={14} />
+                        {t.personal}
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('group')} 
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                    >
+                        <Users size={14} />
+                        Nhóm
+                    </button>
+                </div>
+            )}
+        </div>
       </div>
 
       {/* Content Wrapper */}
@@ -306,7 +354,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                 onClick={() => setPeriod(p)}
                 className={`flex-1 min-w-[70px] py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
                     period === p 
-                    ? (activeGroup ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md shadow-indigo-500/20' 
+                    ? (isGroupView ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md shadow-indigo-500/20' 
                     : 'text-slate-500 hover:bg-white hover:text-slate-700'
                 }`}
                 >
@@ -330,9 +378,9 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
 
             {/* Today's Special Report */}
             {period === 'day' && (
-                <div className={`relative rounded-[2.5rem] p-8 text-white shadow-2xl overflow-hidden animate-scale-in group ${activeGroup ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
+                <div className={`relative rounded-[2.5rem] p-8 text-white shadow-2xl overflow-hidden animate-scale-in group ${isGroupView ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
                     {/* Modern mesh background for the card */}
-                    <div className={`absolute inset-0 bg-gradient-to-br opacity-90 ${activeGroup ? 'from-emerald-500 via-teal-600 to-green-700' : 'from-indigo-500 via-purple-600 to-violet-700'}`}></div>
+                    <div className={`absolute inset-0 bg-gradient-to-br opacity-90 ${isGroupView ? 'from-emerald-500 via-teal-600 to-green-700' : 'from-indigo-500 via-purple-600 to-violet-700'}`}></div>
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
                     
                     <div className="relative z-10">
@@ -367,14 +415,14 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <TrendingUp size={18} className={activeGroup ? "text-teal-500" : "text-indigo-500"}/>
+                                <TrendingUp size={18} className={isGroupView ? "text-teal-500" : "text-indigo-500"}/>
                                 {t.comparison}
                             </h3>
                             <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wide">{t.vsPrev}</p>
                         </div>
                         <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest">
                             <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span> {t.periodPrev}</div>
-                            <div className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full ${activeGroup ? 'bg-teal-500' : 'bg-indigo-500'}`}></span> {t.periodCurrent}</div>
+                            <div className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full ${isGroupView ? 'bg-teal-500' : 'bg-indigo-500'}`}></span> {t.periodCurrent}</div>
                         </div>
                     </div>
                     
@@ -383,8 +431,8 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                         <svg viewBox="0 0 100 50" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                             <defs>
                                 <linearGradient id="gradientCurrent" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0.5" />
-                                    <stop offset="100%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0" />
+                                    <stop offset="0%" stopColor={isGroupView ? "#2dd4bf" : "#818cf8"} stopOpacity="0.5" />
+                                    <stop offset="100%" stopColor={isGroupView ? "#2dd4bf" : "#818cf8"} stopOpacity="0" />
                                 </linearGradient>
                                 <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                                     <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
@@ -404,10 +452,10 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                             
                             {/* Current Period (Animated Line) */}
                             <path 
-                                key={`line-${period}-${activeGroup?.id}`}
+                                key={`line-${period}-${isGroupView}-${activeGroup?.id}`}
                                 d={generateLinePath(chartData.currentPoints, 100, 50)} 
                                 fill="none" 
-                                stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
+                                stroke={isGroupView ? "#14b8a6" : "#6366f1"} 
                                 strokeWidth="2.5" 
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -440,7 +488,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                                 {/* Vertical Line */}
                                                 <line 
                                                     x1={x} y1={y} x2={x} y2="50" 
-                                                    stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
+                                                    stroke={isGroupView ? "#14b8a6" : "#6366f1"} 
                                                     strokeWidth="1" 
                                                     strokeDasharray="2,2" 
                                                     opacity="0.6"
@@ -450,7 +498,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                                 <circle 
                                                     cx={x} cy={y} r="3" 
                                                     fill="white" 
-                                                    stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
+                                                    stroke={isGroupView ? "#14b8a6" : "#6366f1"} 
                                                     strokeWidth="2"
                                                     filter="url(#glow)"
                                                 />
@@ -461,7 +509,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                                         x="0" y="0" width="45" height="16" rx="4" 
                                                         fill="white" 
                                                         fillOpacity="0.95"
-                                                        stroke={activeGroup ? "#ccfbf1" : "#e0e7ff"}
+                                                        stroke={isGroupView ? "#ccfbf1" : "#e0e7ff"}
                                                         strokeWidth="0.5"
                                                     />
                                                     <text x="22.5" y="7" textAnchor="middle" fontSize="3.5" fontWeight="bold" fill="#334155" fontFamily="Plus Jakarta Sans">
