@@ -53,9 +53,25 @@ const AppContent: React.FC = () => {
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   
+  // Logic tổng hợp task từ tất cả project để thông báo deadline
   const allCurrentTasks = useMemo(() => {
-    return personalTasks;
-  }, [personalTasks]);
+    // 1. Lấy task cá nhân
+    const all = [...personalTasks];
+    
+    // 2. Scan localStorage để lấy task của từng group (vì useRealtimeStorage không thể gọi trong loop)
+    myGroups.forEach(group => {
+        const key = `${currentUserId}_group_${group.id}_tasks`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+            try {
+                const groupTasks = JSON.parse(stored) as Task[];
+                all.push(...groupTasks);
+            } catch (e) { /* ignore */ }
+        }
+    });
+
+    return all;
+  }, [personalTasks, myGroups, currentUserId]);
 
   const { notifications, dismissNotification } = useDeadlineNotifications(allCurrentTasks);
 

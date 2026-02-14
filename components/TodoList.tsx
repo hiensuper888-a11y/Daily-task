@@ -1,12 +1,14 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, 
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, User as UserIcon, Users, 
   RotateCcw, Paperclip, Image as ImageIcon, FileText, Video, 
-  ExternalLink, Clock, Edit3, Flame, Zap, CheckCircle, Info, ArrowUpRight
+  ExternalLink, Clock, Edit3, Flame, Zap, CheckCircle, Info, ArrowUpRight,
+  PlusCircle, CheckSquare, Square, ListChecks
 } from 'lucide-react';
-import { Task, FilterType, Priority, Group, UserProfile, Attachment } from '../types';
+import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
@@ -33,6 +35,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   // Editing State
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [newSubtaskText, setNewSubtaskText] = useState('');
 
   // UI State
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
@@ -51,7 +54,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
-  // Hàm chuyển đổi an toàn cho input datetime-local
   const toLocalISOString = (date: Date) => {
     if (!date || isNaN(date.getTime())) return '';
     const year = date.getFullYear();
@@ -102,35 +104,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setViewDate(newDate);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        let type: 'image' | 'video' | 'file' = 'file';
-        if (file.type.startsWith('image/')) type = 'image';
-        if (file.type.startsWith('video/')) type = 'video';
-
-        const attachment: Attachment = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: file.name,
-          type: type,
-          url: reader.result as string,
-          size: file.size
-        };
-        if (isEdit) {
-          setEditingTask(prev => prev ? { ...prev, attachments: [...(prev.attachments || []), attachment] } : null);
-        } else {
-          setNewAttachments(prev => [...prev, attachment]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-    if (e.target) e.target.value = '';
-  };
-
   const addTask = () => {
     if (inputValue.trim() === '') return;
     if (activeGroup && !isLeader) { alert("Chỉ trưởng nhóm mới có thể tạo nhiệm vụ."); return; }
@@ -153,6 +126,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       groupId: activeGroup?.id,
       assignedTo: assignedTo || undefined,
       attachments: newAttachments,
+      subtasks: [],
       comments: []
     };
 
@@ -195,11 +169,44 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           completedAt: newCompleted ? new Date().toISOString() : undefined,
           completedBy: newCompleted ? currentUserId : undefined,
           completionNote: newCompleted ? note : undefined,
-          progress: newCompleted ? 100 : 0
+          progress: newCompleted ? 100 : task.progress
         };
       }
       return task;
     }));
+  };
+
+  const addSubtask = () => {
+    if (!editingTask || !newSubtaskText.trim()) return;
+    const newSub: Subtask = {
+      id: Date.now(),
+      text: newSubtaskText.trim(),
+      completed: false
+    };
+    const updatedSubtasks = [...(editingTask.subtasks || []), newSub];
+    setEditingTask({ ...editingTask, subtasks: updatedSubtasks });
+    setNewSubtaskText('');
+  };
+
+  const toggleSubtask = (subId: number) => {
+    if (!editingTask) return;
+    const updatedSubtasks = (editingTask.subtasks || []).map(st => 
+      st.id === subId ? { ...st, completed: !st.completed } : st
+    );
+    const completedCount = updatedSubtasks.filter(st => st.completed).length;
+    const progress = Math.round((completedCount / updatedSubtasks.length) * 100);
+    setEditingTask({ 
+      ...editingTask, 
+      subtasks: updatedSubtasks, 
+      progress,
+      completed: progress === 100 
+    });
+  };
+
+  const deleteSubtask = (subId: number) => {
+    if (!editingTask) return;
+    const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId);
+    setEditingTask({ ...editingTask, subtasks: updatedSubtasks });
   };
 
   const archiveTask = (id: number, e?: React.MouseEvent) => {
@@ -224,19 +231,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const targetDateStr = getLocalDateString(viewDate);
     return tasks
       .filter(t => {
-        // Nếu bộ lọc là Archive, bỏ qua kiểm tra ngày
         if (filterStatus === 'archived') {
           if (!t.archived) return false;
           if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
           return true;
         } 
-
-        // Các bộ lọc khác đều phải đúng ngày
         const tDate = new Date(t.createdAt);
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
         if (t.archived) return false;
-        
         if (filterStatus === 'assigned_to_me') return t.assignedTo === currentUserId && !t.completed;
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
@@ -298,7 +301,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in border border-white flex flex-col">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in border border-white flex flex-col">
             <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 pb-4 flex items-center justify-between border-b border-slate-50">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
@@ -325,62 +328,95 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Độ ưu tiên</label>
-                  <div className="flex gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
-                    {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                      <button 
-                        key={p} 
-                        onClick={() => setEditingTask({ ...editingTask, priority: p })} 
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                          editingTask.priority === p 
-                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' 
-                          : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {activeGroup && isLeader && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Giao việc cho</label>
-                    <select 
-                      value={editingTask.assignedTo || ''} 
-                      onChange={e => setEditingTask({ ...editingTask, assignedTo: e.target.value })}
-                      className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-[13px] font-bold appearance-none outline-none focus:bg-white focus:border-indigo-400 transition-all"
-                    >
-                      <option value="">Cá nhân</option>
-                      {activeGroup.members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Độ ưu tiên</label>
+                        <div className="flex gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
+                            {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                            <button 
+                                key={p} 
+                                onClick={() => setEditingTask({ ...editingTask, priority: p })} 
+                                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                                editingTask.priority === p 
+                                ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' 
+                                : 'text-slate-400 hover:text-slate-600'
+                                }`}
+                            >
+                                {p}
+                            </button>
+                            ))}
+                        </div>
+                    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                    <Clock size={12}/> Ngày phân phối
-                  </label>
-                  <input 
-                    type="datetime-local" 
-                    value={toLocalISOString(new Date(editingTask.createdAt))} 
-                    onChange={e => setEditingTask({ ...editingTask, createdAt: e.target.value ? new Date(e.target.value).toISOString() : new Date().toISOString() })}
-                    className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
-                  />
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex justify-between">
+                            <span>Tiến độ hoàn thành</span>
+                            <span className="text-indigo-600">{editingTask.progress}%</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            min="0" max="100" 
+                            value={editingTask.progress} 
+                            onChange={(e) => setEditingTask({...editingTask, progress: parseInt(e.target.value), completed: parseInt(e.target.value) === 100})}
+                            className="w-full accent-indigo-600"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                                <Clock size={12}/> Ngày giao
+                            </label>
+                            <input 
+                                type="datetime-local" 
+                                value={toLocalISOString(new Date(editingTask.createdAt))} 
+                                onChange={e => setEditingTask({ ...editingTask, createdAt: e.target.value ? new Date(e.target.value).toISOString() : new Date().toISOString() })}
+                                className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                                <CalendarClock size={12}/> Hạn chót
+                            </label>
+                            <input 
+                                type="datetime-local" 
+                                value={editingTask.deadline ? toLocalISOString(new Date(editingTask.deadline)) : ''} 
+                                onChange={e => setEditingTask({ ...editingTask, deadline: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                                className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
+                            />
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
-                    <CalendarClock size={12}/> Hạn chót hoàn thành
-                  </label>
-                  <input 
-                    type="datetime-local" 
-                    value={editingTask.deadline ? toLocalISOString(new Date(editingTask.deadline)) : ''} 
-                    onChange={e => setEditingTask({ ...editingTask, deadline: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
-                    className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
-                  />
+
+                <div className="space-y-4 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 flex items-center gap-2">
+                        <ListChecks size={14}/> Các bước thực hiện
+                    </label>
+                    <div className="flex-1 space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                        {editingTask.subtasks?.map(st => (
+                            <div key={st.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 group">
+                                <button onClick={() => toggleSubtask(st.id)} className={`transition-colors ${st.completed ? 'text-emerald-500' : 'text-slate-300'}`}>
+                                    {st.completed ? <CheckSquare size={18} /> : <Square size={18} />}
+                                </button>
+                                <span className={`flex-1 text-sm font-medium truncate ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{st.text}</span>
+                                <button onClick={() => deleteSubtask(st.id)} className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 transition-all"><Trash2 size={14}/></button>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex gap-2 pt-2 border-t border-slate-200">
+                        <input 
+                            type="text" 
+                            value={newSubtaskText}
+                            onChange={(e) => setNewSubtaskText(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
+                            placeholder="Thêm bước nhỏ..."
+                            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs focus:ring-2 focus:ring-indigo-100 outline-none"
+                        />
+                        <button onClick={addSubtask} className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+                            <PlusCircle size={18}/>
+                        </button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -400,7 +436,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         </div>
       )}
 
-      {/* CALENDAR MODAL */}
+      {/* CALENDAR & COMPLETION MODALS (Existing logic) */}
       {showCalendar && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
           <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white">
@@ -551,6 +587,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           filteredTasks.map((task, index) => {
             const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
             const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
+            const subtasksCount = task.subtasks?.length || 0;
+            const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
             const isNew = Date.now() - new Date(task.createdAt).getTime() < 3000;
             
             return (
@@ -578,15 +616,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         </p>
                         <div className="flex flex-wrap items-center gap-2.5 mt-2">
                           <PriorityBadge priority={task.priority || 'medium'} />
+                          {subtasksCount > 0 && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                  <ListChecks size={10}/> {subtasksCompleted}/{subtasksCount} bước
+                              </span>
+                          )}
                           {deadlineInfo && (
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${deadlineInfo.colorClass}`}>
                               {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                           )}
-                          {task.attachments && task.attachments.length > 0 && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-50 text-slate-400 border border-slate-100">
-                              <Paperclip size={10} /> {task.attachments.length} tài liệu
-                            </span>
+                          {task.progress > 0 && !task.completed && (
+                              <div className="flex items-center gap-2 ml-1">
+                                  <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                      <div className="h-full bg-indigo-500" style={{width: `${task.progress}%`}}></div>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-400">{task.progress}%</span>
+                              </div>
                           )}
                         </div>
                       </div>
