@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare, Paperclip, FileText, Image as ImageIcon, Video, Send, Download, Eye, Users, Calendar } from 'lucide-react';
-import { Task, FilterType, Priority, Subtask, Group, UserProfile, Attachment, Comment } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, CalendarClock, Timer, AlertCircle, User as UserIcon, Users } from 'lucide-react';
+import { Task, FilterType, Priority, Group, UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
@@ -21,14 +21,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   
   const [assignedDate, setAssignedDate] = useState<string>(''); 
   const [deadline, setDeadline] = useState<string>('');
-  const [estimatedTime, setEstimatedTime] = useState<number | undefined>(undefined);
   const [showInputDetails, setShowInputDetails] = useState(false);
   const [assignedTo, setAssignedTo] = useState<string>(''); 
 
-  const [sortBy, setSortBy] = useState<'priority' | 'deadline' | 'created'>('priority');
-  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [newComment, setNewComment] = useState('');
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
   const [completionNote, setCompletionNote] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterType>('all');
@@ -41,10 +36,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = activeGroup?.leaderId === currentUserId;
 
-  const toLocalISOString = (date: Date) => {
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-    return localDate.toISOString().slice(0, 16);
+  // Helper to get pure date string for comparison (YYYY-MM-DD)
+  const getLocalDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const formatDeadline = (isoString: string) => {
@@ -84,16 +81,20 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     if (inputValue.trim() === '') return;
     if (activeGroup && !isLeader) { alert("Chỉ trưởng nhóm mới có thể tạo nhiệm vụ."); return; }
     
-    const createdDateStr = assignedDate ? new Date(assignedDate).toISOString() : new Date(viewDate).toISOString();
+    // Create task using the exact hour of viewDate if it's today, otherwise start of day
+    const taskDate = new Date(viewDate);
+    if (isToday(viewDate)) {
+      const now = new Date();
+      taskDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+    }
 
     const newTask: Task = {
       id: Date.now(),
       text: inputValue,
       completed: false,
       progress: 0,
-      createdAt: createdDateStr,
+      createdAt: assignedDate ? new Date(assignedDate).toISOString() : taskDate.toISOString(),
       deadline: deadline ? new Date(deadline).toISOString() : undefined,
-      estimatedTime: estimatedTime,
       archived: false,
       priority: newPriority,
       groupId: activeGroup?.id,
@@ -143,10 +144,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const filteredTasks = useMemo(() => {
+    const targetDateStr = getLocalDateString(viewDate);
     return tasks
       .filter(t => {
         const tDate = new Date(t.createdAt);
-        const isSameDay = tDate.toDateString() === viewDate.toDateString();
+        const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay || t.archived) return false;
         if (filterStatus === 'assigned_to_me') return t.assignedTo === currentUserId && !t.completed;
         if (filterStatus === 'active') return !t.completed;
@@ -162,7 +164,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   }, [tasks, viewDate, filterStatus, searchQuery, currentUserId]);
 
   const stats = useMemo(() => {
-      const dayTasks = tasks.filter(t => !t.archived && new Date(t.createdAt).toDateString() === viewDate.toDateString());
+      const targetDateStr = getLocalDateString(viewDate);
+      const dayTasks = tasks.filter(t => !t.archived && getLocalDateString(new Date(t.createdAt)) === targetDateStr);
       return {
           total: dayTasks.length,
           completed: dayTasks.filter(t => t.completed).length,
@@ -170,7 +173,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       };
   }, [tasks, viewDate]);
 
-  // Calendar Logic
   const calendarDays = useMemo(() => {
     const year = calendarViewDate.getFullYear();
     const month = calendarViewDate.getMonth();
@@ -178,14 +180,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     const days = [];
-    // Padding for first week
-    for (let i = 0; i < firstDay; i++) {
-        days.push(null);
-    }
-    // Days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-        days.push(new Date(year, month, i));
-    }
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
     return days;
   }, [calendarViewDate]);
 
@@ -195,14 +191,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       setCalendarViewDate(newDate);
   };
 
-  const handleDateSelect = (date: Date) => {
-      setViewDate(date);
-      setShowCalendar(false);
-  };
-
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
-      {/* Calendar Modal */}
       {showCalendar && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white">
@@ -221,17 +211,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                       ))}
                       {calendarDays.map((date, i) => {
                           if (!date) return <div key={i} className="aspect-square"></div>;
-                          
                           const isSelected = date.toDateString() === viewDate.toDateString();
                           const isCurrentToday = date.toDateString() === new Date().toDateString();
-                          
                           return (
                               <button
                                 key={i}
-                                onClick={() => handleDateSelect(date)}
+                                onClick={() => { setViewDate(date); setShowCalendar(false); }}
                                 className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all relative group ${
                                     isSelected 
-                                    ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100')
+                                    ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg' : 'bg-indigo-600 text-white shadow-lg')
                                     : 'text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
@@ -246,7 +234,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
                   <button 
                     onClick={() => { setViewDate(new Date()); setCalendarViewDate(new Date()); setShowCalendar(false); }}
-                    className={`w-full py-4 mt-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeGroup ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                    className={`w-full py-4 mt-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeGroup ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}
                   >
                       Quay lại hôm nay
                   </button>
@@ -341,20 +329,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             </div>
         ) : (
             <div className="grid grid-cols-1 gap-4">
-                {filteredTasks.map((task, index) => {
+                {filteredTasks.map((task) => {
                     const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
                     const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
-
                     return (
                         <div key={task.id} className={`group bg-white rounded-[2.2rem] p-6 border-2 transition-all duration-300 ${task.completed ? 'opacity-50 border-transparent bg-slate-50/50 scale-[0.98]' : 'border-slate-100 hover:border-indigo-100 hover:shadow-2xl hover:-translate-y-1'}`}>
                             <div className="flex items-start gap-6">
                                 <button onClick={() => handleToggleClick(task)} className={`mt-1.5 transition-all ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-500'}`}>
                                     {task.completed ? <CheckCircle2 size={32} /> : <Circle size={32} strokeWidth={2.5} />}
                                 </button>
-                                <div className="flex-1 min-w-0" onClick={() => setSelectedTask(task)}>
-                                    <div className="flex justify-between items-start gap-3 cursor-pointer">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start gap-3">
                                         <p className={`text-xl font-black leading-tight tracking-tight ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.text}</p>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                                             <button onClick={() => deleteTask(task.id)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl"><Trash2 size={18} /></button>
                                         </div>
                                     </div>

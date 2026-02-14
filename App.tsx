@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight } from 'lucide-react';
-import { AppTab, Language, Group, UserProfile } from './types';
+import { AppTab, Language, Group, UserProfile, Task } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
+import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
+import { NotificationManager } from './components/NotificationManager';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
 const ImageEditor = React.lazy(() => import('./components/ImageEditor').then(module => ({ default: module.ImageEditor })));
@@ -48,6 +50,10 @@ const AppContent: React.FC = () => {
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'Người dùng', email: 'guest', avatar: '', provider: null, isLoggedIn: false });
   const currentUserId = userProfile.email || 'guest';
   const activeGroup = myGroups.find(g => g.id === activeGroupId) || null;
+
+  // Deadline Notification System Integration
+  const [tasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
+  const { notifications, dismissNotification } = useDeadlineNotifications(tasks);
 
   const updateGroupInStorage = (updatedGroup: Group, isDelete: boolean = false) => {
       let newMyGroups;
@@ -113,6 +119,8 @@ const AppContent: React.FC = () => {
 
   return (
     <div className={`flex h-[100dvh] w-full transition-all duration-700 overflow-hidden ${activeGroupId ? 'bg-emerald-50/20' : 'bg-slate-50'}`}>
+      <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
+      
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
           <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] transition-colors duration-1000 ${activeGroupId ? 'bg-emerald-300/40' : 'bg-indigo-300/40'}`}></div>
           <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[140px] transition-colors duration-1000 ${activeGroupId ? 'bg-teal-300/40' : 'bg-violet-300/40'}`}></div>
@@ -220,7 +228,7 @@ const AppContent: React.FC = () => {
 
       {showGroupModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
-              <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-slate-100">
+              <div className="bg-white rounded-[2.5rem] p-10 w-full max-sm shadow-2xl animate-scale-in relative border border-slate-100">
                   <button onClick={() => setShowGroupModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-600"><X size={24}/></button>
                   <h3 className="text-2xl font-black text-slate-800 mb-8 tracking-tighter">Tạo nhóm mới</h3>
                   <div className="space-y-6">
