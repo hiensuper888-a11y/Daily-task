@@ -7,6 +7,24 @@ export interface Subtask {
 
 export type Priority = 'low' | 'medium' | 'high';
 
+export interface Attachment {
+  id: string;
+  type: 'image' | 'video' | 'file';
+  name: string;
+  url: string; // Base64 or URL
+  size?: number;
+}
+
+export interface Comment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  text: string;
+  timestamp: number;
+  role?: 'leader' | 'member';
+}
+
 export interface Task {
   id: number;
   text: string;
@@ -25,6 +43,10 @@ export interface Task {
   assignedTo?: string; // userId (email or uid)
   completedBy?: string; // userId of who finished it
   completionNote?: string; // Note added when finishing
+  
+  // New features
+  attachments?: Attachment[];
+  comments?: Comment[];
 }
 
 export interface GroupMember {

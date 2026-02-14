@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare } from 'lucide-react';
-import { Task, FilterType, Priority, Subtask, Group, UserProfile } from '../types';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare, Paperclip, FileText, Image as ImageIcon, Video, Send, Download, Eye } from 'lucide-react';
+import { Task, FilterType, Priority, Subtask, Group, UserProfile, Attachment, Comment } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
@@ -16,6 +16,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const isGlobal = !!activeGroup;
 
   const [tasks, setTasks] = useRealtimeStorage<Task[]>(storageKey, [], isGlobal);
+  const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'User', email: '', avatar: '', provider: null, isLoggedIn: false });
+
   const [inputValue, setInputValue] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   
@@ -33,11 +35,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   // Edit Mode State
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  const [editDeadline, setEditDeadline] = useState('');
-  const [editCreatedAt, setEditCreatedAt] = useState('');
-  const [editCompletedAt, setEditCompletedAt] = useState('');
-  const [editPriority, setEditPriority] = useState<Priority>('medium');
-  const [editEstimatedTime, setEditEstimatedTime] = useState<number | undefined>(undefined);
+  // ... other edit states managed via direct task update or Detail Modal now
+
+  // Task Detail Modal State
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [newComment, setNewComment] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Completion Note Modal State
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
@@ -141,6 +144,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const addTask = () => {
     if (inputValue.trim() === '') return;
     
+    // Permission check for groups
+    if (activeGroup && !isLeader) {
+        alert("Only the Group Leader can create tasks.");
+        return;
+    }
+    
     let createdDateStr = '';
     
     if (assignedDate) {
@@ -168,7 +177,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       subtasks: [],
       priority: newPriority,
       groupId: activeGroup?.id,
-      assignedTo: assignedTo || undefined
+      assignedTo: assignedTo || undefined,
+      attachments: [],
+      comments: []
     };
 
     setTasks([newTask, ...tasks]);
@@ -180,37 +191,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setAssignedTo('');
   };
 
-  const startEditing = (task: Task) => {
-    setEditingTaskId(task.id);
-    setEditText(task.text);
-    setEditDeadline(task.deadline ? safeDateToInput(task.deadline) : '');
-    setEditCreatedAt(safeDateToInput(task.createdAt));
-    setEditCompletedAt(task.completedAt ? safeDateToInput(task.completedAt) : '');
-    setEditPriority(task.priority || 'medium');
-    setEditEstimatedTime(task.estimatedTime);
-  };
-
-  const saveEdit = () => {
-    if (editingTaskId) {
-        setTasks(tasks.map(t => 
-            t.id === editingTaskId 
-            ? { 
-                ...t, 
-                text: editText, 
-                deadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
-                createdAt: editCreatedAt ? new Date(editCreatedAt).toISOString() : t.createdAt,
-                completedAt: editCompletedAt ? new Date(editCompletedAt).toISOString() : t.completedAt,
-                priority: editPriority,
-                estimatedTime: editEstimatedTime
-              } 
-            : t
-        ));
-        setEditingTaskId(null);
-    }
-  };
-
-  const cancelEdit = () => {
-      setEditingTaskId(null);
+  const updateTask = (updatedTask: Task) => {
+      setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+      // Also update selectedTask if it's the one being edited
+      if (selectedTask && selectedTask.id === updatedTask.id) {
+          setSelectedTask(updatedTask);
+      }
   };
 
   const handleToggleClick = (task: Task) => {
@@ -293,57 +279,89 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     if (progress === 100) playSuccessSound();
   };
 
-  const deleteTask = (id: number) => setTasks(tasks.filter(t => t.id !== id));
-
-  const addSubtask = (taskId: number) => {
-      const text = subtaskInputs[taskId]?.trim();
-      if (!text) return;
-      setTasks(tasks.map(t => {
-          if (t.id === taskId) {
-              const newSub = [...(t.subtasks || []), { id: Date.now(), text, completed: false }];
-              const newProgress = calculateProgressFromSubtasks(newSub);
-              return { 
-                  ...t, 
-                  subtasks: newSub, 
-                  progress: newProgress,
-                  completed: newProgress === 100 
-                };
-          }
-          return t;
-      }));
-      setSubtaskInputs(prev => ({...prev, [taskId]: ''}));
+  const deleteTask = (id: number) => {
+      setTasks(tasks.filter(t => t.id !== id));
+      if (selectedTask?.id === id) setSelectedTask(null);
   };
 
-  const toggleSubtask = (taskId: number, subId: number) => {
-      setTasks(tasks.map(t => {
-          if (t.id === taskId && t.subtasks) {
-              const newSub = t.subtasks.map(s => s.id === subId ? { ...s, completed: !s.completed } : s);
-              const newProgress = calculateProgressFromSubtasks(newSub);
-              const isCompleted = newProgress === 100;
-              if (isCompleted && t.progress < 100) playSuccessSound();
-
-              return { 
-                  ...t, 
-                  subtasks: newSub, 
-                  progress: newProgress, 
-                  completed: isCompleted,
-                  completedAt: isCompleted ? (t.completedAt || new Date().toISOString()) : undefined 
-                };
-          }
-          return t;
-      }));
+  const saveEdit = () => {
+      if (editingTaskId && editText.trim()) {
+          setTasks(tasks.map(t => t.id === editingTaskId ? { ...t, text: editText } : t));
+          setEditingTaskId(null);
+          setEditText('');
+      }
   };
 
-  const deleteSubtask = (taskId: number, subId: number) => {
-       setTasks(tasks.map(t => {
-          if (t.id === taskId && t.subtasks) {
-              const newSub = t.subtasks.filter(s => s.id !== subId);
-              const newProgress = newSub.length > 0 ? calculateProgressFromSubtasks(newSub) : (t.completed ? 100 : t.progress);
-              return { ...t, subtasks: newSub, progress: newProgress, completed: newProgress === 100 };
-          }
-          return t;
-      }));
+  const cancelEdit = () => {
+      setEditingTaskId(null);
+      setEditText('');
   };
+
+  // --- DETAIL MODAL LOGIC (Attachments & Comments) ---
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!selectedTask || !e.target.files?.length) return;
+      
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+          const result = event.target?.result as string;
+          
+          let type: 'image' | 'video' | 'file' = 'file';
+          if (file.type.startsWith('image/')) type = 'image';
+          if (file.type.startsWith('video/')) type = 'video';
+
+          const newAttachment: Attachment = {
+              id: Date.now().toString(),
+              type,
+              name: file.name,
+              url: result, // In a real app, upload to cloud and get URL
+              size: file.size
+          };
+
+          const updatedTask = {
+              ...selectedTask,
+              attachments: [...(selectedTask.attachments || []), newAttachment]
+          };
+          updateTask(updatedTask);
+      };
+
+      // Read file (Use DataURL for Images/Small items demo, usually would upload to server)
+      reader.readAsDataURL(file);
+  };
+
+  const handleAddComment = () => {
+      if (!selectedTask || !newComment.trim()) return;
+
+      const comment: Comment = {
+          id: Date.now().toString(),
+          userId: currentUserId,
+          userName: userProfile.name || 'User',
+          userAvatar: userProfile.avatar || '',
+          text: newComment,
+          timestamp: Date.now(),
+          role: activeGroup ? (isLeader ? 'leader' : 'member') : undefined
+      };
+
+      const updatedTask = {
+          ...selectedTask,
+          comments: [...(selectedTask.comments || []), comment]
+      };
+      updateTask(updatedTask);
+      setNewComment('');
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+      if (!selectedTask) return;
+      const updatedTask = {
+          ...selectedTask,
+          attachments: selectedTask.attachments?.filter(a => a.id !== attachmentId)
+      };
+      updateTask(updatedTask);
+  };
+
+  // ---------------------------------------------
 
   const filteredTasks = useMemo(() => {
     return tasks
@@ -367,7 +385,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         
         // Sorting Logic
         if (sortBy === 'deadline') {
-            // Tasks with deadline first, then by priority fallback
             if (!a.deadline && !b.deadline) {
                  const pMap = { high: 3, medium: 2, low: 1 };
                  return (pMap[b.priority || 'medium'] || 2) - (pMap[a.priority || 'medium'] || 2);
@@ -381,7 +398,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
 
-        // Default: Priority
         const pMap = { high: 3, medium: 2, low: 1 };
         const pA = pMap[a.priority || 'medium'];
         const pB = pMap[b.priority || 'medium'];
@@ -421,6 +437,163 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           </div>
       )}
 
+      {/* --- TASK DETAIL MODAL --- */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 md:p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+           <div className="bg-white rounded-3xl w-full max-w-4xl h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl animate-scale-in">
+               
+               {/* Left: Task Info */}
+               <div className="flex-1 flex flex-col border-r border-slate-100 h-full overflow-hidden">
+                   <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
+                        <div className="flex-1 pr-4">
+                           <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                  selectedTask.priority === 'high' ? 'bg-rose-100 text-rose-600' : 
+                                  selectedTask.priority === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                              }`}>
+                                  {selectedTask.priority}
+                              </span>
+                              {selectedTask.completed && <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600">Completed</span>}
+                           </div>
+                           <h2 className={`text-2xl font-black text-slate-800 leading-tight ${selectedTask.completed ? 'line-through decoration-2 decoration-slate-300 text-slate-400' : ''}`}>{selectedTask.text}</h2>
+                        </div>
+                        <button onClick={() => setSelectedTask(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                            <X size={24} />
+                        </button>
+                   </div>
+
+                   <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-8">
+                       {/* Metadata */}
+                       <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+                           <div className="flex items-center gap-2"><CalendarIcon size={16}/> Created: {formatDisplayDate(selectedTask.createdAt)}</div>
+                           {selectedTask.deadline && <div className="flex items-center gap-2 text-orange-600"><Clock size={16}/> Deadline: {formatDisplayDate(selectedTask.deadline)}</div>}
+                           {activeGroup && selectedTask.assignedTo && (
+                               <div className="flex items-center gap-2">
+                                   <UserIcon size={16}/> 
+                                   Assigned to: <span className="font-bold text-slate-700">{activeGroup.members.find(m => m.id === selectedTask.assignedTo)?.name || 'Unknown'}</span>
+                               </div>
+                           )}
+                       </div>
+
+                       {/* Completion Info */}
+                       {selectedTask.completed && selectedTask.completionNote && (
+                           <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                               <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Completion Report</p>
+                               <p className="text-slate-700 italic">"{selectedTask.completionNote}"</p>
+                           </div>
+                       )}
+
+                       {/* Attachments Section */}
+                       <div>
+                           <div className="flex items-center justify-between mb-3">
+                               <h3 className="font-bold text-slate-800 flex items-center gap-2"><Paperclip size={18} className="text-indigo-500"/> Attachments</h3>
+                               <button onClick={() => fileInputRef.current?.click()} className="text-xs bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1">
+                                   <Plus size={14}/> Add File
+                               </button>
+                               <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} multiple accept="image/*,video/*,.pdf,.doc,.docx" />
+                           </div>
+                           
+                           {(!selectedTask.attachments || selectedTask.attachments.length === 0) ? (
+                               <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl text-slate-400 text-sm">
+                                   No attachments yet
+                               </div>
+                           ) : (
+                               <div className="grid grid-cols-2 gap-3">
+                                   {selectedTask.attachments.map(att => (
+                                       <div key={att.id} className="relative group border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all bg-white">
+                                           {att.type === 'image' ? (
+                                               <div className="aspect-video bg-slate-100 relative">
+                                                   <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                       <a href={att.url} download={att.name} className="p-2 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-full backdrop-blur-sm"><Download size={16}/></a>
+                                                   </div>
+                                               </div>
+                                           ) : att.type === 'video' ? (
+                                               <div className="aspect-video bg-slate-900 flex items-center justify-center text-white relative">
+                                                   <Video size={32} opacity={0.5}/>
+                                                   <video src={att.url} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                                                   <Play size={24} className="absolute z-10"/>
+                                               </div>
+                                           ) : (
+                                               <div className="p-4 flex items-center gap-3">
+                                                   <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500"><FileText size={20}/></div>
+                                                   <div className="flex-1 min-w-0">
+                                                       <p className="text-xs font-bold text-slate-700 truncate">{att.name}</p>
+                                                       <p className="text-[10px] text-slate-400">{(att.size ? (att.size/1024).toFixed(1) + ' KB' : 'File')}</p>
+                                                   </div>
+                                               </div>
+                                           )}
+                                           <button 
+                                                onClick={() => removeAttachment(att.id)}
+                                                className="absolute top-1 right-1 bg-white/80 hover:bg-red-500 hover:text-white text-slate-400 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all z-20"
+                                           >
+                                               <X size={14}/>
+                                           </button>
+                                       </div>
+                                   ))}
+                               </div>
+                           )}
+                       </div>
+                   </div>
+               </div>
+
+               {/* Right: Comments/Activity */}
+               <div className="w-full md:w-[350px] bg-slate-50 flex flex-col h-[50vh] md:h-full">
+                   <div className="p-4 border-b border-slate-200 font-bold text-slate-700 flex items-center gap-2 bg-white">
+                       <MessageSquare size={18} className="text-indigo-500"/> Activity & Comments
+                   </div>
+                   
+                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                       {(!selectedTask.comments || selectedTask.comments.length === 0) ? (
+                           <div className="text-center text-slate-400 text-xs py-10">No comments yet. Be the first!</div>
+                       ) : (
+                           selectedTask.comments.map(comment => (
+                               <div key={comment.id} className={`flex gap-3 ${comment.userId === currentUserId ? 'flex-row-reverse' : ''}`}>
+                                   <div className="flex-shrink-0">
+                                       <img src={comment.userAvatar} alt={comment.userName} className="w-8 h-8 rounded-full border border-white shadow-sm bg-slate-200" />
+                                   </div>
+                                   <div className={`flex flex-col max-w-[85%] ${comment.userId === currentUserId ? 'items-end' : 'items-start'}`}>
+                                       <div className="flex items-center gap-2 mb-1">
+                                           <span className="text-[10px] font-bold text-slate-600">{comment.userName}</span>
+                                           {comment.role === 'leader' && <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 rounded font-bold uppercase">Leader</span>}
+                                           <span className="text-[9px] text-slate-400">{new Date(comment.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                       </div>
+                                       <div className={`px-3 py-2 rounded-2xl text-sm ${
+                                           comment.userId === currentUserId 
+                                           ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                           : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
+                                       }`}>
+                                           {comment.text}
+                                       </div>
+                                   </div>
+                               </div>
+                           ))
+                       )}
+                   </div>
+
+                   <div className="p-3 bg-white border-t border-slate-200">
+                       <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-transparent focus-within:border-indigo-300 focus-within:bg-white transition-all">
+                           <input 
+                               value={newComment}
+                               onChange={(e) => setNewComment(e.target.value)}
+                               onKeyDown={(e) => { if(e.key === 'Enter') handleAddComment() }}
+                               placeholder="Write a comment..."
+                               className="flex-1 bg-transparent border-none text-sm px-3 focus:ring-0 placeholder:text-slate-400"
+                           />
+                           <button 
+                                onClick={handleAddComment}
+                                disabled={!newComment.trim()}
+                                className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                           >
+                               <Send size={16} />
+                           </button>
+                       </div>
+                   </div>
+               </div>
+           </div>
+        </div>
+      )}
+
       {/* --- HEADER --- */}
       <div className="px-6 py-6 pb-2 relative z-10">
         <div className="flex flex-col gap-6">
@@ -454,6 +627,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 </div>
             </div>
 
+            {/* Filter and Sort Bar */}
             <div className="flex flex-col gap-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
                 <div className="bg-white/70 backdrop-blur-sm rounded-xl p-1.5 shadow-sm border border-slate-200 flex items-center justify-between">
                     <button onClick={() => navigateDate(-1)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all">
@@ -559,9 +733,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     const isEditing = editingTaskId === task.id;
                     const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
                     const isOverdue = deadlineInfo?.isOverdue && !task.completed;
-                    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-                    const completedSubtasks = task.subtasks?.filter(s => s.completed).length || 0;
-                    const totalSubtasks = task.subtasks?.length || 0;
                     
                     // Group: Get assigned user info
                     const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
@@ -592,7 +763,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             <div className="p-4 pl-5">
                                 <div className="flex items-start gap-3 relative z-10">
                                     <button 
-                                        onClick={() => handleToggleClick(task)}
+                                        onClick={(e) => { e.stopPropagation(); handleToggleClick(task); }}
                                         className={`mt-0.5 shrink-0 transition-all duration-300 ${
                                             task.completed 
                                             ? 'text-emerald-500 scale-110' 
@@ -602,16 +773,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                         {task.completed ? <CheckCircle2 size={22} className="fill-emerald-50" /> : <Circle size={22} strokeWidth={2.5} />}
                                     </button>
                                     
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0" onClick={() => setSelectedTask(task)}>
                                         {isEditing ? (
-                                            <div className="space-y-4">
+                                            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
                                                 <input 
                                                     value={editText}
                                                     onChange={(e) => setEditText(e.target.value)}
                                                     className="w-full text-lg font-bold text-slate-800 border-b border-indigo-200 focus:border-indigo-500 focus:outline-none bg-transparent pb-1"
                                                     autoFocus
                                                 />
-                                                {/* Edit inputs hidden for brevity, logic exists above */}
                                                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                                                     <button onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><XCircle size={20}/></button>
                                                     <button onClick={saveEdit} className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"><Save size={16}/> Save</button>
@@ -619,62 +789,48 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <p 
-                                                        onClick={() => handleToggleClick(task)}
-                                                        className={`text-[15px] font-semibold leading-snug cursor-pointer transition-all ${
-                                                            task.completed ? 'line-through text-slate-400' : 'text-slate-700'
-                                                        }`}
-                                                    >
+                                                <div className="flex justify-between items-start gap-2 cursor-pointer">
+                                                    <p className={`text-[15px] font-semibold leading-snug transition-all ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                                                         {task.text}
                                                     </p>
                                                     
                                                     <div className="flex items-center gap-1">
-                                                        {/* Assigned User Avatar */}
                                                         {assignedMember && !task.completed && (
-                                                            <img 
-                                                                src={assignedMember.avatar} 
-                                                                alt={assignedMember.name} 
-                                                                className="w-6 h-6 rounded-full border border-white shadow-sm"
-                                                                title={`Assigned to ${assignedMember.name}`}
-                                                            />
+                                                            <img src={assignedMember.avatar} alt={assignedMember.name} className="w-6 h-6 rounded-full border border-white shadow-sm" title={`Assigned to ${assignedMember.name}`}/>
                                                         )}
-
-                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-200">
-                                                            <button onClick={() => startEditing(task)} className="text-slate-300 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded-lg transition-colors">
-                                                                <Edit2 size={15} />
-                                                            </button>
-                                                            <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors">
-                                                                <Trash2 size={15} />
-                                                            </button>
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 duration-200" onClick={(e) => e.stopPropagation()}>
+                                                            <button onClick={() => { setEditingTaskId(task.id); setEditText(task.text); }} className="text-slate-300 hover:text-indigo-500 p-1.5 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={15} /></button>
+                                                            <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={15} /></button>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 
                                                 {/* Metadata Chips */}
                                                 <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                                                    {/* Start Date Chip */}
-                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500" title={`Created: ${formatDisplayDate(task.createdAt)}`}>
-                                                        <CalendarDays size={10} />
-                                                        {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric'})}
+                                                    <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
+                                                        <CalendarDays size={10} /> {new Date(task.createdAt).toLocaleDateString(language, {day: 'numeric', month: 'numeric'})}
                                                     </span>
 
-                                                    {task.estimatedTime && (
-                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-violet-50 text-violet-600" title="Estimated Time">
-                                                            <Hourglass size={10} />
-                                                            {formatEstimate(task.estimatedTime)}
+                                                    {task.attachments && task.attachments.length > 0 && (
+                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                                            <Paperclip size={10} /> {task.attachments.length}
+                                                        </span>
+                                                    )}
+
+                                                    {task.comments && task.comments.length > 0 && (
+                                                        <span className="text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
+                                                            <MessageSquare size={10} /> {task.comments.length}
                                                         </span>
                                                     )}
 
                                                     {deadlineInfo && (
-                                                        <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${deadlineInfo.colorClass}`} title={deadlineInfo.fullDate}>
-                                                            {deadlineInfo.icon}
-                                                            {deadlineInfo.text}
+                                                        <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md border ${deadlineInfo.colorClass}`}>
+                                                            {deadlineInfo.icon} {deadlineInfo.text}
                                                         </span>
                                                     )}
                                                 </div>
                                                 
-                                                {/* Completion Note & User */}
+                                                {/* Completion Note */}
                                                 {task.completed && (task.completedBy || task.completionNote) && (
                                                     <div className="mt-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 flex items-start gap-2 text-xs">
                                                         <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5"/>
@@ -685,71 +841,20 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                                     </div>
                                                 )}
 
-                                                {/* Progress Bar (Auto or Manual) */}
+                                                {/* Progress Bar */}
                                                 {!task.completed && (
-                                                    <div className="mt-3 flex items-center gap-2 group/slider">
+                                                    <div className="mt-3 flex items-center gap-2 group/slider" onClick={(e) => e.stopPropagation()}>
                                                         <div className="relative flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div 
-                                                                className={`absolute h-full rounded-full transition-all duration-500 relative overflow-hidden ${isOverdue ? 'bg-rose-500' : 'bg-indigo-500'}`}
-                                                                style={{width: `${task.progress}%`}}
-                                                            >
-                                                                {/* Shimmer Effect */}
+                                                            <div className={`absolute h-full rounded-full transition-all duration-500 relative overflow-hidden ${isOverdue ? 'bg-rose-500' : 'bg-indigo-500'}`} style={{width: `${task.progress}%`}}>
                                                                 <div className="absolute inset-0 animate-shimmer opacity-40"></div>
                                                             </div>
-                                                            {!hasSubtasks && (
-                                                                <input 
-                                                                    type="range" 
-                                                                    min="0" max="100" 
-                                                                    value={task.progress}
-                                                                    onChange={(e) => updateProgress(task.id, e.target.value)}
-                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                                />
+                                                            {(!task.subtasks || task.subtasks.length === 0) && (
+                                                                <input type="range" min="0" max="100" value={task.progress} onChange={(e) => updateProgress(task.id, e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
                                                             )}
                                                         </div>
                                                         <span className="text-[10px] font-mono font-bold text-slate-400 w-8 text-right">{task.progress}%</span>
                                                     </div>
                                                 )}
-
-                                                {/* Subtasks Section */}
-                                                <div className="mt-1">
-                                                    {(hasSubtasks || isEditing) && (
-                                                        <div className="flex items-center gap-2 mt-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                            <ListChecks size={12} />
-                                                            <span>{t.subtasks}</span>
-                                                            {hasSubtasks && (
-                                                                <span className="ml-auto bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[9px]">
-                                                                    {completedSubtasks}/{totalSubtasks}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {task.subtasks?.map(sub => (
-                                                        <div key={sub.id} className="flex items-center gap-2 mb-1.5 group/sub pl-1">
-                                                            <button onClick={() => toggleSubtask(task.id, sub.id)} className={sub.completed ? 'text-emerald-500 transition-all scale-105' : 'text-slate-300 hover:text-slate-400 transition-all'}>
-                                                                {sub.completed ? <CheckSquare size={14} /> : <Square size={14} />}
-                                                            </button>
-                                                            <span className={`text-xs flex-1 transition-all ${sub.completed ? 'line-through text-slate-400' : 'text-slate-600 font-medium'}`}>{sub.text}</span>
-                                                            <X 
-                                                                size={14} 
-                                                                className="text-slate-300 hover:text-red-500 cursor-pointer opacity-0 group-hover/sub:opacity-100 transition-opacity p-0.5"
-                                                                onClick={() => deleteSubtask(task.id, sub.id)}
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                    <div className="flex items-center gap-2 mt-2 pl-4 opacity-50 focus-within:opacity-100 transition-opacity group-hover:opacity-80">
-                                                        <PlusCircle size={14} className="text-indigo-400" />
-                                                        <input 
-                                                            className="bg-transparent text-xs focus:outline-none w-full placeholder:text-slate-400 font-medium text-slate-700 py-1 border-b border-transparent focus:border-indigo-100 transition-all"
-                                                            placeholder={t.addSubtask}
-                                                            value={subtaskInputs[task.id] || ''}
-                                                            onChange={(e) => setSubtaskInputs({...subtaskInputs, [task.id]: e.target.value})}
-                                                            onKeyDown={(e) => {
-                                                                if(e.key === 'Enter') addSubtask(task.id);
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
                                             </>
                                         )}
                                     </div>
@@ -762,156 +867,158 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         )}
       </div>
 
-      {/* --- FLOATING INPUT BAR --- */}
-      <div className="absolute bottom-6 left-0 right-0 px-4 md:px-6 z-30 pointer-events-none">
-        <div className="max-w-3xl mx-auto pointer-events-auto">
-            <div className={`glass rounded-[2rem] transition-all duration-300 border border-white/50 bg-white/80 backdrop-blur-xl ${showInputDetails ? 'p-4 shadow-2xl ring-1 ring-indigo-500/10' : 'p-2 shadow-xl shadow-indigo-900/10'}`}>
-                
-                {showInputDetails && (
-                    <div className="flex flex-wrap items-center gap-3 mb-4 animate-fade-in border-b border-slate-100 pb-4">
-                        {/* Assigned Date Picker */}
-                        <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${assignedDate ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
-                            <div className="relative flex items-center">
-                                <button 
-                                    type="button"
-                                    className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${assignedDate ? 'text-indigo-700' : 'text-slate-500'}`}
-                                >
-                                    <CalendarDays size={14} className={assignedDate ? "text-indigo-600" : "text-slate-400"} /> 
-                                    <span>{assignedDate ? formatDisplayDate(assignedDate) : t.setAssignedDate || 'Start Date'}</span>
-                                </button>
-                                <input 
-                                    type="datetime-local" 
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    value={assignedDate}
-                                    onChange={(e) => setAssignedDate(e.target.value)}
-                                />
+      {/* --- FLOATING INPUT BAR (Only visible if Personal or (Group + Leader)) --- */}
+      {(!activeGroup || isLeader) && (
+        <div className="absolute bottom-6 left-0 right-0 px-4 md:px-6 z-30 pointer-events-none">
+            <div className="max-w-3xl mx-auto pointer-events-auto">
+                <div className={`glass rounded-[2rem] transition-all duration-300 border border-white/50 bg-white/80 backdrop-blur-xl ${showInputDetails ? 'p-4 shadow-2xl ring-1 ring-indigo-500/10' : 'p-2 shadow-xl shadow-indigo-900/10'}`}>
+                    
+                    {showInputDetails && (
+                        <div className="flex flex-wrap items-center gap-3 mb-4 animate-fade-in border-b border-slate-100 pb-4">
+                            {/* Assigned Date Picker */}
+                            <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${assignedDate ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
+                                <div className="relative flex items-center">
+                                    <button 
+                                        type="button"
+                                        className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${assignedDate ? 'text-indigo-700' : 'text-slate-500'}`}
+                                    >
+                                        <CalendarDays size={14} className={assignedDate ? "text-indigo-600" : "text-slate-400"} /> 
+                                        <span>{assignedDate ? formatDisplayDate(assignedDate) : t.setAssignedDate || 'Start Date'}</span>
+                                    </button>
+                                    <input 
+                                        type="datetime-local" 
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        value={assignedDate}
+                                        onChange={(e) => setAssignedDate(e.target.value)}
+                                    />
+                                </div>
+                                {assignedDate && (
+                                    <button onClick={() => setAssignedDate('')} className="pr-2 pl-1 text-indigo-400 hover:text-red-500 relative z-20">
+                                        <X size={12} />
+                                    </button>
+                                )}
                             </div>
-                            {assignedDate && (
-                                <button onClick={() => setAssignedDate('')} className="pr-2 pl-1 text-indigo-400 hover:text-red-500 relative z-20">
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
 
-                        {/* Deadline Picker */}
-                        <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${deadline ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
-                            <div className="relative flex items-center">
-                                <button 
-                                    type="button"
-                                    className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${deadline ? 'text-orange-700' : 'text-slate-500'}`}
-                                >
-                                    <CalendarClock size={14} className={deadline ? "text-orange-600" : "text-slate-400"} /> 
-                                    <span>{deadline ? formatDisplayDate(deadline) : t.setDeadline}</span>
-                                </button>
-                                <input 
-                                    type="datetime-local" 
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    value={deadline}
-                                    onChange={(e) => setDeadline(e.target.value)}
-                                />
+                            {/* Deadline Picker */}
+                            <div className={`relative group flex items-center rounded-xl border transition-all overflow-hidden ${deadline ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-100 focus-within:border-indigo-300'}`}>
+                                <div className="relative flex items-center">
+                                    <button 
+                                        type="button"
+                                        className={`flex items-center gap-2 pl-3 pr-2 py-2 text-xs font-bold transition-all ${deadline ? 'text-orange-700' : 'text-slate-500'}`}
+                                    >
+                                        <CalendarClock size={14} className={deadline ? "text-orange-600" : "text-slate-400"} /> 
+                                        <span>{deadline ? formatDisplayDate(deadline) : t.setDeadline}</span>
+                                    </button>
+                                    <input 
+                                        type="datetime-local" 
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        value={deadline}
+                                        onChange={(e) => setDeadline(e.target.value)}
+                                    />
+                                </div>
+                                {deadline && (
+                                    <button onClick={() => setDeadline('')} className="pr-2 pl-1 text-orange-400 hover:text-red-500 relative z-20">
+                                        <X size={12} />
+                                    </button>
+                                )}
                             </div>
-                            {deadline && (
-                                <button onClick={() => setDeadline('')} className="pr-2 pl-1 text-orange-400 hover:text-red-500 relative z-20">
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
 
-                        {/* Estimate Time */}
-                        <div className={`flex items-center gap-1 border rounded-xl p-1 pl-3 transition-colors ${estimatedTime ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
-                            <Hourglass size={14} className={estimatedTime ? "text-violet-500" : "text-slate-400"}/>
-                            <select 
-                                className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${estimatedTime ? 'text-violet-700' : 'text-slate-600'}`}
-                                value={estimatedTime || ''}
-                                onChange={(e) => setEstimatedTime(e.target.value ? parseInt(e.target.value) : undefined)}
-                            >
-                                <option value="">{t.setEstimate}</option>
-                                <option value="15">15 {t.minutes}</option>
-                                <option value="30">30 {t.minutes}</option>
-                                <option value="45">45 {t.minutes}</option>
-                                <option value="60">1 {t.hours}</option>
-                                <option value="120">2 {t.hours}</option>
-                                <option value="240">4 {t.hours}</option>
-                            </select>
-                            {estimatedTime && (
-                                <button onClick={() => setEstimatedTime(undefined)} className="p-1 text-violet-400 hover:text-red-500"><X size={12} /></button>
-                            )}
-                        </div>
-
-                        {/* Group Assignment Selector (Only for Leaders) */}
-                        {activeGroup && isLeader && (
-                             <div className="flex items-center gap-1 border rounded-xl p-1 pl-3 bg-slate-50 border-slate-100">
-                                <UserIcon size={14} className={assignedTo ? "text-indigo-500" : "text-slate-400"}/>
+                            {/* Estimate Time */}
+                            <div className={`flex items-center gap-1 border rounded-xl p-1 pl-3 transition-colors ${estimatedTime ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100'}`}>
+                                <Hourglass size={14} className={estimatedTime ? "text-violet-500" : "text-slate-400"}/>
                                 <select 
-                                    className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${assignedTo ? 'text-indigo-700' : 'text-slate-600'}`}
-                                    value={assignedTo}
-                                    onChange={(e) => setAssignedTo(e.target.value)}
+                                    className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${estimatedTime ? 'text-violet-700' : 'text-slate-600'}`}
+                                    value={estimatedTime || ''}
+                                    onChange={(e) => setEstimatedTime(e.target.value ? parseInt(e.target.value) : undefined)}
                                 >
-                                    <option value="">{t.assignTo}</option>
-                                    {activeGroup.members.map(m => (
-                                        <option key={m.id} value={m.id}>{m.name}</option>
-                                    ))}
+                                    <option value="">{t.setEstimate}</option>
+                                    <option value="15">15 {t.minutes}</option>
+                                    <option value="30">30 {t.minutes}</option>
+                                    <option value="45">45 {t.minutes}</option>
+                                    <option value="60">1 {t.hours}</option>
+                                    <option value="120">2 {t.hours}</option>
+                                    <option value="240">4 {t.hours}</option>
                                 </select>
+                                {estimatedTime && (
+                                    <button onClick={() => setEstimatedTime(undefined)} className="p-1 text-violet-400 hover:text-red-500"><X size={12} /></button>
+                                )}
                             </div>
-                        )}
 
-                        {/* Priority Selector */}
-                        <div className="flex gap-1 ml-auto">
-                            {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                                <button
-                                    key={p}
-                                    onClick={() => setNewPriority(p)}
-                                    className={`w-8 h-8 rounded-full transition-all flex items-center justify-center border shadow-sm ${
-                                        newPriority === p 
-                                        ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
-                                        : 'bg-white border-slate-100 text-slate-300 hover:text-slate-500 hover:bg-slate-50'
-                                    }`}
-                                    title={t[p] || p}
-                                >
-                                    <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : "currentColor"} />
-                                </button>
-                            ))}
+                            {/* Group Assignment Selector (Only for Leaders) */}
+                            {activeGroup && isLeader && (
+                                <div className="flex items-center gap-1 border rounded-xl p-1 pl-3 bg-slate-50 border-slate-100">
+                                    <UserIcon size={14} className={assignedTo ? "text-indigo-500" : "text-slate-400"}/>
+                                    <select 
+                                        className={`bg-transparent text-xs font-bold focus:outline-none py-1 cursor-pointer pr-2 ${assignedTo ? 'text-indigo-700' : 'text-slate-600'}`}
+                                        value={assignedTo}
+                                        onChange={(e) => setAssignedTo(e.target.value)}
+                                    >
+                                        <option value="">{t.assignTo}</option>
+                                        {activeGroup.members.map(m => (
+                                            <option key={m.id} value={m.id}>{m.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Priority Selector */}
+                            <div className="flex gap-1 ml-auto">
+                                {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setNewPriority(p)}
+                                        className={`w-8 h-8 rounded-full transition-all flex items-center justify-center border shadow-sm ${
+                                            newPriority === p 
+                                            ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
+                                            : 'bg-white border-slate-100 text-slate-300 hover:text-slate-500 hover:bg-slate-50'
+                                        }`}
+                                        title={t[p] || p}
+                                    >
+                                        <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : "currentColor"} />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
+                    )}
+
+                    {/* Input Row */}
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setShowInputDetails(!showInputDetails)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border ${
+                                showInputDetails 
+                                ? 'bg-indigo-600 text-white border-indigo-600 rotate-90 shadow-md' 
+                                : 'bg-slate-100 text-slate-500 border-transparent hover:bg-indigo-50 hover:text-indigo-600'
+                            }`}
+                        >
+                            <SlidersHorizontal size={18} />
+                        </button>
+
+                        <input 
+                            type="text" 
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
+                            placeholder={t.addTaskPlaceholder}
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 h-10 px-2"
+                        />
+
+                        <button 
+                            onClick={addTask}
+                            disabled={!inputValue.trim()}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                                inputValue.trim() 
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 hover:bg-indigo-700 active:scale-95' 
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            }`}
+                        >
+                            <Plus size={22} strokeWidth={2.5} />
+                        </button>
                     </div>
-                )}
-
-                {/* Input Row */}
-                <div className="flex items-center gap-2">
-                    <button 
-                        onClick={() => setShowInputDetails(!showInputDetails)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border ${
-                            showInputDetails 
-                            ? 'bg-indigo-600 text-white border-indigo-600 rotate-90 shadow-md' 
-                            : 'bg-slate-100 text-slate-500 border-transparent hover:bg-indigo-50 hover:text-indigo-600'
-                        }`}
-                    >
-                        <SlidersHorizontal size={18} />
-                    </button>
-
-                    <input 
-                        type="text" 
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
-                        placeholder={t.addTaskPlaceholder}
-                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 h-10 px-2"
-                    />
-
-                    <button 
-                        onClick={addTask}
-                        disabled={!inputValue.trim()}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                            inputValue.trim() 
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:scale-105 hover:bg-indigo-700 active:scale-95' 
-                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        }`}
-                    >
-                        <Plus size={22} strokeWidth={2.5} />
-                    </button>
                 </div>
             </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
