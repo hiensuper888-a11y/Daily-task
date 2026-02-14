@@ -103,7 +103,7 @@ const TaskItem = React.memo(({
                         {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
                     </div>
                 </div>
-                {!task.completed && <button onClick={(e) => onDelete(task.id, e)} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-rose-500 bg-white/80 backdrop-blur-sm rounded-xl transition-all shadow-sm hover:shadow-md hover:bg-rose-50"><Trash2 size={18} /></button>}
+                <button onClick={(e) => onDelete(task.id, e)} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-rose-500 bg-white/80 backdrop-blur-sm rounded-xl transition-all shadow-sm hover:shadow-md hover:bg-rose-50"><Trash2 size={18} /></button>
             </div>
         </div>
     );
@@ -423,8 +423,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                      </div>
                  </div>
             </div>
-            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-8 border-t border-slate-100 rounded-b-[3rem]">
-              <button onClick={updateTask} className="w-full py-4 rounded-2xl text-white font-bold text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce">Lưu thay đổi</button>
+            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-8 border-t border-slate-100 rounded-b-[3rem] flex gap-4">
+              <button onClick={(e) => deleteTask(editingTask.id, e)} className="p-4 rounded-2xl text-rose-500 font-bold bg-rose-50 hover:bg-rose-100 transition-all"><Trash2 size={24}/></button>
+              <button onClick={updateTask} className="flex-1 py-4 rounded-2xl text-white font-bold text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce">Lưu thay đổi</button>
             </div>
           </div>
         </div>

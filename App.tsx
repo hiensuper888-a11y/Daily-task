@@ -13,13 +13,16 @@ const Reports = React.lazy(() => import('./components/Reports').then(module => (
 const Profile = React.lazy(() => import('./components/Profile').then(module => ({ default: module.Profile })));
 const AiAssistant = React.lazy(() => import('./components/AiAssistant').then(module => ({ default: module.AiAssistant })));
 
-const languages: { code: Language; label: string }[] = [
-  { code: 'vi', label: 'Tiếng Việt' },
-  { code: 'en', label: 'English' },
-  { code: 'zh', label: '中文' },
-  { code: 'ja', label: '日本語' },
-  { code: 'fr', label: 'Français' },
-  { code: 'ko', label: '한국어' },
+const languages: { code: Language; label: string; flag: string }[] = [
+  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'zh', label: '中文', flag: '🇨🇳' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
 ];
 
 const LoadingFallback = () => (
@@ -365,6 +368,37 @@ const AppContent: React.FC = () => {
                   <span>Nhập mã tham gia...</span>
               </button>
           </div>
+        </div>
+
+        {/* Language & Settings Footer */}
+        <div className="p-4 border-t border-white/40 relative">
+            <button 
+                onClick={() => setShowLangMenu(!showLangMenu)} 
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/50 transition-all text-slate-600 font-bold text-sm bg-white/30 backdrop-blur-sm border border-white/50 shadow-sm"
+            >
+                <Globe size={20} className="text-indigo-500" />
+                <span className="flex-1 text-left">{languages.find(l => l.code === language)?.label}</span>
+                <span className="text-lg">{languages.find(l => l.code === language)?.flag}</span>
+            </button>
+            
+            {showLangMenu && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)}></div>
+                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 p-2 max-h-[300px] overflow-y-auto custom-scrollbar animate-scale-in z-50 origin-bottom">
+                        {languages.map(lang => (
+                            <button
+                                key={lang.code}
+                                onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-bold ${language === lang.code ? 'bg-indigo-50 text-indigo-600 shadow-sm border border-indigo-100' : 'text-slate-600 hover:bg-slate-50 border border-transparent'}`}
+                            >
+                                <span className="text-xl shadow-sm rounded-md overflow-hidden">{lang.flag}</span>
+                                <span>{lang.label}</span>
+                                {language === lang.code && <Check size={16} className="ml-auto text-indigo-600"/>}
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
       </aside>
 

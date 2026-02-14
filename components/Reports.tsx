@@ -172,7 +172,10 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const exportToExcel = () => {
     const data = getFilteredTasks();
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+    const contextName = activeGroup ? activeGroup.name : t.personal;
+    
     let csvContent = "\uFEFF"; 
+    csvContent += `Report Context,${contextName}\n`;
     csvContent += `Report Period,${period}\n`;
     csvContent += `Score,${chartData.currentScore}%\n`;
     csvContent += `Comparison vs Prev,${diff}%\n\n`;
@@ -185,17 +188,19 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
         csvContent += `${d.toLocaleString(language)},"${task.text.replace(/"/g, '""')}",${task.completed ? t.completed : t.active},${task.progress}%,"${subtasksStr.replace(/"/g, '""')}"\n`;
     });
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    downloadFile(blob, `nano-report-${period}.csv`);
+    downloadFile(blob, `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.csv`);
   };
 
   const exportToWord = () => {
       const data = getFilteredTasks();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      const contextName = activeGroup ? activeGroup.name : t.personal;
       
       let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>Report</title></head><body>`;
       html += `<h1>${t.reportHeader} - ${period.toUpperCase()}</h1>`;
-      html += `<h2>Summary</h2><p>Score: ${chartData.currentScore}% | Tasks: ${chartData.currentCount}</p>`;
+      html += `<h2>Context: ${contextName}</h2>`;
+      html += `<h3>Summary</h3><p>Score: ${chartData.currentScore}% | Tasks: ${chartData.currentCount}</p>`;
       html += `<h3>Reflection</h3><p><strong>Evaluation:</strong> ${sanitize(reflection.evaluation || "N/A")}</p>`;
       html += `<p><strong>Improvement:</strong> ${sanitize(reflection.improvement || "N/A")}</p>`;
       html += `<h3>Tasks</h3><table border="1" style="border-collapse:collapse;width:100%"><tr><th>Time</th><th>Task</th><th>Status</th><th>Progress</th></tr>`;
@@ -206,14 +211,16 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       html += `</table></body></html>`;
       
       const blob = new Blob([html], { type: 'application/msword' });
-      downloadFile(blob, `nano-report-${period}.doc`);
+      downloadFile(blob, `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.doc`);
   };
 
   const exportToXML = () => {
       const data = getFilteredTasks();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      const contextName = activeGroup ? activeGroup.name : 'Personal';
+      
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<report>\n';
-      xml += `  <meta>\n    <period>${period}</period>\n    <score>${chartData.currentScore}</score>\n    <totalTasks>${chartData.currentCount}</totalTasks>\n  </meta>\n`;
+      xml += `  <meta>\n    <context>${sanitize(contextName)}</context>\n    <period>${period}</period>\n    <score>${chartData.currentScore}</score>\n    <totalTasks>${chartData.currentCount}</totalTasks>\n  </meta>\n`;
       xml += `  <reflection>\n    <evaluation>${sanitize(reflection.evaluation || "")}</evaluation>\n    <improvement>${sanitize(reflection.improvement || "")}</improvement>\n  </reflection>\n`;
       xml += `  <tasks>\n`;
       data.forEach(t => {
@@ -221,24 +228,26 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
       });
       xml += `  </tasks>\n</report>`;
       const blob = new Blob([xml], { type: 'text/xml' });
-      downloadFile(blob, `nano-report-${period}.xml`);
+      downloadFile(blob, `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.xml`);
   };
 
   const exportToPowerPoint = async () => {
       const pres = new PptxGenJS();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      const contextName = activeGroup ? activeGroup.name : t.personal;
       
       let slide = pres.addSlide();
       slide.addText(`Productivity Report - ${period.toUpperCase()}`, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
-      slide.addText(`Score: ${chartData.currentScore}%`, { x: 1, y: 2, fontSize: 18, color: '00CC99' });
-      slide.addText(`Tasks Completed: ${chartData.currentCount}`, { x: 1, y: 2.5, fontSize: 18 });
+      slide.addText(`Context: ${contextName}`, { x: 1, y: 1.5, fontSize: 16, color: '6366F1' });
+      slide.addText(`Score: ${chartData.currentScore}%`, { x: 1, y: 2.5, fontSize: 18, color: '00CC99' });
+      slide.addText(`Tasks Completed: ${chartData.currentCount}`, { x: 1, y: 3, fontSize: 18 });
 
       slide = pres.addSlide();
       slide.addText("Self Reflection", { x: 0.5, y: 0.5, fontSize: 20, bold: true, color: '6366F1' });
       slide.addText(`Evaluation: ${reflection.evaluation || "N/A"}`, { x: 0.5, y: 1.5, fontSize: 14, w: 8 });
       slide.addText(`Improvement: ${reflection.improvement || "N/A"}`, { x: 0.5, y: 3.5, fontSize: 14, w: 8 });
 
-      pres.writeFile({ fileName: `nano-report-${period}.pptx` });
+      pres.writeFile({ fileName: `nano-report-${contextName.replace(/\s+/g, '-')}-${period}.pptx` });
   };
 
   const downloadFile = (blob: Blob, fileName: string) => {
