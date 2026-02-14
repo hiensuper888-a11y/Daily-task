@@ -16,6 +16,22 @@ interface TodoListProps {
   activeGroup: Group | null;
 }
 
+// Extracted component for better performance
+const PriorityBadge = ({ priority }: { priority: Priority }) => {
+    const configs = {
+      high: { color: 'bg-rose-50 text-rose-600 border-rose-100', icon: <Flame size={12} />, label: 'Quan trọng' },
+      medium: { color: 'bg-amber-50 text-amber-600 border-amber-100', icon: <Zap size={12} />, label: 'Cần thiết' },
+      low: { color: 'bg-slate-50 text-slate-500 border-slate-100', icon: <CheckCircle size={12} />, label: 'Bình thường' }
+    };
+    const config = configs[priority] || configs.medium;
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${config.color} transition-all`}>
+        {config.icon}
+        {config.label}
+      </span>
+    );
+};
+
 export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const storageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
   const isGlobal = !!activeGroup;
@@ -283,21 +299,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       progress: dayTasks.length ? Math.round(dayTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / dayTasks.length) : 0
     };
   }, [tasks, viewDate]);
-
-  const PriorityBadge = ({ priority }: { priority: Priority }) => {
-    const configs = {
-      high: { color: 'bg-rose-50 text-rose-600 border-rose-100', icon: <Flame size={12} />, label: 'Quan trọng' },
-      medium: { color: 'bg-amber-50 text-amber-600 border-amber-100', icon: <Zap size={12} />, label: 'Cần thiết' },
-      low: { color: 'bg-slate-50 text-slate-500 border-slate-100', icon: <CheckCircle size={12} />, label: 'Bình thường' }
-    };
-    const config = configs[priority] || configs.medium;
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${config.color} transition-all`}>
-        {config.icon}
-        {config.label}
-      </span>
-    );
-  };
 
   const navigateDate = (days: number) => {
     const newDate = new Date(viewDate);
@@ -648,6 +649,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             const subtasksCount = task.subtasks?.length || 0;
             const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
             const isNew = Date.now() - new Date(task.createdAt).getTime() < 3000;
+            const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
             
             return (
               <div 
@@ -670,6 +672,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         </p>
                         <div className="flex flex-wrap items-center gap-2.5 mt-2">
                           <PriorityBadge priority={task.priority || 'medium'} />
+                          {assignedMember && (
+                              <span className="inline-flex items-center gap-1.5 pr-3 pl-1 py-1 rounded-full text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-100">
+                                  <img src={assignedMember.avatar} className="w-4 h-4 rounded-full" alt={assignedMember.name} />
+                                  {assignedMember.name}
+                              </span>
+                          )}
                           {subtasksCount > 0 && (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
                                   <ListChecks size={10}/> {subtasksCompleted}/{subtasksCount} bước

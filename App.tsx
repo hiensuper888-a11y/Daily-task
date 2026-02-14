@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight, Activity, Search, AlertCircle, LogIn } from 'lucide-react';
+import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2, Home, LayoutGrid, Layout, ChevronRight, Activity, Search, AlertCircle, LogIn, Check } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -57,6 +57,7 @@ const AppContent: React.FC = () => {
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [foundUsers, setFoundUsers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'Người dùng', email: 'guest', avatar: '', provider: null, isLoggedIn: false });
   
@@ -143,14 +144,19 @@ const AppContent: React.FC = () => {
           return;
       }
       if (confirm(`Bạn có chắc chắn muốn xóa nhóm "${activeGroup.name}"? Hành động này không thể hoàn tác.`)) {
-          // Remove tasks from storage
-          localStorage.removeItem(`group_${activeGroup.id}_tasks`);
-          // Remove group from list
-          const updatedGroups = myGroups.filter(g => g.id !== activeGroup.id);
-          setMyGroups(updatedGroups);
+          // 1. Clear Active ID first to prevent render errors
+          const groupId = activeGroup.id;
           setActiveGroupId(null);
           setShowSettingsModal(false);
           setActiveTab('tasks');
+
+          // 2. Remove tasks
+          localStorage.removeItem(`group_${groupId}_tasks`);
+
+          // 3. Remove group from list
+          setTimeout(() => {
+             setMyGroups(prev => prev.filter(g => g.id !== groupId));
+          }, 50);
       }
   };
 
@@ -199,6 +205,12 @@ const AppContent: React.FC = () => {
           };
           setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
       }
+  };
+
+  const copyToClipboard = (text: string) => {
+      navigator.clipboard.writeText(text);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const NavItem = ({ tab, icon: Icon, label }: any) => (
@@ -443,9 +455,15 @@ const AppContent: React.FC = () => {
 
                       {/* Members List */}
                       <div className="space-y-4">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex justify-between">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex justify-between items-center">
                               <span>Thành viên ({activeGroup.members.length})</span>
-                              <span className="text-slate-300">Mã: {activeGroup.joinCode}</span>
+                              <button 
+                                onClick={() => copyToClipboard(activeGroup.joinCode)}
+                                className="flex items-center gap-1.5 text-slate-400 hover:text-indigo-600 transition-colors group"
+                              >
+                                  <span className="text-xs">Mã: {activeGroup.joinCode}</span>
+                                  {copiedCode ? <Check size={14} className="text-emerald-500"/> : <Copy size={14} className="group-hover:scale-110 transition-transform"/>}
+                              </button>
                           </label>
                           <div className="space-y-2">
                               {activeGroup.members.map((member) => (
@@ -457,7 +475,7 @@ const AppContent: React.FC = () => {
                                                   {member.name}
                                                   {member.role === 'leader' && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Leader</span>}
                                               </p>
-                                              <p className="text-[10px] text-slate-400 font-mono">ID: {member.id.slice(0, 8)}...</p>
+                                              <p className="text-xs text-slate-400 font-mono">ID: {member.id.slice(0, 8)}...</p>
                                           </div>
                                       </div>
                                       

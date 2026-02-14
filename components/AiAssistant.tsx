@@ -17,7 +17,9 @@ export const AiAssistant: React.FC = () => {
     const isOnline = useOnlineStatus();
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
     };
 
     useEffect(() => {
@@ -73,7 +75,7 @@ export const AiAssistant: React.FC = () => {
             const errorMsg: ChatMessage = {
                 id: Date.now().toString(),
                 role: 'model',
-                text: "Sorry, I encountered an error while processing your request.",
+                text: "Xin lỗi, tôi gặp sự cố khi xử lý yêu cầu. Vui lòng kiểm tra kết nối hoặc cấu hình API.",
                 timestamp: Date.now(),
                 modelUsed: selectedModel
             };
@@ -91,7 +93,7 @@ export const AiAssistant: React.FC = () => {
             const noTaskMsg: ChatMessage = {
                 id: Date.now().toString(),
                 role: 'model',
-                text: "You have no active tasks to analyze! Great job!",
+                text: "Bạn không có công việc nào cần phân tích! Tuyệt vời!",
                 timestamp: Date.now(),
                 modelUsed: selectedModel
             };
@@ -100,16 +102,18 @@ export const AiAssistant: React.FC = () => {
         }
 
         const taskListStr = activeTasks.map(t => 
-            `- [Priority: ${t.priority ? t.priority.toUpperCase() : 'MEDIUM'}] ${t.text} (Progress: ${t.progress}%)`
+            `- [Ưu tiên: ${t.priority ? t.priority.toUpperCase() : 'MEDIUM'}] ${t.text} (Tiến độ: ${t.progress}%)`
         ).join('\n');
 
-        const prompt = `Please analyze my active tasks:\n\n${taskListStr}\n\nBased on this list, please provide the following in Markdown format:\n1. **Prioritized List**: A clear list of tasks sorted by importance, explicitly mentioning their priority.\n2. **Execution Plan**: A suggested execution order to be most productive.\n3. **Strategic Advice**: Specific advice on how to tackle high-priority items effectively.`;
+        const prompt = `Hãy phân tích danh sách công việc của tôi:\n\n${taskListStr}\n\nDựa trên danh sách này, hãy cung cấp:\n1. **Thứ tự ưu tiên**: Sắp xếp lại danh sách theo mức độ quan trọng.\n2. **Kế hoạch thực hiện**: Gợi ý trình tự làm việc hiệu quả nhất.\n3. **Lời khuyên**: Các mẹo cụ thể để giải quyết các việc quan trọng.`;
         
         handleSendMessage(prompt);
     };
 
     const clearChat = () => {
-        setMessages([]);
+        if(confirm("Xóa toàn bộ lịch sử trò chuyện?")) {
+            setMessages([]);
+        }
     };
 
     const getModelIcon = (model: AiModel) => {
@@ -168,7 +172,7 @@ export const AiAssistant: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6 pb-32 md:pb-10">
                 {!isOnline && (
                     <div className="bg-slate-800 text-white p-3 rounded-full text-xs font-bold flex items-center justify-center gap-2 mx-auto max-w-sm shadow-xl animate-scale-in">
-                        <WifiOff size={16} /> Internet connection required for AI.
+                        <WifiOff size={16} /> Cần kết nối Internet để sử dụng AI.
                     </div>
                 )}
                 {messages.length === 0 ? (
@@ -178,7 +182,7 @@ export const AiAssistant: React.FC = () => {
                         </div>
                         <div className="text-center space-y-2">
                              <p className="text-lg font-bold text-slate-500">{t.welcomeAi}</p>
-                             <p className="text-sm text-slate-400">Ask me anything or analyze your daily tasks.</p>
+                             <p className="text-sm text-slate-400">Hỏi tôi bất cứ điều gì hoặc yêu cầu phân tích công việc.</p>
                         </div>
                         {tasks.length > 0 && (
                              <button 

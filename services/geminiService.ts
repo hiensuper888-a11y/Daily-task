@@ -1,10 +1,19 @@
+
 import { GoogleGenAI, Chat } from "@google/genai";
 
 // Declare process for TypeScript since @types/node might not be present
 declare const process: { env: { API_KEY: string } };
 
-// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Safely initialize GenAI only if key exists, otherwise provide a dummy implementation or throw localized error when called.
+const getAiClient = () => {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey || apiKey === 'undefined') {
+        return null;
+    }
+    return new GoogleGenAI({ apiKey });
+};
+
+const ai = getAiClient();
 
 /**
  * Edits an image based on a text prompt using Gemini 2.5 Flash Image.
@@ -18,6 +27,8 @@ export const editImageWithGemini = async (
   mimeType: string,
   prompt: string
 ): Promise<string | null> => {
+  if (!ai) throw new Error("API Key chưa được cấu hình.");
+  
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -64,6 +75,8 @@ export const chatWithGemini = async (
   message: string,
   history: { role: 'user' | 'model', parts: [{ text: string }] }[]
 ): Promise<string> => {
+    if (!ai) return "Chức năng AI chưa được kích hoạt do thiếu API Key.";
+
     try {
         const chat: Chat = ai.chats.create({
             model: 'gemini-3-flash-preview',
@@ -77,6 +90,6 @@ export const chatWithGemini = async (
         return response.text || "";
     } catch (error) {
         console.error("Chat API Error:", error);
-        return "Sorry, I am having trouble connecting to the AI service right now.";
+        return "Xin lỗi, tôi không thể kết nối với dịch vụ AI ngay bây giờ.";
     }
 };
