@@ -45,8 +45,10 @@ export const isFirebaseConfigured = () => true;
 export const createUserWithEmailAndPassword = async (_auth: any, email: string, pass: string) => {
     await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
     
+    const cleanEmail = email.toLowerCase().trim();
     const users = getUsers();
-    if (users[email]) {
+    
+    if (users[cleanEmail]) {
         const err: any = new Error("Email already in use");
         err.code = 'auth/email-already-in-use';
         throw err;
@@ -56,15 +58,15 @@ export const createUserWithEmailAndPassword = async (_auth: any, email: string, 
     const uid = 'user_' + Math.random().toString(36).substring(2, 9);
     const newUser = {
         uid,
-        email,
+        email: cleanEmail,
         password: pass, // Stored locally for simulation
         emailVerified: false,
-        displayName: email.split('@')[0],
+        displayName: cleanEmail.split('@')[0],
         photoURL: '',
         createdAt: Date.now()
     };
 
-    users[email] = newUser;
+    users[cleanEmail] = newUser;
     saveUsers(users);
 
     return { user: newUser };
@@ -73,8 +75,9 @@ export const createUserWithEmailAndPassword = async (_auth: any, email: string, 
 export const signInWithEmailAndPassword = async (_auth: any, email: string, pass: string) => {
     await new Promise(resolve => setTimeout(resolve, 600));
 
+    const cleanEmail = email.toLowerCase().trim();
     const users = getUsers();
-    const user = users[email];
+    const user = users[cleanEmail];
 
     if (!user) {
         const err: any = new Error("User not found");
@@ -108,12 +111,13 @@ export const sendEmailVerification = async (user: any) => {
     // We will alert the user in the UI, but here we update the "backend" state.
     setTimeout(() => {
         const users = getUsers();
-        if (users[user.email]) {
-            users[user.email].emailVerified = true;
+        const cleanEmail = user.email.toLowerCase().trim();
+        if (users[cleanEmail]) {
+            users[cleanEmail].emailVerified = true;
             saveUsers(users);
             // We verify the user in the backend, but the user needs to login again to refresh the token in a real app.
-            console.log(`[Mock Email Service] ${user.email} has been verified.`);
-            alert(`(Simulation) An email has been sent to ${user.email}.\n\nFor this demo, we are simulating that you clicked the verification link.\n\nYour account is now verified! You can log in.`);
+            console.log(`[Mock Email Service] ${cleanEmail} has been verified.`);
+            alert(`(Mô phỏng) Hệ thống đã gửi email tới ${cleanEmail}.\n\nVì đây là bản demo, chúng tôi giả lập bạn đã bấm vào link xác thực.\n\nTài khoản của bạn ĐÃ ĐƯỢC KÍCH HOẠT! Bạn có thể đăng nhập ngay.`);
         }
     }, 2000);
 };
@@ -125,20 +129,21 @@ export const signInWithPopup = async (_auth: any, provider: any) => {
     // Generate a consistent dummy email for social login based on provider to allow re-login
     const providerName = provider.providerId === 'google.com' ? 'gmail' : 'facebook';
     const email = `demo_${providerName}_user@example.com`;
+    const cleanEmail = email.toLowerCase().trim();
     
-    let user = users[email];
+    let user = users[cleanEmail];
     if (!user) {
         user = {
             // Replace deprecated substr with substring
             uid: `social_${providerName}_` + Math.random().toString(36).substring(2, 9),
-            email,
+            email: cleanEmail,
             password: 'social-login-no-pass',
             emailVerified: true, // Social accounts are trusted
             displayName: provider.providerId === 'google.com' ? 'Google User' : 'Facebook User',
-            photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+            photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanEmail}`,
             createdAt: Date.now()
         };
-        users[email] = user;
+        users[cleanEmail] = user;
         saveUsers(users);
     }
 
@@ -149,10 +154,11 @@ export const signInWithPopup = async (_auth: any, provider: any) => {
 export const updateProfile = async (user: any, updates: { displayName?: string; photoURL?: string }) => {
     await new Promise(resolve => setTimeout(resolve, 500));
     const users = getUsers();
-    if (user && user.email && users[user.email]) {
-        users[user.email] = { ...users[user.email], ...updates };
+    const cleanEmail = user.email?.toLowerCase().trim();
+    if (cleanEmail && users[cleanEmail]) {
+        users[cleanEmail] = { ...users[cleanEmail], ...updates };
         saveUsers(users);
-        auth.currentUser = users[user.email];
+        auth.currentUser = users[cleanEmail];
     }
 };
 
@@ -163,7 +169,7 @@ export const updateProfile = async (user: any, updates: { displayName?: string; 
 export const searchUsers = async (query: string) => {
     await new Promise(resolve => setTimeout(resolve, 400)); // Simulate delay
     const users = getUsers();
-    const lowerQuery = query.toLowerCase();
+    const lowerQuery = query.toLowerCase().trim();
 
     // STRICT: ONLY Return existing users, DO NOT create fake/seed users.
     // Filter logic: Check if query matches email, displayName or uid

@@ -61,9 +61,7 @@ export const Profile: React.FC = () => {
         alert("Lỗi: Ứng dụng chưa được cấu hình Firebase. Vui lòng liên hệ quản trị viên.");
         return;
     }
-    // We allow "offline" auth for this mock demo, but strictly speaking user asked for online check.
-    // However, since we mock it locally, isOnline check might block the demo if user is actually offline.
-    // We'll keep the check to simulate realism.
+    
     if (!isOnline) {
         alert("Vui lòng kết nối mạng để đăng nhập.");
         return;
@@ -74,11 +72,12 @@ export const Profile: React.FC = () => {
     }
     
     setIsSyncing(true);
+    const cleanEmail = emailInput.trim().toLowerCase();
 
     try {
         if (authMode === 'register') {
             // 1. REGISTER
-            const credential = await createUserWithEmailAndPassword(auth, emailInput, passwordInput);
+            const credential = await createUserWithEmailAndPassword(auth, cleanEmail, passwordInput);
             const user = credential.user;
             
             // 2. SEND VERIFICATION
@@ -87,17 +86,17 @@ export const Profile: React.FC = () => {
             // 3. FORCE LOGOUT (Require verification first)
             await signOut(auth);
             
-            alert(`Đăng ký thành công! Một email xác nhận đã được gửi tới ${emailInput}. Vui lòng kiểm tra hộp thư và xác nhận trước khi đăng nhập.`);
+            alert(`Đăng ký thành công! Một email xác nhận đã được gửi tới ${cleanEmail}. Vui lòng chờ 2-3 giây để hệ thống giả lập xác nhận, sau đó đăng nhập.`);
             setAuthMode('login'); // Switch to login screen
         } else {
             // 1. LOGIN
-            const credential = await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+            const credential = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
             const user = credential.user;
 
             // 2. CHECK VERIFICATION
             if (!user.emailVerified) {
                 await signOut(auth); // Sign out immediately
-                alert("Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email và bấm xác nhận đăng ký.");
+                alert("Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email của bạn. (Trong bản demo này, vui lòng đợi vài giây sau khi đăng ký để hệ thống tự kích hoạt).");
                 setIsSyncing(false);
                 return;
             }
@@ -111,7 +110,7 @@ export const Profile: React.FC = () => {
         let msg = error.message;
         if (error.code === 'auth/email-already-in-use') msg = "Email này đã được sử dụng.";
         if (error.code === 'auth/wrong-password') msg = "Sai mật khẩu.";
-        if (error.code === 'auth/user-not-found') msg = "Tài khoản không tồn tại.";
+        if (error.code === 'auth/user-not-found') msg = "Tài khoản không tồn tại. Vui lòng kiểm tra email hoặc đăng ký mới.";
         if (error.code === 'auth/weak-password') msg = "Mật khẩu quá yếu.";
         alert(`Lỗi: ${msg}`);
         setIsSyncing(false);
@@ -236,12 +235,12 @@ export const Profile: React.FC = () => {
   // --- UI RENDERERS ---
 
   const renderLoginScreen = () => (
-    <div className="w-full max-w-md mx-auto space-y-6 animate-scale-in">
+    <div className="w-full max-w-sm mx-auto space-y-6 animate-scale-in">
         <div className="text-center space-y-2 mb-8">
-             <div className="relative w-24 h-24 mx-auto mb-6">
+             <div className="relative w-20 h-20 mx-auto mb-6">
                 <div className="absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
-                <div className="relative w-full h-full bg-white rounded-full shadow-xl flex items-center justify-center border-4 border-indigo-50">
-                    <User size={40} className="text-indigo-600" />
+                <div className="relative w-full h-full bg-white/80 backdrop-blur-md rounded-full shadow-xl flex items-center justify-center border-4 border-white">
+                    <User size={32} className="text-indigo-600" />
                 </div>
              </div>
              <h2 className="text-2xl font-black text-slate-800 tracking-tight">
@@ -257,8 +256,7 @@ export const Profile: React.FC = () => {
              )}
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white space-y-4 relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+        <div className="glass-modern p-6 md:p-8 rounded-[2rem] shadow-xl border border-white space-y-4 relative overflow-hidden">
              
              <div className="space-y-4">
                  <div className="group relative">
@@ -268,7 +266,7 @@ export const Profile: React.FC = () => {
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
                         placeholder="Địa chỉ Email"
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-sm font-medium transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-sm font-medium transition-all"
                     />
                  </div>
                  <div className="group relative">
@@ -278,7 +276,7 @@ export const Profile: React.FC = () => {
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
                         placeholder="Mật khẩu"
-                        className="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-sm font-medium transition-all"
+                        className="w-full pl-11 pr-11 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-sm font-medium transition-all"
                     />
                     <button 
                         type="button"
@@ -336,8 +334,8 @@ export const Profile: React.FC = () => {
              <div className="px-8 pb-8 relative">
                  <div className="flex flex-col md:flex-row gap-6 items-start">
                      {/* Avatar */}
-                     <div className="relative -mt-16 shrink-0">
-                         <div className="w-32 h-32 rounded-[2rem] p-1 bg-white shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                     <div className="relative -mt-16 shrink-0 text-center md:text-left">
+                         <div className="w-32 h-32 rounded-[2rem] p-1 bg-white shadow-lg mx-auto md:mx-0">
                              <img 
                                 src={editForm.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} 
                                 className="w-full h-full rounded-[1.8rem] object-cover bg-slate-100"
@@ -356,21 +354,21 @@ export const Profile: React.FC = () => {
                      </div>
 
                      {/* Main Info */}
-                     <div className="pt-4 flex-1 w-full">
-                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                     <div className="pt-4 flex-1 w-full text-center md:text-left">
+                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                              <div>
                                  {isEditing ? (
                                      <input 
                                         name="name"
                                         value={editForm.name}
                                         onChange={handleInputChange}
-                                        className="text-2xl font-black text-slate-800 bg-slate-50 border-b-2 border-indigo-500 focus:outline-none w-full md:w-auto"
+                                        className="text-2xl font-black text-slate-800 bg-slate-50 border-b-2 border-indigo-500 focus:outline-none w-full md:w-auto text-center md:text-left"
                                      />
                                  ) : (
                                      <h2 className="text-3xl font-black text-slate-800 tracking-tight">{profile.name}</h2>
                                  )}
                                  
-                                 <div className="flex flex-wrap items-center gap-3 mt-2">
+                                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
                                      <div className="flex items-center gap-1.5 text-slate-500 font-medium text-xs bg-slate-100 px-2 py-1 rounded-lg">
                                          <Mail size={12}/> {profile.email}
                                      </div>
@@ -382,7 +380,7 @@ export const Profile: React.FC = () => {
                                  </div>
                              </div>
                              
-                             <div className="flex gap-2 w-full md:w-auto">
+                             <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
                                  {isEditing ? (
                                      <button onClick={handleSave} className="flex-1 md:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2">
                                          <Save size={16}/> {t.saveProfile}

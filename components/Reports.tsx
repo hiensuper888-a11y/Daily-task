@@ -1,15 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight } from 'lucide-react';
-import { Task, ReflectionMap } from '../types';
+import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import PptxGenJS from 'pptxgenjs';
 
 type Period = 'day' | 'week' | 'month' | 'year' | 'custom';
 
-export const Reports: React.FC = () => {
-  const [tasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
-  const [reflections, setReflections] = useRealtimeStorage<ReflectionMap>('reflections', {});
+interface ReportsProps {
+    activeGroup?: Group | null;
+}
+
+export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
+  const taskStorageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
+  const reflectionStorageKey = activeGroup ? `group_${activeGroup.id}_reflections` : 'reflections';
+  const isGlobal = !!activeGroup;
+
+  const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobal);
+  const [reflections, setReflections] = useRealtimeStorage<ReflectionMap>(reflectionStorageKey, {}, isGlobal);
+  
   const [period, setPeriod] = useState<Period>('day');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -242,13 +251,15 @@ export const Reports: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-slate-50/50 md:bg-transparent relative">
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600 p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10">
+      <div className={`relative overflow-hidden bg-gradient-to-r p-8 text-white shrink-0 shadow-lg md:rounded-t-[2.5rem] z-10 ${activeGroup ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-violet-600'}`}>
         <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><PieChart size={120} /></div>
         <h1 className="text-2xl font-bold flex items-center gap-3 relative z-10">
-          <BarChart3 size={28} className="text-emerald-200" />
+          <BarChart3 size={28} className={activeGroup ? "text-emerald-200" : "text-indigo-200"} />
           {t.reportHeader}
         </h1>
-        <p className="text-emerald-100 text-sm mt-2 font-medium opacity-90 relative z-10">{t.reportSubHeader}</p>
+        <p className={`${activeGroup ? "text-emerald-100" : "text-indigo-100"} text-sm mt-2 font-medium opacity-90 relative z-10`}>
+            {activeGroup ? `${t.reportSubHeader} - ${activeGroup.name}` : t.reportSubHeader}
+        </p>
       </div>
 
       {/* Content Wrapper */}
@@ -263,7 +274,7 @@ export const Reports: React.FC = () => {
                 onClick={() => setPeriod(p)}
                 className={`flex-1 min-w-[60px] py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all ${
                     period === p 
-                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md scale-105' 
+                    ? (activeGroup ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md scale-105' 
                     : 'text-slate-500 hover:bg-white hover:text-slate-700'
                 }`}
                 >
@@ -287,18 +298,18 @@ export const Reports: React.FC = () => {
 
             {/* Today's Special Report */}
             {period === 'day' && (
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden animate-scale-in group">
+                <div className={`bg-gradient-to-br rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden animate-scale-in group ${activeGroup ? 'from-teal-500 to-emerald-600' : 'from-indigo-500 to-purple-600'}`}>
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
                     <div className="relative z-10">
                         <h2 className="text-lg font-bold flex items-center gap-2 mb-1 opacity-90"><Calendar size={20}/> {t.reportToday}</h2>
-                        <p className="text-indigo-100 text-sm mb-6">{new Date().toLocaleDateString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className={`${activeGroup ? 'text-teal-100' : 'text-indigo-100'} text-sm mb-6`}>{new Date().toLocaleDateString(language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                         <div className="flex flex-wrap gap-4">
                              <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md min-w-[120px] border border-white/10 group-hover:scale-105 transition-transform">
-                                 <p className="text-xs text-indigo-100 uppercase font-bold tracking-wider mb-1">Score</p>
+                                 <p className={`text-xs uppercase font-bold tracking-wider mb-1 ${activeGroup ? 'text-emerald-100' : 'text-indigo-100'}`}>Score</p>
                                  <p className="text-4xl font-black tracking-tight">{chartData.currentScore}%</p>
                              </div>
                              <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md min-w-[120px] border border-white/10 group-hover:scale-105 transition-transform delay-75">
-                                 <p className="text-xs text-indigo-100 uppercase font-bold tracking-wider mb-1">Tasks</p>
+                                 <p className={`text-xs uppercase font-bold tracking-wider mb-1 ${activeGroup ? 'text-emerald-100' : 'text-indigo-100'}`}>Tasks</p>
                                  <p className="text-4xl font-black tracking-tight">{chartData.currentCount}</p>
                              </div>
                         </div>
@@ -312,12 +323,12 @@ export const Reports: React.FC = () => {
                 <div className="glass-card rounded-[2rem] p-6 animate-fade-in" style={{animationDelay: '0.1s'}}>
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <TrendingUp size={16} className="text-emerald-500"/>
+                            <TrendingUp size={16} className={activeGroup ? "text-teal-500" : "text-indigo-500"}/>
                             {t.comparison} ({t.vsPrev})
                         </h3>
                         <div className="flex gap-4 text-[10px] font-bold uppercase tracking-wider">
                             <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300"></span> {t.periodPrev}</div>
-                            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span> {t.periodCurrent}</div>
+                            <div className="flex items-center gap-1"><span className={`w-2 h-2 rounded-full ${activeGroup ? 'bg-teal-500' : 'bg-indigo-500'}`}></span> {t.periodCurrent}</div>
                         </div>
                     </div>
                     
@@ -330,15 +341,15 @@ export const Reports: React.FC = () => {
                             <path 
                                 d={generateLinePath(chartData.currentPoints, 100, 50)} 
                                 fill="none" 
-                                stroke="#10b981" 
+                                stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
                                 strokeWidth="1.5" 
                                 strokeLinecap="round"
                                 className="animate-draw"
                             />
                             <defs>
                                 <linearGradient id="gradientCurrent" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#34d399" stopOpacity="0.5" />
-                                    <stop offset="100%" stopColor="#34d399" stopOpacity="0.05" />
+                                    <stop offset="0%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0.5" />
+                                    <stop offset="100%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0.05" />
                                 </linearGradient>
                             </defs>
                         </svg>
