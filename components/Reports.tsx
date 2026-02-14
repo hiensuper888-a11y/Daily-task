@@ -22,6 +22,9 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const [period, setPeriod] = useState<Period>('day');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  // State for chart interactivity
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  
   const { t, language } = useLanguage();
 
   const getDateRange = () => {
@@ -345,26 +348,99 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     </div>
                     
                     {/* SVG Chart */}
-                    <div className="w-full h-56 relative">
+                    <div className="w-full h-56 relative group/chart">
                         <svg viewBox="0 0 100 50" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                            <path d={generateAreaPath(chartData.prevPoints, 100, 50)} fill="#f1f5f9" />
-                            <path d={generateAreaPath(chartData.currentPoints, 100, 50)} fill="url(#gradientCurrent)" opacity="0.9" className="animate-fade-in" />
-                            
-                            <path d={generateLinePath(chartData.prevPoints, 100, 50)} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
-                            <path 
-                                d={generateLinePath(chartData.currentPoints, 100, 50)} 
-                                fill="none" 
-                                stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
-                                strokeWidth="2" 
-                                strokeLinecap="round"
-                                className="animate-draw"
-                            />
                             <defs>
                                 <linearGradient id="gradientCurrent" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0.4" />
                                     <stop offset="100%" stopColor={activeGroup ? "#2dd4bf" : "#818cf8"} stopOpacity="0" />
                                 </linearGradient>
+                                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
                             </defs>
+
+                            {/* Previous Period (Dotted) */}
+                            <path d={generateAreaPath(chartData.prevPoints, 100, 50)} fill="#f1f5f9" />
+                            <path d={generateLinePath(chartData.prevPoints, 100, 50)} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+                            
+                            {/* Current Period (Animated) */}
+                            <path d={generateAreaPath(chartData.currentPoints, 100, 50)} fill="url(#gradientCurrent)" opacity="0.9" className="animate-fade-in" />
+                            <path 
+                                key={`line-${period}-${activeGroup?.id}`}
+                                d={generateLinePath(chartData.currentPoints, 100, 50)} 
+                                fill="none" 
+                                stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
+                                strokeWidth="2" 
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="animate-draw-path"
+                            />
+
+                            {/* Interaction Layer & Tooltips */}
+                            {chartData.currentPoints.map((point, index) => {
+                                const x = index * (100 / (chartData.currentPoints.length - 1));
+                                const y = 50 - (point.value / 100) * 50;
+                                const isHovered = hoveredIndex === index;
+
+                                return (
+                                    <g key={index} onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)}>
+                                        {/* Invisible Trigger Zone */}
+                                        <rect 
+                                            x={x - 5} 
+                                            y="0" 
+                                            width="10" 
+                                            height="50" 
+                                            fill="transparent" 
+                                            className="cursor-crosshair"
+                                        />
+                                        
+                                        {/* Tooltip Elements (Only show when hovered) */}
+                                        {isHovered && (
+                                            <>
+                                                {/* Vertical Line */}
+                                                <line 
+                                                    x1={x} y1={y} x2={x} y2="50" 
+                                                    stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
+                                                    strokeWidth="0.5" 
+                                                    strokeDasharray="2,2" 
+                                                    opacity="0.6"
+                                                />
+                                                
+                                                {/* Glowing Dot */}
+                                                <circle 
+                                                    cx={x} cy={y} r="2.5" 
+                                                    fill="white" 
+                                                    stroke={activeGroup ? "#14b8a6" : "#6366f1"} 
+                                                    strokeWidth="1.5"
+                                                    filter="url(#glow)"
+                                                />
+
+                                                {/* Tooltip Box */}
+                                                <g transform={`translate(${index > 4 ? x - 25 : x - 10}, ${y - 12})`}>
+                                                    <rect 
+                                                        x="0" y="0" width="35" height="14" rx="3" 
+                                                        fill="white" 
+                                                        stroke={activeGroup ? "#ccfbf1" : "#e0e7ff"}
+                                                        strokeWidth="0.5"
+                                                        filter="drop-shadow(0 2px 4px rgb(0 0 0 / 0.1))"
+                                                    />
+                                                    <text x="17.5" y="6" textAnchor="middle" fontSize="3" fontWeight="bold" fill="#334155">
+                                                        {point.value}%
+                                                    </text>
+                                                    <text x="17.5" y="10" textAnchor="middle" fontSize="2.5" fill="#94a3b8">
+                                                        {point.date.getDate()}/{point.date.getMonth() + 1}
+                                                    </text>
+                                                </g>
+                                            </>
+                                        )}
+                                    </g>
+                                )
+                            })}
                         </svg>
                         <div className="absolute inset-x-0 bottom-0 flex justify-between text-[10px] text-slate-300 font-bold pt-4 border-t border-slate-50">
                              <span>Start</span>

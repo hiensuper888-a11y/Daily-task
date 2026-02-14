@@ -94,11 +94,23 @@
       @keyframes checkBounce {
         0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); }
       }
+      
+      /* Chart Drawing Animation */
+      @keyframes drawChart {
+        from { stroke-dashoffset: 200; }
+        to { stroke-dashoffset: 0; }
+      }
 
       .animate-fade-in { animation: fadeInUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
       .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
       .animate-float { animation: float 6s ease-in-out infinite; }
       .animate-check { animation: checkBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      
+      .animate-draw-path {
+        stroke-dasharray: 200;
+        stroke-dashoffset: 200;
+        animation: drawChart 1.5s ease-out forwards;
+      }
       
       /* Glass Morphism Classes */
       .glass-modern {
