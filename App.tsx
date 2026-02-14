@@ -36,6 +36,7 @@ const LoadingFallback = () => (
 );
 
 // --- GLOBAL GROUP HELPERS (Mock Backend) ---
+// This simulates a backend database so that different users (browser tabs/sessions) can interact with the same groups.
 const GLOBAL_GROUPS_KEY = 'public_groups_db';
 
 const getGlobalGroups = (): Group[] => {
@@ -122,7 +123,7 @@ const AppContent: React.FC = () => {
           const globalGroups = getGlobalGroups();
           
           setMyGroups(prevMyGroups => {
-              if (prevMyGroups.length === 0) return prevMyGroups;
+              if (prevMyGroups.length === 0 && globalGroups.length === 0) return prevMyGroups;
 
               // 1. Filter out groups that no longer exist in global DB OR user is removed from global group
               const validGroups = prevMyGroups.filter(localGroup => {
@@ -136,7 +137,7 @@ const AppContent: React.FC = () => {
                   return false;
               });
 
-              // 2. Update data for valid groups
+              // 2. Update data for valid groups (sync name, avatar, members changes)
               let hasChanges = validGroups.length !== prevMyGroups.length;
               
               const newGroups = validGroups.map(localGroup => {
@@ -475,7 +476,7 @@ const AppContent: React.FC = () => {
                     </button>
                     
                     {/* Settings Icon */}
-                    {activeGroupId === group.id && group.leaderId === currentUserId && (
+                    {activeGroupId === group.id && (
                         <button 
                             onClick={(e) => { e.stopPropagation(); setShowSettingsModal(true); }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-emerald-100 hover:bg-emerald-500 hover:text-white transition-colors"
@@ -533,7 +534,7 @@ const AppContent: React.FC = () => {
                 {activeTab === item.id && <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${activeGroupId ? 'bg-emerald-600' : 'bg-indigo-600'}`}></div>}
               </button>
           ))}
-          {activeGroupId && activeGroup?.leaderId === currentUserId && (
+          {activeGroupId && (
               <button onClick={() => setShowSettingsModal(true)} className="p-4 rounded-2xl text-emerald-600 bg-emerald-50 relative">
                  <Settings size={24} strokeWidth={2.5} />
               </button>
@@ -588,7 +589,7 @@ const AppContent: React.FC = () => {
           </div>
       )}
 
-      {/* MODAL: Group Settings (Leader Only) */}
+      {/* MODAL: Group Settings */}
       {showSettingsModal && activeGroup && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
               <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in border border-white flex flex-col max-h-[85vh]">
@@ -602,29 +603,31 @@ const AppContent: React.FC = () => {
 
                   <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
                       
-                      {/* Invite Section */}
+                      {/* Invite Section (Visible to everyone, but search usually leader only) */}
                       <div className="space-y-4">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mời thành viên</label>
                           
-                          {/* Search */}
-                          <div className="flex gap-2">
-                              <div className="relative flex-1">
-                                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
-                                  <input 
-                                    type="text" 
-                                    value={memberSearchQuery}
-                                    onChange={(e) => setMemberSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
-                                    placeholder="Tìm email, ID..." 
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100"
-                                  />
+                          {/* Only Leader can search and add directly */}
+                          {activeGroup.leaderId === currentUserId && (
+                              <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
+                                      <input 
+                                        type="text" 
+                                        value={memberSearchQuery}
+                                        onChange={(e) => setMemberSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()}
+                                        placeholder="Tìm email, ID..." 
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                      />
+                                  </div>
+                                  <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                                      {isSearching ? <Loader2 size={18} className="animate-spin"/> : "Tìm"}
+                                  </button>
                               </div>
-                              <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50">
-                                  {isSearching ? <Loader2 size={18} className="animate-spin"/> : "Tìm"}
-                              </button>
-                          </div>
-                          
-                          {hasSearched && foundUsers.length === 0 && !isSearching && (
+                          )}
+
+                          {hasSearched && foundUsers.length === 0 && !isSearching && activeGroup.leaderId === currentUserId && (
                               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center text-slate-400 text-sm font-medium">
                                   Không tìm thấy người dùng nào.
                               </div>
@@ -647,7 +650,7 @@ const AppContent: React.FC = () => {
                               </div>
                           )}
 
-                          {/* Share Codes */}
+                          {/* Share Codes - Visible to everyone */}
                           <div className="flex gap-2">
                               <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between">
                                   <div>
@@ -690,7 +693,7 @@ const AppContent: React.FC = () => {
                                                       {member.name}
                                                       {member.role === 'leader' && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Leader</span>}
                                                   </p>
-                                                  {editingMemberId === member.id ? (
+                                                  {editingMemberId === member.id && activeGroup.leaderId === currentUserId ? (
                                                       <div className="mt-1 space-y-1">
                                                           <input 
                                                             value={editMemberTitle}
@@ -714,17 +717,19 @@ const AppContent: React.FC = () => {
                                               </div>
                                           </div>
                                           
-                                          <div className="flex gap-1">
-                                              {editingMemberId === member.id ? (
-                                                  <button onClick={() => handleUpdateMemberInfo(member.id)} className="p-2 text-emerald-500 bg-emerald-50 hover:bg-emerald-100 rounded-lg"><Save size={14}/></button>
-                                              ) : (
-                                                  <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg"><Edit2 size={14}/></button>
-                                              )}
-                                              
-                                              {member.role !== 'leader' && (
-                                                  <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><UserMinus size={14}/></button>
-                                              )}
-                                          </div>
+                                          {activeGroup.leaderId === currentUserId && (
+                                              <div className="flex gap-1">
+                                                  {editingMemberId === member.id ? (
+                                                      <button onClick={() => handleUpdateMemberInfo(member.id)} className="p-2 text-emerald-500 bg-emerald-50 hover:bg-emerald-100 rounded-lg"><Save size={14}/></button>
+                                                  ) : (
+                                                      <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg"><Edit2 size={14}/></button>
+                                                  )}
+                                                  
+                                                  {member.role !== 'leader' && (
+                                                      <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"><UserMinus size={14}/></button>
+                                                  )}
+                                              </div>
+                                          )}
                                       </div>
                                   </div>
                               ))}
