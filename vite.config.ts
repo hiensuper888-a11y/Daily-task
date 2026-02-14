@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
     define: {
       // Safely replace process.env.API_KEY with the string value during build
       // Using JSON.stringify ensures it's wrapped in quotes
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || 'AIzaSyAm3oIyGTPb1-Knso8Rtj58vU4nvyOYxCU'),
       // Prevent "process is not defined" error in browser
       'process.env': {} 
     },
