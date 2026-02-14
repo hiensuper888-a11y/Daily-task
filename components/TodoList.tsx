@@ -4,7 +4,8 @@ import {
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, 
   Edit3, CheckSquare, Square, ListChecks,
-  PlusCircle, Sun, Moon, Sunrise, Sunset, Users, User
+  PlusCircle, Sun, Moon, Sunrise, Sunset, Users, User,
+  Layers, Zap, ArrowRightCircle
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -268,6 +269,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
 
+  // Filter Configuration for UI
+  const filterConfig: Record<FilterType, { icon: any, label: string, colorClass: string, shadowClass: string }> = {
+    all: { icon: Layers, label: t.all, colorClass: 'from-slate-700 to-slate-900', shadowClass: 'shadow-slate-500/30' },
+    active: { icon: Zap, label: t.active, colorClass: 'from-indigo-500 to-violet-600', shadowClass: 'shadow-indigo-500/30' },
+    completed: { icon: CheckCircle2, label: t.completed, colorClass: 'from-emerald-500 to-teal-600', shadowClass: 'shadow-emerald-500/30' },
+    assigned_to_me: { icon: User, label: t.assigned_to_me, colorClass: 'from-blue-500 to-cyan-600', shadowClass: 'shadow-blue-500/30' },
+    delegated: { icon: ArrowRightCircle, label: t.delegated, colorClass: 'from-orange-500 to-amber-600', shadowClass: 'shadow-orange-500/30' },
+    archived: { icon: Archive, label: t.archived, colorClass: 'from-slate-500 to-gray-600', shadowClass: 'shadow-slate-500/30' },
+  };
+
+  const activeFilters = ['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me', 'delegated'] : []), 'archived'] as FilterType[];
+
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
       
@@ -395,11 +408,26 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
           <div className="flex gap-3">
              <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none flex-1 -mx-4 px-4 mask-gradient-x">
-              {(['all', 'active', 'completed', ...(activeGroup ? ['assigned_to_me', 'delegated'] : []), 'archived'] as FilterType[]).map(f => {
+              {activeFilters.map(f => {
                 const isActive = filterStatus === f;
+                const config = filterConfig[f] || filterConfig.all;
+                const Icon = config.icon;
+                
                 return (
-                  <button key={f} onClick={() => setFilterStatus(f)} className={`px-5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 border ${isActive ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white/60 text-slate-500 border-transparent hover:bg-white hover:shadow-sm backdrop-blur-sm'}`}>
-                    {f === 'archived' ? 'Kho lưu trữ' : t[f]}
+                  <button 
+                    key={f} 
+                    onClick={() => setFilterStatus(f)} 
+                    className={`
+                        relative px-5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 group
+                        ${isActive 
+                            ? `bg-gradient-to-r ${config.colorClass} text-white shadow-lg ${config.shadowClass} scale-105` 
+                            : 'bg-white/60 text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm backdrop-blur-sm'
+                        }
+                        active:scale-95
+                    `}
+                  >
+                    <Icon size={14} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} strokeWidth={2.5} />
+                    <span>{config.label}</span>
                   </button>
                 );
               })}
