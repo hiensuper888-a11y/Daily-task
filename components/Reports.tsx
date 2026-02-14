@@ -218,7 +218,9 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   };
 
   const exportToPowerPoint = async () => {
-      const pres = new PptxGenJS();
+      // Use explicit casting to avoid 'is not a constructor' error in strict environments/builds
+      // PptxGenJS might be imported as default or named depending on the module system
+      const pres = new (PptxGenJS as any)();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
       
       // Slide 1: Title

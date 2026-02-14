@@ -126,7 +126,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     if (!files) return;
 
     // Use Array.from and let TypeScript infer the type, or cast if necessary in strict mode
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         let type: 'image' | 'video' | 'file' = 'file';
