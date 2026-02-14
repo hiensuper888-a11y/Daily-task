@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Share2, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, QrCode, Edit2, Save, Palette } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Share2, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, QrCode, Edit2, Save } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -210,7 +210,8 @@ const AppContent: React.FC = () => {
               role: 'leader',
               joinedAt: Date.now(),
               customTitle: 'Trưởng nhóm',
-              note: 'Quản trị viên'
+              note: 'Quản trị viên',
+              headerBackground: ''
           }],
           joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           createdAt: Date.now()
@@ -256,7 +257,8 @@ const AppContent: React.FC = () => {
               role: 'member',
               joinedAt: Date.now(),
               customTitle: 'Thành viên',
-              note: ''
+              note: '',
+              headerBackground: ''
           };
           updatedGroup = { ...targetGroup, members: [...targetGroup.members, newMember] };
           saveGlobalGroup(updatedGroup);
@@ -306,7 +308,7 @@ const AppContent: React.FC = () => {
       setHasSearched(true);
       try {
           const results = await searchUsers(memberSearchQuery);
-          const existingMemberIds = activeGroup?.members.map(m => m.id) || [];
+          const existingMemberIds = activeGroup?.members?.map(m => m.id) || [];
           setFoundUsers(results.filter((u: any) => !existingMemberIds.includes(u.uid)));
       } catch (error) {
           console.error(error);
@@ -324,11 +326,12 @@ const AppContent: React.FC = () => {
           role: 'member',
           joinedAt: Date.now(),
           customTitle: 'Thành viên',
-          note: ''
+          note: '',
+          headerBackground: ''
       };
       const updatedGroup = {
           ...activeGroup,
-          members: [...activeGroup.members, newMember]
+          members: [...(activeGroup.members || []), newMember]
       };
       setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
       saveGlobalGroup(updatedGroup);
@@ -365,7 +368,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleUpdatePersonalGroupSettings = (headerBg: string) => {
-    if (!activeGroup) return;
+    if (!activeGroup || !activeGroup.members) return;
     const updatedMembers = activeGroup.members.map(m => {
         if (m.id === currentUserId) {
             return { ...m, headerBackground: headerBg };
@@ -724,9 +727,9 @@ const AppContent: React.FC = () => {
                            </div>
                            
                            <div className="space-y-4">
-                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thành viên ({activeGroup.members.length})</label>
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Thành viên ({activeGroup.members?.length || 0})</label>
                                <div className="space-y-2">
-                                  {activeGroup.members.map((member) => (
+                                  {activeGroup.members?.map((member) => (
                                       <div key={member.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
                                           <div className="flex items-start justify-between">
                                               <div className="flex items-center gap-3">
@@ -798,7 +801,7 @@ const AppContent: React.FC = () => {
                                             title={c.name}
                                         >
                                             {/* Show check if roughly matches current bg (simplified check) */}
-                                            {activeGroup.members.find(m => m.id === currentUserId)?.headerBackground === c.val && (
+                                            {(activeGroup.members?.find(m => m.id === currentUserId)?.headerBackground || '') === c.val && (
                                                 <div className="absolute inset-0 flex items-center justify-center">
                                                     <Check size={16} className="text-white drop-shadow-md"/>
                                                 </div>
@@ -824,7 +827,7 @@ const AppContent: React.FC = () => {
                                     accept="image/*"
                                     onChange={handlePersonalBgUpload}
                                 />
-                                {activeGroup.members.find(m => m.id === currentUserId)?.headerBackground?.startsWith('data:') && (
+                                {activeGroup.members?.find(m => m.id === currentUserId)?.headerBackground?.startsWith('data:') && (
                                     <div className="relative h-32 rounded-2xl overflow-hidden shadow-md group">
                                         <img 
                                             src={activeGroup.members.find(m => m.id === currentUserId)?.headerBackground} 

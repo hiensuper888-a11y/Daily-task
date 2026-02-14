@@ -69,7 +69,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
   // Find current user's membership to get preferences
-  const currentMember = activeGroup?.members.find(m => m.id === currentUserId);
+  // SAFELY ACCESS MEMBERS WITH ?.
+  const currentMember = activeGroup?.members?.find(m => m.id === currentUserId);
 
   // Reset form when switching groups
   useEffect(() => {
@@ -587,7 +588,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
             const subtasksCount = task.subtasks?.length || 0;
             const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
-            const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
+            const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
             
             return (
               <div 
