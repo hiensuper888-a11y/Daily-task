@@ -35,12 +35,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   // Edit Mode State
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  // ... other edit states managed via direct task update or Detail Modal now
 
   // Task Detail Modal State
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newComment, setNewComment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentListRef = useRef<HTMLDivElement>(null);
 
   // Completion Note Modal State
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
@@ -337,11 +337,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const handleAddComment = () => {
       if (!selectedTask || !newComment.trim()) return;
 
+      const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`;
+
       const comment: Comment = {
           id: Date.now().toString(),
           userId: currentUserId,
           userName: userProfile.name || 'User',
-          userAvatar: userProfile.avatar || '',
+          userAvatar: userProfile.avatar || fallbackAvatar,
           text: newComment,
           timestamp: Date.now(),
           role: activeGroup ? (isLeader ? 'leader' : 'member') : undefined
@@ -353,6 +355,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       };
       updateTask(updatedTask);
       setNewComment('');
+      
+      // Auto-scroll to bottom of comments
+      setTimeout(() => {
+          if (commentListRef.current) {
+              commentListRef.current.scrollTo({ top: commentListRef.current.scrollHeight, behavior: 'smooth' });
+          }
+      }, 100);
   };
 
   const removeAttachment = (attachmentId: string) => {
@@ -546,31 +555,42 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                        <MessageSquare size={18} className="text-indigo-500"/> Activity & Comments
                    </div>
                    
-                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref={commentListRef}>
                        {(!selectedTask.comments || selectedTask.comments.length === 0) ? (
                            <div className="text-center text-slate-400 text-xs py-10">No comments yet. Be the first!</div>
                        ) : (
-                           selectedTask.comments.map(comment => (
-                               <div key={comment.id} className={`flex gap-3 ${comment.userId === currentUserId ? 'flex-row-reverse' : ''}`}>
-                                   <div className="flex-shrink-0">
-                                       <img src={comment.userAvatar} alt={comment.userName} className="w-8 h-8 rounded-full border border-white shadow-sm bg-slate-200" />
-                                   </div>
-                                   <div className={`flex flex-col max-w-[85%] ${comment.userId === currentUserId ? 'items-end' : 'items-start'}`}>
-                                       <div className="flex items-center gap-2 mb-1">
-                                           <span className="text-[10px] font-bold text-slate-600">{comment.userName}</span>
-                                           {comment.role === 'leader' && <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 rounded font-bold uppercase">Leader</span>}
-                                           <span className="text-[9px] text-slate-400">{new Date(comment.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                           selectedTask.comments.map(comment => {
+                               const commentDate = new Date(comment.timestamp);
+                               const dateDisplay = isToday(commentDate) 
+                                   ? commentDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                                   : commentDate.toLocaleDateString([], {month: 'short', day: 'numeric', hour:'2-digit', minute:'2-digit'});
+                                   
+                               return (
+                                   <div key={comment.id} className={`flex gap-3 ${comment.userId === currentUserId ? 'flex-row-reverse' : ''}`}>
+                                       <div className="flex-shrink-0">
+                                           <img 
+                                                src={comment.userAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.userId}`} 
+                                                alt={comment.userName} 
+                                                className="w-8 h-8 rounded-full border border-white shadow-sm bg-slate-200" 
+                                           />
                                        </div>
-                                       <div className={`px-3 py-2 rounded-2xl text-sm ${
-                                           comment.userId === currentUserId 
-                                           ? 'bg-indigo-600 text-white rounded-tr-none' 
-                                           : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
-                                       }`}>
-                                           {comment.text}
+                                       <div className={`flex flex-col max-w-[85%] ${comment.userId === currentUserId ? 'items-end' : 'items-start'}`}>
+                                           <div className="flex items-center gap-2 mb-1">
+                                               <span className="text-[10px] font-bold text-slate-600">{comment.userName}</span>
+                                               {comment.role === 'leader' && <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 rounded font-bold uppercase">Leader</span>}
+                                               <span className="text-[9px] text-slate-400">{dateDisplay}</span>
+                                           </div>
+                                           <div className={`px-3 py-2 rounded-2xl text-sm ${
+                                               comment.userId === currentUserId 
+                                               ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                               : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
+                                           }`}>
+                                               {comment.text}
+                                           </div>
                                        </div>
                                    </div>
-                               </div>
-                           ))
+                               );
+                           })
                        )}
                    </div>
 
