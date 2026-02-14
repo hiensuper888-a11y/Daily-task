@@ -413,10 +413,12 @@ export const TodoList: React.FC = () => {
                     <div className="relative">
                         <button 
                             onClick={() => setShowSortMenu(!showSortMenu)}
-                            className={`p-2 rounded-xl border transition-all ${showSortMenu ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white/50 text-slate-400 border-transparent hover:bg-white hover:text-slate-600'}`}
+                            className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 ${showSortMenu ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white/50 text-slate-400 border-transparent hover:bg-white hover:text-slate-600'}`}
                             title={t.sortBy}
                         >
                             <ArrowUpDown size={16} />
+                            {sortBy === 'priority' && <span className="text-[10px] font-bold">{t.sortPriority}</span>}
+                            {sortBy === 'deadline' && <span className="text-[10px] font-bold">{t.deadline}</span>}
                         </button>
                         {showSortMenu && (
                             <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 p-1 z-30 min-w-[120px] animate-fade-in">
@@ -475,6 +477,11 @@ export const TodoList: React.FC = () => {
                     const completedSubtasks = task.subtasks?.filter(s => s.completed).length || 0;
                     const totalSubtasks = task.subtasks?.length || 0;
                     
+                    // Priority visual properties
+                    const priorityColor = task.priority === 'high' ? 'rose' : task.priority === 'low' ? 'emerald' : 'amber';
+                    const priorityBg = task.priority === 'high' ? 'bg-rose-50' : task.priority === 'low' ? 'bg-emerald-50' : 'bg-amber-50';
+                    const priorityBorder = task.priority === 'high' ? 'border-rose-100' : task.priority === 'low' ? 'border-emerald-100' : 'border-amber-100';
+
                     return (
                         <div 
                             key={task.id}
@@ -485,17 +492,17 @@ export const TodoList: React.FC = () => {
                                 ? 'border-slate-100 opacity-70 bg-slate-50/50 hover:opacity-100' 
                                 : isOverdue 
                                     ? 'border-red-200 bg-red-50/10 shadow-red-100' 
-                                    : 'border-white hover:border-indigo-200 hover:shadow-[0_8px_20px_-8px_rgba(99,102,241,0.2)] hover:-translate-y-0.5'
+                                    : `border-white hover:${priorityBorder} hover:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] hover:-translate-y-0.5`
                             } shadow-sm`}
                         >
                             {/* Priority Strip */}
-                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                                 task.priority === 'high' ? 'bg-rose-500' :
                                 task.priority === 'low' ? 'bg-emerald-500' :
                                 'bg-amber-500'
                             }`}></div>
 
-                            <div className="p-4 pl-5">
+                            <div className="p-4 pl-6">
                                 <div className="flex items-start gap-3 relative z-10">
                                     <button 
                                         onClick={() => toggleTask(task.id)}
@@ -803,7 +810,7 @@ export const TodoList: React.FC = () => {
                         )}
                     </div>
 
-                     {/* Priority */}
+                     {/* Priority Selector */}
                      <div className="flex gap-1 ml-auto">
                         {(['low', 'medium', 'high'] as Priority[]).map(p => (
                             <button
@@ -812,11 +819,11 @@ export const TodoList: React.FC = () => {
                                 className={`w-8 h-8 rounded-full transition-all flex items-center justify-center border shadow-sm ${
                                     newPriority === p 
                                     ? (p === 'high' ? 'bg-rose-500 border-rose-600 text-white scale-110' : p === 'medium' ? 'bg-amber-500 border-amber-600 text-white scale-110' : 'bg-emerald-500 border-emerald-600 text-white scale-110') 
-                                    : 'bg-white border-white text-transparent hover:bg-slate-100'
+                                    : 'bg-white border-white text-slate-300 hover:text-slate-500 hover:bg-slate-100'
                                 }`}
-                                title={p}
+                                title={t[p] || p}
                             >
-                                <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : (p === 'high' ? 'text-rose-400' : p === 'medium' ? 'text-amber-400' : 'text-emerald-400')} />
+                                <Flag size={14} fill={newPriority === p ? "currentColor" : "none"} className={newPriority === p ? "" : "currentColor"} />
                             </button>
                         ))}
                     </div>
