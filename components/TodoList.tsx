@@ -59,7 +59,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   // Get current user ID to check permissions
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
-  const isLeader = activeGroup?.leaderId === currentUserId;
+  
+  // Check permission: Leader ID OR Role is 'leader'
+  const currentMember = activeGroup?.members.find(m => m.id === currentUserId);
+  const isLeader = activeGroup?.leaderId === currentUserId || currentMember?.role === 'leader';
 
   // Helper: Format Date for Input (YYYY-MM-DDTHH:mm)
   const toLocalISOString = (date: Date) => {
@@ -146,7 +149,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     
     // Permission check for groups
     if (activeGroup && !isLeader) {
-        alert("Only the Group Leader can create tasks.");
+        alert("Only Group Leaders can create tasks.");
         return;
     }
     

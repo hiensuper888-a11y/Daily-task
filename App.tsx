@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon } from 'lucide-react';
+import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus } from 'lucide-react';
 import { TodoList } from './components/TodoList';
 import { ImageEditor } from './components/ImageEditor';
 import { Reports } from './components/Reports';
@@ -21,7 +21,9 @@ const AppContent: React.FC = () => {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null); // null = Personal
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [showShareModal, setShowShareModal] = useState<Group | null>(null);
+  
+  // Group Management Modal State
+  const [managingGroup, setManagingGroup] = useState<Group | null>(null);
 
   // Form Inputs
   const [newGroupName, setNewGroupName] = useState('');
@@ -34,6 +36,37 @@ const AppContent: React.FC = () => {
   const currentUserId = userProfile.email || 'guest';
 
   const activeGroup = myGroups.find(g => g.id === activeGroupId) || null;
+
+  // --- Helper to update group in both local and global simulation ---
+  const updateGroupInStorage = (updatedGroup: Group, isDelete: boolean = false) => {
+      // 1. Update local MyGroups
+      let newMyGroups;
+      if (isDelete) {
+          newMyGroups = myGroups.filter(g => g.id !== updatedGroup.id);
+          if (activeGroupId === updatedGroup.id) setActiveGroupId(null);
+      } else {
+          newMyGroups = myGroups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
+      }
+      setMyGroups(newMyGroups);
+
+      // 2. Update Global Simulation (so other "users" see changes)
+      const globalGroupsStr = localStorage.getItem('simulated_global_groups');
+      if (globalGroupsStr) {
+          let globalGroups: Group[] = JSON.parse(globalGroupsStr);
+          if (isDelete) {
+              globalGroups = globalGroups.filter(g => g.id !== updatedGroup.id);
+          } else {
+              // Replace or Add
+              const exists = globalGroups.find(g => g.id === updatedGroup.id);
+              if (exists) {
+                  globalGroups = globalGroups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
+              } else {
+                  globalGroups.push(updatedGroup);
+              }
+          }
+          localStorage.setItem('simulated_global_groups', JSON.stringify(globalGroups));
+      }
+  };
 
   const handleGroupImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -63,7 +96,10 @@ const AppContent: React.FC = () => {
           joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           createdAt: Date.now()
       };
-      setMyGroups([...myGroups, newGroup]);
+      
+      // Update storage using helper to ensure global sync immediately
+      updateGroupInStorage(newGroup);
+      
       setNewGroupName('');
       setNewGroupImage('');
       setShowGroupModal(false);
@@ -72,17 +108,13 @@ const AppContent: React.FC = () => {
   };
 
   const handleJoinGroup = () => {
-     // Simulation: Check if code matches any group in "mock global db" or existing (since we can't truly query other users in localStorage)
-     // For demo purposes, we search within myGroups OR assume valid if it matches a pattern.
-     // To make it functional for testing: Users can "Join" a group they created by code if they left, 
-     // OR we simulate a "Global Groups" store in localStorage for demo.
+     // Simulation: Check if code matches any group in "mock global db"
      const globalGroupsStr = localStorage.getItem('simulated_global_groups');
      const globalGroups: Group[] = globalGroupsStr ? JSON.parse(globalGroupsStr) : [];
      
-     // Sync local groups to global for simulation
+     // Sync local groups to global for simulation if missing
      const allGroups = [...globalGroups, ...myGroups].filter((v,i,a)=>a.findIndex(t=>(t.id===v.id))===i);
-     localStorage.setItem('simulated_global_groups', JSON.stringify(allGroups));
-
+     
      const targetGroup = allGroups.find(g => g.joinCode === joinCodeInput);
 
      if (targetGroup) {
@@ -100,10 +132,8 @@ const AppContent: React.FC = () => {
                 joinedAt: Date.now()
              }]
          };
-         setMyGroups([...myGroups, updatedGroup]);
-         // Update global store
-         const newGlobal = allGroups.map(g => g.id === targetGroup.id ? updatedGroup : g);
-         localStorage.setItem('simulated_global_groups', JSON.stringify(newGlobal));
+         
+         updateGroupInStorage(updatedGroup);
 
          setJoinCodeInput('');
          setShowJoinModal(false);
@@ -113,6 +143,57 @@ const AppContent: React.FC = () => {
          alert(t.groupJoinError);
      }
   };
+
+  // --- Group Management Handlers ---
+
+  const handleLeaveGroup = () => {
+      if (!managingGroup) return;
+      if (confirm("Are you sure you want to leave this group?")) {
+          const updatedGroup: Group = {
+              ...managingGroup,
+              members: managingGroup.members.filter(m => m.id !== currentUserId)
+          };
+          updateGroupInStorage(updatedGroup);
+          setManagingGroup(null);
+          setActiveGroupId(null);
+      }
+  };
+
+  const handleDeleteGroup = () => {
+      if (!managingGroup) return;
+      if (confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+          updateGroupInStorage(managingGroup, true); // true = delete
+          setManagingGroup(null);
+      }
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+      if (!managingGroup) return;
+      if (confirm("Remove this member?")) {
+          const updatedGroup: Group = {
+              ...managingGroup,
+              members: managingGroup.members.filter(m => m.id !== memberId)
+          };
+          updateGroupInStorage(updatedGroup);
+          setManagingGroup(updatedGroup); // Update local modal state
+      }
+  };
+
+  const handleToggleRole = (memberId: string) => {
+      if (!managingGroup) return;
+      const member = managingGroup.members.find(m => m.id === memberId);
+      if (!member) return;
+
+      const newRole: 'leader' | 'member' = member.role === 'leader' ? 'member' : 'leader';
+      const updatedGroup: Group = {
+          ...managingGroup,
+          members: managingGroup.members.map(m => m.id === memberId ? { ...m, role: newRole } : m)
+      };
+      
+      updateGroupInStorage(updatedGroup);
+      setManagingGroup(updatedGroup);
+  };
+
 
   const languages: { code: Language; label: string }[] = [
     { code: 'vi', label: 'Tiếng Việt' },
@@ -219,8 +300,8 @@ const AppContent: React.FC = () => {
                           )}
                           <span className="text-sm truncate">{group.name}</span>
                       </div>
-                      <div className="flex items-center" onClick={(e) => { e.stopPropagation(); setShowShareModal(group); }}>
-                          <Share2 size={14} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-500"/>
+                      <div className="flex items-center" onClick={(e) => { e.stopPropagation(); setManagingGroup(group); }}>
+                          <Settings size={14} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-500"/>
                       </div>
                   </button>
               ))}
@@ -345,26 +426,114 @@ const AppContent: React.FC = () => {
           </div>
       )}
 
-      {/* Share Group Modal */}
-      {showShareModal && (
+      {/* Group Management Modal (Replaces simple Share Modal) */}
+      {managingGroup && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-scale-in relative text-center">
-                  <button onClick={() => setShowShareModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X size={20}/></button>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">{t.inviteMembers}</h3>
-                  <p className="text-slate-500 text-sm mb-6">Share this code or QR with your team</p>
-                  
-                  <div className="bg-white p-4 rounded-xl border-2 border-slate-100 inline-block mb-6 shadow-sm">
-                       <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${showShareModal.joinCode}`} alt="QR Code" className="w-32 h-32"/>
+              <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-scale-in relative overflow-hidden flex flex-col max-h-[80vh]">
+                  {/* Header */}
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                      <div className="flex items-center gap-3">
+                           {managingGroup.avatar ? (
+                                <img src={managingGroup.avatar} className="w-10 h-10 rounded-full border border-slate-200 object-cover" />
+                           ) : (
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border border-indigo-200">
+                                    {managingGroup.name.substring(0,2).toUpperCase()}
+                                </div>
+                           )}
+                           <div>
+                               <h3 className="font-bold text-slate-800">{managingGroup.name}</h3>
+                               <p className="text-xs text-slate-500">{managingGroup.members.length} {t.member}</p>
+                           </div>
+                      </div>
+                      <button onClick={() => setManagingGroup(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-colors"><X size={20}/></button>
                   </div>
 
-                  <div className="bg-slate-50 p-4 rounded-xl flex items-center justify-between border border-slate-200 mb-4">
-                      <span className="font-mono text-xl font-bold text-slate-800 tracking-widest">{showShareModal.joinCode}</span>
-                      <button 
-                        onClick={() => {navigator.clipboard.writeText(showShareModal.joinCode); alert(t.copySuccess)}}
-                        className="p-2 hover:bg-white rounded-lg transition-colors text-indigo-600"
-                      >
-                          <Copy size={20}/>
-                      </button>
+                  <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                      
+                      {/* Section 1: Invite */}
+                      <div>
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><UserPlus size={14}/> Invite Members</h4>
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${managingGroup.joinCode}`} alt="QR Code" className="w-24 h-24 mb-3 border border-white rounded-lg shadow-sm"/>
+                              <div className="flex items-center gap-2 w-full">
+                                  <div className="flex-1 bg-white border border-slate-200 rounded-lg p-2 text-center font-mono font-bold tracking-widest text-slate-700 select-all">
+                                      {managingGroup.joinCode}
+                                  </div>
+                                  <button onClick={() => {navigator.clipboard.writeText(managingGroup.joinCode); alert(t.copySuccess)}} className="p-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                      <Copy size={16}/>
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* Section 2: Members */}
+                      <div>
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users size={14}/> Members</h4>
+                          <div className="space-y-2">
+                              {managingGroup.members.map(member => {
+                                  const isMe = member.id === currentUserId;
+                                  // I am admin if I am creator or promoted leader
+                                  const myRole = managingGroup.members.find(m => m.id === currentUserId)?.role;
+                                  const iAmAdmin = managingGroup.leaderId === currentUserId || myRole === 'leader';
+                                  
+                                  return (
+                                      <div key={member.id} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-100 transition-colors group">
+                                          <div className="flex items-center gap-3">
+                                              <img src={member.avatar} className="w-8 h-8 rounded-full bg-slate-200" />
+                                              <div>
+                                                  <p className="text-sm font-bold text-slate-700 flex items-center gap-1">
+                                                      {member.name} {isMe && <span className="text-[10px] text-slate-400">(You)</span>}
+                                                  </p>
+                                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${member.role === 'leader' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                      {member.role === 'leader' ? 'Leader' : 'Member'}
+                                                  </span>
+                                              </div>
+                                          </div>
+                                          
+                                          {/* Actions - Only if I am admin, and not acting on myself (unless leaving/demoting self logic handled elsewhere) */}
+                                          {iAmAdmin && !isMe && (
+                                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                  <button 
+                                                    onClick={() => handleToggleRole(member.id)}
+                                                    className={`p-1.5 rounded-lg transition-colors ${member.role === 'leader' ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'}`}
+                                                    title={member.role === 'leader' ? "Demote to Member" : "Promote to Leader"}
+                                                  >
+                                                      {member.role === 'leader' ? <ShieldAlert size={16}/> : <Shield size={16}/>}
+                                                  </button>
+                                                  <button 
+                                                    onClick={() => handleRemoveMember(member.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Remove Member"
+                                                  >
+                                                      <UserMinus size={16}/>
+                                                  </button>
+                                              </div>
+                                          )}
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      </div>
+
+                      {/* Section 3: Danger Zone */}
+                      <div className="pt-4 border-t border-slate-100">
+                          {managingGroup.leaderId === currentUserId ? (
+                              <button 
+                                onClick={handleDeleteGroup}
+                                className="w-full py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-red-100"
+                              >
+                                  <Trash2 size={18}/> Delete Group
+                              </button>
+                          ) : (
+                              <button 
+                                onClick={handleLeaveGroup}
+                                className="w-full py-3 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
+                              >
+                                  <LogOut size={18}/> Leave Group
+                              </button>
+                          )}
+                      </div>
+
                   </div>
               </div>
           </div>
@@ -397,7 +566,7 @@ const AppContent: React.FC = () => {
                  <button
                    key={lang.code}
                    onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
-                   className={`w-full text-left px-4 py-2.5 text-xs font-medium hover:bg-slate-50 ${language === lang.code ? 'text-indigo-600 bg-indigo-50' : 'text-slate-700'}`}
+                   className={`w-full text-left px-4 py-2.5 text-xs font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 ${language === lang.code ? 'text-indigo-600 bg-indigo-50' : 'text-slate-700'}`}
                  >
                    {lang.label}
                  </button>
