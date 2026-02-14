@@ -245,7 +245,7 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 md:p-6 bg-gradient-to-t from-white via-white/80 to-transparent z-10 sticky bottom-0 md:relative md:rounded-b-[2.5rem]">
+            <div className="p-4 md:p-6 bg-gradient-to-t from-white via-white/80 to-transparent z-10 sticky bottom-0 md:relative md:rounded-b-[2.5rem] pb-safe">
                 <div className="flex items-end gap-3 max-w-4xl mx-auto bg-white/80 backdrop-blur-xl p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white ring-1 ring-slate-100/50">
                      <button 
                         onClick={clearChat}

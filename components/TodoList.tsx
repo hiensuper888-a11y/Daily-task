@@ -18,13 +18,13 @@ interface TodoListProps {
 
 const PriorityBadge = ({ priority }: { priority: Priority }) => {
     const configs = {
-      high: { color: 'bg-rose-100 text-rose-700 ring-rose-500/20', icon: <Flame size={10} fill="currentColor" />, label: 'High' },
-      medium: { color: 'bg-amber-100 text-amber-700 ring-amber-500/20', icon: <Zap size={10} fill="currentColor" />, label: 'Medium' },
-      low: { color: 'bg-emerald-100 text-emerald-700 ring-emerald-500/20', icon: <CheckCircle size={10} />, label: 'Low' }
+      high: { color: 'bg-rose-50 text-rose-600 ring-rose-500/20', icon: <Flame size={12} fill="currentColor" />, label: 'Cao' },
+      medium: { color: 'bg-amber-50 text-amber-600 ring-amber-500/20', icon: <Zap size={12} fill="currentColor" />, label: 'Trung bình' },
+      low: { color: 'bg-emerald-50 text-emerald-600 ring-emerald-500/20', icon: <CheckCircle size={12} />, label: 'Thấp' }
     };
     const config = configs[priority] || configs.medium;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${config.color} ring-1`}>
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${config.color} ring-1 shadow-sm`}>
         {config.icon}
         {config.label}
       </span>
@@ -62,13 +62,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
-  // Find current user's membership to get preferences
   // SAFELY ACCESS MEMBERS WITH ?.
   const currentMember = activeGroup?.members?.find(m => m.id === currentUserId);
 
@@ -82,14 +80,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       setNewAttachments([]);
       setShowInputDetails(false);
   }, [activeGroup]);
-
-  // Fix timezone issue for datetime-local input
-  const toLocalISOString = (date: Date) => {
-    if (!date || isNaN(date.getTime())) return '';
-    const tzOffset = date.getTimezoneOffset() * 60000; 
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
-    return localISOTime;
-  };
 
   const getLocalDateString = (date: Date) => {
     const year = date.getFullYear();
@@ -108,51 +98,22 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const isSoon = diffHrs > 0 && diffHrs < 24;
 
     let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    let colorClass = 'text-slate-500 bg-slate-50';
+    let colorClass = 'text-slate-500 bg-slate-50 ring-slate-200';
     let icon = <CalendarClock size={12} />;
 
     if (isOverdue) {
-      text = t.overdue || 'Overdue';
-      colorClass = 'text-rose-600 bg-rose-50 font-bold';
+      text = t.overdue || 'Quá hạn';
+      colorClass = 'text-rose-600 bg-rose-50 ring-rose-200 font-bold';
       icon = <AlertCircle size={12} />;
     } else if (isSoon) {
-      text = `${Math.ceil(diffHrs)}h left`;
-      colorClass = 'text-amber-600 bg-amber-50 font-bold';
+      text = `${Math.ceil(diffHrs)}h nữa`;
+      colorClass = 'text-amber-600 bg-amber-50 ring-amber-200 font-bold';
       icon = <Timer size={12} />;
     }
     return { text, colorClass, icon, isOverdue };
   };
 
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        let type: 'image' | 'video' | 'file' = 'file';
-        if (file.type.startsWith('image/')) type = 'image';
-        if (file.type.startsWith('video/')) type = 'video';
-
-        const attachment: Attachment = {
-          id: Math.random().toString(36).substring(2, 9),
-          name: file.name,
-          type: type,
-          url: reader.result as string,
-          size: file.size
-        };
-        if (isEdit && editingTask) {
-          setEditingTask(prev => prev ? { ...prev, attachments: [...(prev.attachments || []), attachment] } : null);
-        } else {
-          setNewAttachments(prev => [...prev, attachment]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-    if (e.target) e.target.value = '';
-  };
 
   const addTask = () => {
     if (inputValue.trim() === '') return;
@@ -259,16 +220,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setEditingTask({ ...editingTask, subtasks: updatedSubtasks });
   };
 
-  const archiveTask = (id: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: true } : t));
-  };
-
-  const restoreTask = (id: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: false } : t));
-  };
-
   const deleteTask = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (confirm("Xóa công việc này vĩnh viễn?")) {
@@ -321,12 +272,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         return (pMap[b.priority || 'medium'] - pMap[a.priority || 'medium']);
       });
   }, [tasks, viewDate, filterStatus, searchQuery, currentUserId]);
-
-  const navigateDate = (days: number) => {
-    const newDate = new Date(viewDate);
-    newDate.setDate(viewDate.getDate() + days);
-    setViewDate(newDate);
-  };
 
   const changeMonth = (delta: number) => {
     const newDate = new Date(calendarViewDate);
@@ -608,12 +553,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         <div className="flex flex-wrap items-center gap-2">
                           <PriorityBadge priority={task.priority || 'medium'} />
                           {deadlineInfo && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold ${deadlineInfo.colorClass}`}>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ring-1 ${deadlineInfo.colorClass}`}>
                               {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                           )}
                            {subtasksCount > 0 && (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
                                   <ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}
                               </span>
                           )}
@@ -640,7 +585,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       <div className="absolute bottom-24 lg:bottom-10 left-0 right-0 px-4 z-30 pointer-events-none pb-safe pt-4">
         <div className="max-w-xl mx-auto pointer-events-auto">
           <div className={`glass-modern rounded-[2.5rem] shadow-2xl transition-all duration-300 overflow-hidden ring-1 ring-white/50 ${
-            showInputDetails ? 'p-6 translate-y-[-10px] bg-white/95' : 'p-2 pr-3 bg-white/80'
+            showInputDetails ? 'p-6 translate-y-[-10px] bg-white/95' : 'p-2 pr-3 bg-white/80 backdrop-blur-2xl'
           }`}>
             {showInputDetails && (
               <div className="grid grid-cols-2 gap-4 mb-4 animate-fade-in">
@@ -669,7 +614,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onChange={e => setInputValue(e.target.value)} 
                 onKeyDown={e => e.key === 'Enter' && addTask()} 
                 placeholder="Thêm việc mới..." 
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-[1.2rem] px-4 py-3 text-base font-bold text-slate-800 shadow-sm placeholder:text-slate-400 placeholder:font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all mx-1" 
+                className="flex-1 bg-transparent border-none px-4 py-3 text-base font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-semibold focus:outline-none transition-all mx-1" 
               />
               <button 
                 onClick={addTask} 
