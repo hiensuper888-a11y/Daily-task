@@ -53,12 +53,9 @@ const AppContent: React.FC = () => {
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   
-  // Logic tổng hợp task từ tất cả project để thông báo deadline
+  // Logic tổng hợp task toàn cục để thông báo deadline
   const allCurrentTasks = useMemo(() => {
-    // 1. Lấy task cá nhân
     const all = [...personalTasks];
-    
-    // 2. Scan localStorage để lấy task của từng group (vì useRealtimeStorage không thể gọi trong loop)
     myGroups.forEach(group => {
         const key = `${currentUserId}_group_${group.id}_tasks`;
         const stored = localStorage.getItem(key);
@@ -69,7 +66,6 @@ const AppContent: React.FC = () => {
             } catch (e) { /* ignore */ }
         }
     });
-
     return all;
   }, [personalTasks, myGroups, currentUserId]);
 
@@ -131,7 +127,7 @@ const AppContent: React.FC = () => {
 
       <aside className="hidden md:flex flex-col w-72 bg-white/60 backdrop-blur-3xl border-r border-slate-100 shrink-0 z-20 relative shadow-[1px_0_10px_rgba(0,0,0,0.02)]">
         <div className="p-8 pb-4">
-          <div className="flex items-center gap-4 mb-10 group">
+          <div className="flex items-center gap-4 mb-10 group cursor-pointer">
             <div className={`w-12 h-12 transition-all duration-700 rounded-2xl flex items-center justify-center text-white shadow-xl ${activeGroupId ? 'bg-emerald-600 rotate-6 shadow-emerald-200' : 'bg-indigo-600 -rotate-6 shadow-indigo-200'} group-hover:rotate-0`}>
                 <CheckSquare size={26} strokeWidth={2.5} />
             </div>
