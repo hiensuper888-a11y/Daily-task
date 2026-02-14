@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- APP LOGO -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%234F46E5'/%3E%3Cpath d='M30 52 L45 67 L72 32' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%236366f1'/%3E%3Cpath d='M30 52 L45 67 L72 32' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
     
     <meta property="og:title" content="Daily Task - Quản lý công việc chuyên nghiệp" />
     <meta property="og:description" content="Tối ưu hóa năng suất với AI, quản lý deadline và thời gian hiệu quả." />
@@ -22,110 +22,87 @@
       :root {
         --safe-top: env(safe-area-inset-top, 24px);
         --safe-bottom: env(safe-area-inset-bottom, 20px);
-        --primary: #4F46E5;
-        --surface: #ffffff;
-        --background: #f8fafc;
       }
 
       body {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: var(--background);
+        background-color: #f8fafc;
         -webkit-tap-highlight-color: transparent;
         user-select: none;
-        overflow: hidden; /* Prevent body scroll */
-        color: #0f172a;
-        letter-spacing: -0.01em;
-        overscroll-behavior-y: none;
+        overflow: hidden;
+        color: #1e293b;
       }
       
-      ::selection {
-        background: rgba(79, 70, 229, 0.1);
-        color: #312e81;
-      }
-
-      /* Refined Mesh Background - Very Subtle for Clean Look */
+      /* Premium Mesh Background */
       .mesh-bg {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+        inset: 0;
         z-index: -1;
         background-color: #f8fafc;
         background-image: 
-          radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 50%),
-          radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.03) 0px, transparent 50%),
-          radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.03) 0px, transparent 50%),
-          radial-gradient(at 0% 100%, rgba(20, 184, 166, 0.03) 0px, transparent 50%);
+          radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+          radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
+          radial-gradient(at 0% 100%, rgba(20, 184, 166, 0.05) 0px, transparent 50%);
+        filter: blur(40px);
       }
 
-      /* Modern Scrollbar */
-      .custom-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; } 
-      @media (min-width: 1024px) {
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { 
-          background-color: rgba(203, 213, 225, 0.4); 
-          border-radius: 100px; 
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
-          background-color: rgba(148, 163, 184, 0.6); 
-        }
+      /* Polished Scrollbar */
+      .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { 
+        background-color: rgba(203, 213, 225, 0.5); 
+        border-radius: 20px; 
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+        background-color: rgba(148, 163, 184, 0.8); 
       }
       
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
-      /* Smooth Animations */
-      @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+      /* Animations */
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
       }
       @keyframes scaleIn {
-        from { opacity: 0; transform: scale(0.98); }
+        from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
       }
-      @keyframes checkBounce {
-        0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); }
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
       
-      /* Chart Drawing Animation */
-      @keyframes drawChart {
-        from { stroke-dashoffset: 200; }
-        to { stroke-dashoffset: 0; }
-      }
-
-      .animate-fade-in { animation: fadeInUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-      .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-      .animate-check { animation: checkBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .animate-float { animation: float 6s ease-in-out infinite; }
+      .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       
-      .animate-draw-path {
-        stroke-dasharray: 200;
-        stroke-dashoffset: 200;
-        animation: drawChart 1.5s ease-out forwards;
+      /* Glass Morphism Utilities */
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
       }
       
-      /* Glass Morphism Classes - Lighter and Cleaner */
-      .glass-modern {
+      .glass-card {
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.6);
       }
+
+      /* Interactive Elements */
+      .btn-bounce { transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; }
+      .btn-bounce:active { transform: scale(0.92); }
       
-      /* Mobile Safe Areas */
+      /* Safe Areas */
       .pb-safe { padding-bottom: var(--safe-bottom); }
       .pt-safe { padding-top: var(--safe-top); }
-      
-      /* Interactive Elements */
-      .btn-press { transition: transform 0.1s ease, opacity 0.2s; cursor: pointer; }
-      .btn-press:active { transform: scale(0.97); opacity: 0.9; }
-      
-      /* Utilities */
-      .mask-gradient-x {
-        mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent);
-        -webkit-mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent);
-      }
     </style>
 <script type="importmap">
 {
