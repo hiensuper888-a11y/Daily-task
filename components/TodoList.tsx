@@ -669,7 +669,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onChange={e => setInputValue(e.target.value)} 
                 onKeyDown={e => e.key === 'Enter' && addTask()} 
                 placeholder="Thêm việc mới..." 
-                className="flex-1 bg-transparent border-none focus:ring-0 text-base font-bold text-slate-800 h-10 placeholder:text-slate-400 placeholder:font-semibold" 
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-[1.2rem] px-4 py-3 text-base font-bold text-slate-800 shadow-sm placeholder:text-slate-400 placeholder:font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all mx-1" 
               />
               <button 
                 onClick={addTask} 

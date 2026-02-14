@@ -218,7 +218,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   };
 
   const exportToPowerPoint = async () => {
-      const pres = new (PptxGenJS as any)();
+      const pres = new PptxGenJS();
       const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
       
       let slide = pres.addSlide();

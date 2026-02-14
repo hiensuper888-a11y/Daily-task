@@ -237,13 +237,13 @@ export const Profile: React.FC = () => {
   const renderLoginScreen = () => (
     <div className="w-full max-w-sm mx-auto space-y-6 animate-scale-in">
         <div className="text-center space-y-2 mb-8">
-             <div className="relative w-24 h-24 mx-auto mb-6">
-                <div className="absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-                <div className="relative w-full h-full bg-white/90 backdrop-blur-md rounded-full shadow-2xl flex items-center justify-center border-4 border-white/50">
-                    <User size={40} className="text-indigo-600" />
+             <div className="relative w-32 h-32 mx-auto mb-8">
+                <div className="absolute inset-0 bg-indigo-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+                <div className="relative w-full h-full bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl flex items-center justify-center border border-white/60">
+                    <User size={64} className="text-indigo-600 drop-shadow-sm" strokeWidth={1.5} />
                 </div>
              </div>
-             <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+             <h2 className="text-3xl font-black text-slate-800 tracking-tight">
                 {authMode === 'login' ? 'Đăng Nhập' : 'Đăng Ký Tài Khoản'}
              </h2>
              <p className="text-slate-500 font-medium text-sm">
@@ -256,34 +256,34 @@ export const Profile: React.FC = () => {
              )}
         </div>
 
-        <div className="glass-modern p-8 rounded-[2.5rem] shadow-xl border border-white space-y-5 relative overflow-hidden">
+        <div className="glass-modern p-8 rounded-[2.5rem] shadow-2xl border border-white/80 space-y-6 relative overflow-hidden backdrop-blur-xl">
              
              <div className="space-y-4">
                  <div className="group relative">
-                    <Mail size={18} className="absolute left-4 top-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors"/>
+                    <Mail size={20} className="absolute left-4 top-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-10"/>
                     <input 
                         type="email"
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
                         placeholder="Địa chỉ Email"
-                        className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none text-sm font-bold text-slate-700 transition-all placeholder:font-medium"
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50/50 border-none ring-1 ring-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none text-sm font-bold text-slate-700 transition-all placeholder:text-slate-400"
                     />
                  </div>
                  <div className="group relative">
-                    <Lock size={18} className="absolute left-4 top-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors"/>
+                    <Lock size={20} className="absolute left-4 top-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-10"/>
                     <input 
                         type={showPassword ? "text" : "password"}
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
                         placeholder="Mật khẩu"
-                        className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none text-sm font-bold text-slate-700 transition-all placeholder:font-medium"
+                        className="w-full pl-12 pr-12 py-4 bg-slate-50/50 border-none ring-1 ring-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none text-sm font-bold text-slate-700 transition-all placeholder:text-slate-400"
                     />
                     <button 
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3.5 text-slate-400 hover:text-indigo-600 p-1 rounded-md transition-colors"
+                        className="absolute right-4 top-4 text-slate-400 hover:text-indigo-600 p-0.5 rounded-md transition-colors"
                     >
-                        {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                        {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
                     </button>
                  </div>
                  {authMode === 'register' && (
@@ -296,13 +296,13 @@ export const Profile: React.FC = () => {
              <button 
                 onClick={handleEmailAuth}
                 disabled={isSyncing}
-                className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200"
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-300"
              >
-                 {isSyncing ? <RefreshCw size={18} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={18}/> : <UserPlus size={18}/>)}
+                 {isSyncing ? <RefreshCw size={20} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={20}/> : <UserPlus size={20}/>)}
                  {authMode === 'login' ? t.login : t.register}
              </button>
 
-             <div className="text-center pt-4 border-t border-slate-100 mt-2">
+             <div className="text-center pt-4 border-t border-slate-100/50 mt-2">
                  <button 
                     onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
                     className="text-xs text-indigo-600 font-bold hover:text-indigo-800 hover:underline transition-colors"
