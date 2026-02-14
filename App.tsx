@@ -544,7 +544,23 @@ const AppContent: React.FC = () => {
               { id: 'reports', icon: BarChart3 },
               { id: 'profile', icon: UserCircle2 }
           ].map((item) => (
-              <button key={item.id} onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }} className={`p-4 rounded-2xl transition-all relative ${activeTab === item.id ? (activeGroupId ? 'text-emerald-600 bg-emerald-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400'}`}>
+              <button 
+                key={item.id} 
+                onClick={() => { 
+                    if (item.id === 'tasks') {
+                        // If we are already on tasks tab, toggle between Group and Personal
+                        if (activeTab === 'tasks' && activeGroupId) {
+                            setActiveGroupId(null);
+                        } else {
+                            setActiveTab('tasks');
+                        }
+                    } else {
+                        setActiveTab(item.id as AppTab); 
+                        setActiveGroupId(null);
+                    }
+                }} 
+                className={`p-4 rounded-2xl transition-all relative ${activeTab === item.id ? (activeGroupId ? 'text-emerald-600 bg-emerald-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400'}`}
+              >
                 <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
                 {activeTab === item.id && <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${activeGroupId ? 'bg-emerald-600' : 'bg-indigo-600'}`}></div>}
               </button>
@@ -559,8 +575,8 @@ const AppContent: React.FC = () => {
 
       {/* MODAL: Join Group */}
       {showJoinModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
-              <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
+          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
                   <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
                   <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tighter">Tham gia nhóm</h3>
                   <div className="space-y-6">
@@ -578,8 +594,8 @@ const AppContent: React.FC = () => {
 
       {/* MODAL: Create Group */}
       {showGroupModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
-              <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
+          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white">
                   <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
                   <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tighter">Tạo nhóm dự án</h3>
                   <div className="space-y-6">
@@ -606,8 +622,8 @@ const AppContent: React.FC = () => {
 
       {/* MODAL: Group Settings */}
       {showSettingsModal && activeGroup && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-              <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in border border-white flex flex-col max-h-[85vh]">
+          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in border border-white flex flex-col max-h-[85vh]">
                   <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-[2.5rem]">
                       <div>
                           <h3 className="text-xl font-black text-slate-900">Quản lý nhóm</h3>
