@@ -53,16 +53,16 @@ export const AiAssistant: React.FC = () => {
             const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', text: responseText, timestamp: Date.now(), modelUsed: selectedModel };
             setMessages([...newMessages, aiMsg]);
         } catch (error) {
-            setMessages([...newMessages, { id: Date.now().toString(), role: 'model', text: "Lỗi kết nối AI.", timestamp: Date.now() }]);
+            setMessages([...newMessages, { id: Date.now().toString(), role: 'model', text: t.aiError, timestamp: Date.now() }]);
         } finally { setIsLoading(false); }
     };
 
     const handleAnalyzeTasks = () => {
         if (!isOnline) return;
         const activeTasks = tasks.filter(t => !t.completed && !t.archived);
-        if (activeTasks.length === 0) return handleSendMessage("Tôi không có công việc nào, hãy khen tôi!");
+        if (activeTasks.length === 0) return handleSendMessage(t.aiNoTasksPrompt);
         const taskListStr = activeTasks.map(t => `- [${t.priority?.toUpperCase() || 'M'}] ${t.text}`).join('\n');
-        handleSendMessage(`Phân tích danh sách việc cần làm:\n${taskListStr}\n\nHãy cho lời khuyên về thứ tự thực hiện.`);
+        handleSendMessage(`${t.aiAnalyzeIntro}${taskListStr}${t.aiAnalyzeOutro}`);
     };
 
     return (
@@ -74,9 +74,9 @@ export const AiAssistant: React.FC = () => {
                         <Sparkles size={20} className="text-white"/>
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-slate-800 leading-none">AI Chat</h2>
+                        <h2 className="text-lg font-black text-slate-800 leading-none">{t.aiChatTitle}</h2>
                         <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Online
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {t.online}
                         </span>
                     </div>
                 </div>
@@ -92,7 +92,7 @@ export const AiAssistant: React.FC = () => {
                 {messages.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
                         <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center"><Bot size={40} className="opacity-20"/></div>
-                        <p className="text-sm font-bold">Bắt đầu trò chuyện với AI</p>
+                        <p className="text-sm font-bold">{t.startChat}</p>
                     </div>
                 )}
                 {messages.map((msg) => (
@@ -123,7 +123,7 @@ export const AiAssistant: React.FC = () => {
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}}
                             disabled={!isOnline}
-                            placeholder="Nhập tin nhắn..."
+                            placeholder={t.typeMessage}
                             className="w-full bg-transparent border-none focus:ring-0 p-3 max-h-32 min-h-[48px] resize-none text-sm font-medium text-slate-700 placeholder:text-slate-400"
                             rows={1}
                         />

@@ -158,6 +158,15 @@ const enTranslations = {
   groupJoined: "Joined group successfully!",
   groupJoinError: "Invalid code or already joined.",
   copySuccess: "Code copied!",
+
+  // AI Chat Specific
+  aiChatTitle: "AI Chat",
+  online: "Online",
+  startChat: "Start chatting with AI",
+  aiError: "AI Connection Error.",
+  aiNoTasksPrompt: "I have no tasks, please praise me for being efficient!",
+  aiAnalyzeIntro: "Analyze my todo list:\n",
+  aiAnalyzeOutro: "\n\nPlease advise on the execution order and prioritization.",
 };
 
 const viTranslations = {
@@ -318,6 +327,15 @@ const viTranslations = {
   groupJoined: "Đã tham gia nhóm!",
   groupJoinError: "Mã không đúng hoặc đã tham gia.",
   copySuccess: "Đã chép mã!",
+
+  // AI Chat Specific
+  aiChatTitle: "AI Chat",
+  online: "Trực tuyến",
+  startChat: "Bắt đầu trò chuyện với AI",
+  aiError: "Lỗi kết nối AI.",
+  aiNoTasksPrompt: "Tôi không có công việc nào, hãy khen tôi vì đã hoàn thành hết!",
+  aiAnalyzeIntro: "Phân tích danh sách việc cần làm:\n",
+  aiAnalyzeOutro: "\n\nHãy cho lời khuyên về thứ tự thực hiện và cách tối ưu hóa.",
 };
 
 export const translations = {

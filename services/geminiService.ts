@@ -78,7 +78,7 @@ export const chatWithGemini = async (
 
     try {
         const chat: Chat = ai.chats.create({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             history: history,
             config: {
                 systemInstruction: "You are a helpful and friendly AI assistant inside a productivity app called 'Daily Task'. Keep answers concise and relevant."
