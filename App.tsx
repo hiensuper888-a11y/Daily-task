@@ -35,6 +35,31 @@ const LoadingFallback = () => (
   </div>
 );
 
+// --- GLOBAL GROUP HELPERS (Mock Backend) ---
+const GLOBAL_GROUPS_KEY = 'public_groups_db';
+
+const getGlobalGroups = (): Group[] => {
+    try {
+        return JSON.parse(localStorage.getItem(GLOBAL_GROUPS_KEY) || '[]');
+    } catch { return []; }
+};
+
+const saveGlobalGroup = (group: Group) => {
+    const groups = getGlobalGroups();
+    const index = groups.findIndex(g => g.id === group.id);
+    if (index >= 0) {
+        groups[index] = group;
+    } else {
+        groups.push(group);
+    }
+    localStorage.setItem(GLOBAL_GROUPS_KEY, JSON.stringify(groups));
+};
+
+const deleteGlobalGroup = (groupId: string) => {
+    const groups = getGlobalGroups().filter(g => g.id !== groupId);
+    localStorage.setItem(GLOBAL_GROUPS_KEY, JSON.stringify(groups));
+};
+
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('tasks');
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -88,6 +113,28 @@ const AppContent: React.FC = () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
+
+  // Sync Groups from Global DB (Simulation of Real-time updates from other users)
+  useEffect(() => {
+      const interval = setInterval(() => {
+          const globalGroups = getGlobalGroups();
+          if (globalGroups.length === 0) return;
+
+          setMyGroups(prevMyGroups => {
+              let hasChanges = false;
+              const newGroups = prevMyGroups.map(localGroup => {
+                  const globalMatch = globalGroups.find(gg => gg.id === localGroup.id);
+                  if (globalMatch && JSON.stringify(globalMatch) !== JSON.stringify(localGroup)) {
+                      hasChanges = true;
+                      return globalMatch;
+                  }
+                  return localGroup;
+              });
+              return hasChanges ? newGroups : prevMyGroups;
+          });
+      }, 3000); // Check every 3 seconds
+      return () => clearInterval(interval);
+  }, [setMyGroups]);
 
   // Check for join code in URL
   useEffect(() => {
@@ -149,7 +196,13 @@ const AppContent: React.FC = () => {
           joinCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           createdAt: Date.now()
       };
+      
+      // Save locally
       setMyGroups([...myGroups, newGroup]);
+      
+      // Save globally (mock backend)
+      saveGlobalGroup(newGroup);
+
       setNewGroupName('');
       setNewGroupImage('');
       setShowGroupModal(false);
@@ -158,12 +211,9 @@ const AppContent: React.FC = () => {
   };
 
   const handleJoinGroup = () => {
-      // In a real app, this would query Firebase for the group by code.
-      // Here, we can only simulate joining if the user has the group data (shared storage simulation or pure mock).
-      // Since this is a local-first mock without a real backend for sharing, we will alert.
       if(!joinCodeInput) return;
       
-      // Check if user is already in a group with this code (local check)
+      // 1. Check local
       const existing = myGroups.find(g => g.joinCode === joinCodeInput);
       if(existing) {
           alert("Bạn đã là thành viên của nhóm này!");
@@ -172,8 +222,37 @@ const AppContent: React.FC = () => {
           return;
       }
       
-      alert("Trong bản demo này, mã tham gia chỉ hoạt động để chia sẻ ID. Chức năng tham gia yêu cầu Backend thực tế (Firebase) để tìm nhóm của người khác.");
+      // 2. Check global (Mock Backend)
+      const globalGroups = getGlobalGroups();
+      const targetGroup = globalGroups.find(g => g.joinCode === joinCodeInput);
+
+      if (!targetGroup) {
+          alert("Mã nhóm không tồn tại hoặc không tìm thấy.");
+          return;
+      }
+
+      // 3. Add self to group
+      const newMember: GroupMember = {
+          id: currentUserId,
+          name: userProfile.name || 'Thành viên mới',
+          avatar: userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`,
+          role: 'member',
+          joinedAt: Date.now(),
+          customTitle: 'Thành viên',
+          note: ''
+      };
+
+      const updatedGroup = { ...targetGroup, members: [...targetGroup.members, newMember] };
+      
+      // 4. Update Global
+      saveGlobalGroup(updatedGroup);
+
+      // 5. Update Local
+      setMyGroups([...myGroups, updatedGroup]);
+      
+      setActiveGroupId(updatedGroup.id);
       setShowJoinModal(false);
+      alert(`Đã tham gia nhóm "${updatedGroup.name}" thành công!`);
   };
 
   const handleDeleteGroup = () => {
@@ -188,9 +267,11 @@ const AppContent: React.FC = () => {
           setShowSettingsModal(false);
           setActiveTab('tasks');
           localStorage.removeItem(`group_${groupId}_tasks`);
-          setTimeout(() => {
-             setMyGroups(prev => prev.filter(g => g.id !== groupId));
-          }, 50);
+          
+          // Delete locally
+          setMyGroups(prev => prev.filter(g => g.id !== groupId));
+          // Delete globally
+          deleteGlobalGroup(groupId);
       }
   };
 
@@ -224,6 +305,7 @@ const AppContent: React.FC = () => {
           members: [...activeGroup.members, newMember]
       };
       setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
+      saveGlobalGroup(updatedGroup);
       setFoundUsers(foundUsers.filter(u => u.uid !== user.uid));
   };
 
@@ -238,6 +320,7 @@ const AppContent: React.FC = () => {
               members: activeGroup.members.filter(m => m.id !== memberId)
           };
           setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
+          saveGlobalGroup(updatedGroup);
       }
   };
 
@@ -249,7 +332,9 @@ const AppContent: React.FC = () => {
           }
           return m;
       });
-      setMyGroups(myGroups.map(g => g.id === activeGroup.id ? { ...g, members: updatedMembers } : g));
+      const updatedGroup = { ...activeGroup, members: updatedMembers };
+      setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
+      saveGlobalGroup(updatedGroup);
       setEditingMemberId(null);
   };
 
