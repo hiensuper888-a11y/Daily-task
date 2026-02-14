@@ -393,7 +393,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 </div>
               </div>
             );
-        })}
+        })
+      )}
       </div>
 
       {/* FIXED BOTTOM INPUT BAR - Easier for thumbs */}
