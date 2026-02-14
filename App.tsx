@@ -1,14 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus } from 'lucide-react';
-import { TodoList } from './components/TodoList';
-import { ImageEditor } from './components/ImageEditor';
-import { Reports } from './components/Reports';
-import { Profile } from './components/Profile';
-import { AiAssistant } from './components/AiAssistant';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { ListTodo, Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, WifiOff, Users, Plus, ScanLine, Share2, Copy, X, Camera, Image as ImageIcon, Settings, Shield, ShieldAlert, UserMinus, Trash2, LogOut, UserPlus, Loader2 } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
+
+// Lazy Load Components for Performance Optimization
+const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
+const ImageEditor = React.lazy(() => import('./components/ImageEditor').then(module => ({ default: module.ImageEditor })));
+const Reports = React.lazy(() => import('./components/Reports').then(module => ({ default: module.Reports })));
+const Profile = React.lazy(() => import('./components/Profile').then(module => ({ default: module.Profile })));
+const AiAssistant = React.lazy(() => import('./components/AiAssistant').then(module => ({ default: module.AiAssistant })));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-full w-full text-slate-400">
+    <div className="flex flex-col items-center gap-2">
+      <Loader2 size={32} className="animate-spin text-indigo-500" />
+      <span className="text-xs font-medium">Loading resources...</span>
+    </div>
+  </div>
+);
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('tasks');
@@ -230,12 +241,8 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex h-[100dvh] w-full bg-[#f1f5f9] text-slate-800 font-sans overflow-hidden selection:bg-indigo-100 selection:text-indigo-700 relative">
       
-      {/* Refined Dynamic Background */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#f8fafc]">
-          <div className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-indigo-200/20 rounded-full blur-[120px] animate-float opacity-60"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-rose-200/20 rounded-full blur-[120px] animate-float opacity-60" style={{animationDelay: '-3s'}}></div>
-          <div className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] bg-cyan-100/30 rounded-full blur-[100px] animate-float opacity-40" style={{animationDelay: '-5s'}}></div>
-      </div>
+      {/* Optimized Background: Static Gradient instead of heavy animations */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50/50 to-rose-50/50"></div>
 
       {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden md:flex flex-col w-72 bg-white/70 backdrop-blur-2xl border border-white/60 shrink-0 z-20 shadow-xl shadow-slate-200/40 m-4 my-6 ml-6 rounded-[2rem] h-[calc(100vh-3rem)] transition-all relative overflow-hidden">
@@ -575,15 +582,17 @@ const AppContent: React.FC = () => {
            )}
         </div>
 
-        {/* Content Container */}
+        {/* Content Container - Wrapped in Suspense for Lazy Loading */}
         <div className="flex-1 overflow-hidden relative md:p-6 lg:p-6 h-full transition-all duration-500 ease-out">
            {/* Desktop Card Wrapper */}
            <div className="h-full w-full max-w-[1600px] mx-auto md:bg-white/40 md:backdrop-blur-xl md:rounded-[2.5rem] md:border md:border-white/50 overflow-hidden relative transition-all duration-300">
                <div className="h-full animate-fade-in">
-                   {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
-                   activeTab === 'ai' ? <AiAssistant /> :
-                   activeTab === 'reports' ? <Reports /> : 
-                   activeTab === 'profile' ? <Profile /> : <ImageEditor />}
+                   <Suspense fallback={<LoadingFallback />}>
+                       {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
+                       activeTab === 'ai' ? <AiAssistant /> :
+                       activeTab === 'reports' ? <Reports /> : 
+                       activeTab === 'profile' ? <Profile /> : <ImageEditor />}
+                   </Suspense>
                </div>
            </div>
         </div>

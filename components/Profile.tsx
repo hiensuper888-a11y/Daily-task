@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Facebook, Mail, Save, FileSpreadsheet, FileText, Download, Sparkles, WifiOff, Info, CheckCircle2, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Link as LinkIcon, Phone, Lock, LogIn, UserPlus, Upload, ShieldCheck, LayoutDashboard, Eye, EyeOff, Fingerprint } from 'lucide-react';
+import { User, LogOut, Cloud, RefreshCw, Mail, Save, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Phone, Lock, LogIn, UserPlus, Eye, EyeOff, Fingerprint, LayoutDashboard } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { 
   auth, 
-  googleProvider, 
-  facebookProvider, 
   isFirebaseConfigured,
-  signInWithPopup, 
   signOut, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -120,32 +117,6 @@ export const Profile: React.FC = () => {
         setIsSyncing(false);
     } finally {
         if (authMode === 'register') setIsSyncing(false); // Only stop loading here for register, Login continues in loginSuccess
-    }
-  };
-
-  const loginSocial = async (providerName: 'google' | 'facebook') => {
-    if (!isFirebaseConfigured()) {
-        alert("Lỗi: Ứng dụng chưa được cấu hình Firebase.");
-        return;
-    }
-    if (!isOnline) {
-        alert("Cần có kết nối mạng để đăng nhập xã hội.");
-        return;
-    }
-    setIsSyncing(true);
-
-    try {
-        const provider = providerName === 'google' ? googleProvider : facebookProvider;
-        const result = await signInWithPopup(auth, provider!);
-        
-        // Note: Social logins typically verify email automatically on the provider side.
-        // We assume if they successfully login via Google/FB, they are verified users.
-        loginSuccess(result.user, providerName);
-        
-    } catch (error: any) {
-        console.error("Login Error:", error);
-        alert(`Đăng nhập thất bại: ${error.message}`);
-        setIsSyncing(false);
     }
   };
 
@@ -332,29 +303,7 @@ export const Profile: React.FC = () => {
                  {authMode === 'login' ? t.login : t.register}
              </button>
 
-             <div className="relative py-2">
-                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">Hoặc tiếp tục với</span></div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-3">
-                 <button 
-                    onClick={() => loginSocial('google')}
-                    className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm text-slate-700 shadow-sm"
-                 >
-                     <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G" className="w-4 h-4"/>
-                     Google
-                 </button>
-                 <button 
-                    onClick={() => loginSocial('facebook')}
-                    className="flex items-center justify-center gap-2 py-3 bg-[#1877F2] text-white rounded-xl hover:bg-[#166fe5] transition-all font-bold text-sm shadow-sm"
-                 >
-                     <Facebook size={16} fill="currentColor"/>
-                     Facebook
-                 </button>
-             </div>
-
-             <div className="text-center pt-2">
+             <div className="text-center pt-4 border-t border-slate-100 mt-2">
                  <button 
                     onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
                     className="text-xs text-indigo-600 font-bold hover:text-indigo-800 hover:underline transition-colors"
