@@ -126,7 +126,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         let type: 'image' | 'video' | 'file' = 'file';
@@ -278,23 +278,38 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const targetDateStr = getLocalDateString(viewDate);
     return tasks
       .filter(t => {
+        // 1. Archived Tasks (Always Global Search)
         if (filterStatus === 'archived') {
           if (!t.archived) return false;
           if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
           return true;
         } 
+        
+        // 2. Filter out archived tasks for other views
+        if (t.archived) return false;
+
+        // 3. Search Query (Global search for non-archived)
+        if (searchQuery && !t.text.toLowerCase().includes(searchQuery.toLowerCase())) {
+            return false;
+        }
+
+        // 4. Special Group Filters (Bypass Date Filter to show all pending items)
+        if (filterStatus === 'assigned_to_me') {
+            return t.assignedTo === currentUserId && !t.completed;
+        }
+        if (filterStatus === 'delegated') {
+            return t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
+        }
+
+        // 5. Date Filter (For 'All', 'Active', 'Completed')
         const tDate = new Date(t.createdAt);
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
-        if (t.archived) return false;
         
-        // Group specific filters
-        if (filterStatus === 'assigned_to_me') return t.assignedTo === currentUserId && !t.completed;
-        if (filterStatus === 'delegated') return t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
-        
+        // 6. Status Filters
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
-        if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
+        
         return true;
       })
       .sort((a, b) => {
