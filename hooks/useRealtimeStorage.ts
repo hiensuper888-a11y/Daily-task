@@ -1,18 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// Key used to store the currently logged-in email
+// Key used to store the currently logged-in email/UID
 export const SESSION_KEY = 'daily_task_active_session_user';
 
 /**
  * A hook that syncs with localStorage and updates in real-time across tabs.
- * It automatically prefixes keys with the current user's email to ensure data separation,
- * UNLESS globalKey is set to true (used for shared group data simulation).
  */
 export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: boolean = false) {
   
-  // Helper to determine the prefix (User ID/Email or 'guest')
   const getStorageKey = useCallback(() => {
-    if (globalKey) return key; // No prefix for group/shared data
+    if (globalKey) return key;
 
     if (typeof window === 'undefined') return `guest_${key}`;
     const currentUser = window.localStorage.getItem(SESSION_KEY);
@@ -20,24 +17,19 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
     return `${prefix}_${key}`;
   }, [key, globalKey]);
 
-  // Helper to get value from storage
   const readValue = useCallback((): T => {
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
+    if (typeof window === 'undefined') return initialValue;
     try {
       const finalKey = getStorageKey();
       const item = window.localStorage.getItem(finalKey);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
-  }, [initialValue, getStorageKey, key]);
+  }, [initialValue, getStorageKey]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  // Function to set value and trigger event
   const setValue = (value: T | ((val: T) => T)) => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
@@ -45,7 +37,6 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
       if (typeof window !== 'undefined') {
         const finalKey = getStorageKey();
         window.localStorage.setItem(finalKey, JSON.stringify(valueToStore));
-        // Dispatch custom events
         window.dispatchEvent(new Event('local-storage'));
       }
     } catch (error) {
@@ -53,29 +44,30 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
     }
   };
 
-  // Re-read storage when the component mounts or when keys change
   useEffect(() => {
-    setStoredValue(readValue());
-  }, [readValue]);
+    const handleSync = () => setStoredValue(readValue());
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setStoredValue(readValue());
-    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('local-storage', handleSync);
+    window.addEventListener('auth-change', handleSync);
 
-    // Listen for changes from other tabs
-    window.addEventListener('storage', handleStorageChange);
-    // Listen for changes from the same tab (custom event)
-    window.addEventListener('local-storage', handleStorageChange);
-    // Listen for auth changes (Login/Logout) to switch data sources immediately
-    window.addEventListener('auth-change', handleStorageChange);
+    // Đặc biệt quan trọng: theo dõi thay đổi SESSION_KEY trực tiếp
+    const interval = setInterval(() => {
+      const currentKey = getStorageKey();
+      const session = window.localStorage.getItem(SESSION_KEY);
+      // Nếu session thay đổi, cập nhật lại dữ liệu
+      if (session && !currentKey.startsWith(session) && !globalKey) {
+        handleSync();
+      }
+    }, 1000);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('local-storage', handleStorageChange);
-      window.removeEventListener('auth-change', handleStorageChange);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('local-storage', handleSync);
+      window.removeEventListener('auth-change', handleSync);
+      clearInterval(interval);
     };
-  }, [readValue]);
+  }, [readValue, getStorageKey, globalKey]);
 
   return [storedValue, setValue] as const;
 }

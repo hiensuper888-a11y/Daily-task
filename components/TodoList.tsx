@@ -51,10 +51,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
+  // Hàm chuyển đổi an toàn cho input datetime-local
   const toLocalISOString = (date: Date) => {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
-    return localISOTime;
+    if (!date || isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const getLocalDateString = (date: Date) => {
@@ -78,7 +83,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     let icon = <CalendarClock size={12} />;
 
     if (isOverdue) {
-      text = t.overdue;
+      text = t.overdue || 'Quá hạn';
       colorClass = 'text-rose-600 bg-rose-50 border-rose-100 font-bold';
       icon = <AlertCircle size={12} />;
     } else if (isSoon) {
@@ -197,6 +202,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     }));
   };
 
+  const archiveTask = (id: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setTasks(tasks.map(t => t.id === id ? { ...t, archived: true } : t));
+  };
+
+  const restoreTask = (id: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setTasks(tasks.map(t => t.id === id ? { ...t, archived: false } : t));
+  };
+
   const deleteTask = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (confirm("Xóa công việc này vĩnh viễn?")) {
@@ -209,15 +224,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const targetDateStr = getLocalDateString(viewDate);
     return tasks
       .filter(t => {
-        const tDate = new Date(t.createdAt);
-        const isSameDay = getLocalDateString(tDate) === targetDateStr;
+        // Nếu bộ lọc là Archive, bỏ qua kiểm tra ngày
         if (filterStatus === 'archived') {
           if (!t.archived) return false;
           if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase());
           return true;
         } 
+
+        // Các bộ lọc khác đều phải đúng ngày
+        const tDate = new Date(t.createdAt);
+        const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
         if (t.archived) return false;
+        
         if (filterStatus === 'assigned_to_me') return t.assignedTo === currentUserId && !t.completed;
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
@@ -237,7 +256,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     return {
       total: dayTasks.length,
       completed: dayTasks.filter(t => t.completed).length,
-      progress: dayTasks.length ? Math.round(dayTasks.reduce((acc, t) => acc + t.progress, 0) / dayTasks.length) : 0
+      progress: dayTasks.length ? Math.round(dayTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / dayTasks.length) : 0
     };
   }, [tasks, viewDate]);
 
@@ -256,10 +275,27 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     );
   };
 
+  const changeMonth = (delta: number) => {
+    const newDate = new Date(calendarViewDate);
+    newDate.setMonth(calendarViewDate.getMonth() + delta);
+    setCalendarViewDate(newDate);
+  };
+
+  const calendarDays = useMemo(() => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+    return days;
+  }, [calendarViewDate]);
+
   return (
     <div className="flex flex-col h-full relative overflow-hidden bg-white/50">
       
-      {/* PROFESSIONAL EDIT MODAL - Redesigned */}
+      {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
           <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in border border-white flex flex-col">
@@ -270,7 +306,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">Chi tiết công việc</h3>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">Cập nhật lúc: {new Date().toLocaleTimeString()}</p>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">ID: {editingTask.id}</p>
                 </div>
               </div>
               <button onClick={() => setEditingTask(null)} className="p-3 text-slate-300 hover:text-slate-900 transition-colors">
@@ -330,8 +366,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   </label>
                   <input 
                     type="datetime-local" 
-                    value={editingTask.createdAt ? toLocalISOString(new Date(editingTask.createdAt)) : ''} 
-                    onChange={e => setEditingTask({ ...editingTask, createdAt: new Date(e.target.value).toISOString() })}
+                    value={toLocalISOString(new Date(editingTask.createdAt))} 
+                    onChange={e => setEditingTask({ ...editingTask, createdAt: e.target.value ? new Date(e.target.value).toISOString() : new Date().toISOString() })}
                     className="w-full p-4 bg-slate-50/50 border border-slate-100 rounded-[1.2rem] text-xs font-bold outline-none focus:bg-white focus:border-indigo-400 transition-all" 
                   />
                 </div>
@@ -364,14 +400,72 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         </div>
       )}
 
-      {/* Header Area - Redesigned for hierarchy */}
+      {/* CALENDAR MODAL */}
+      {showCalendar && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white">
+            <div className="flex items-center justify-between mb-8">
+              <button onClick={() => changeMonth(-1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronLeft size={20}/></button>
+              <div className="text-center">
+                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">{calendarViewDate.getFullYear()}</p>
+                <h4 className="text-xl font-black text-slate-900 tracking-tight">{calendarViewDate.toLocaleString(language, { month: 'long' })}</h4>
+              </div>
+              <button onClick={() => changeMonth(1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronRight size={20}/></button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <div key={i} className="text-center text-[10px] font-black text-slate-300 py-2">{d}</div>
+              ))}
+              {calendarDays.map((date, i) => {
+                if (!date) return <div key={i} className="aspect-square"></div>;
+                const isSelected = date.toDateString() === viewDate.toDateString();
+                const isCurrentToday = date.toDateString() === new Date().toDateString();
+                return (
+                  <button
+                    key={i}
+                    onClick={() => { setViewDate(date); setShowCalendar(false); }}
+                    className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all relative group ${
+                      isSelected 
+                      ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg' : 'bg-indigo-600 text-white shadow-lg')
+                      : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {date.getDate()}
+                    {isCurrentToday && !isSelected && (
+                      <div className={`absolute bottom-1 w-1 h-1 rounded-full ${activeGroup ? 'bg-emerald-500' : 'bg-indigo-500'}`}></div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={() => { setViewDate(new Date()); setCalendarViewDate(new Date()); setShowCalendar(false); }} className={`w-full py-4 mt-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeGroup ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>Quay lại hôm nay</button>
+            <button onClick={() => setShowCalendar(false)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 mt-2">Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {completingTaskId && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-scale-in border border-slate-100">
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Báo cáo hoàn thành</h3>
+                  <p className="text-slate-400 text-sm mb-8 font-medium">Bạn đã hoàn thành nhiệm vụ này? Hãy để lại ghi chú nếu cần.</p>
+                  <textarea value={completionNote} onChange={(e) => setCompletionNote(e.target.value)} placeholder="Mô tả ngắn gọn kết quả..." className="w-full h-36 p-5 bg-slate-50 border border-slate-200 rounded-3xl mb-8 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all text-sm font-medium resize-none" />
+                  <div className="flex gap-4">
+                      <button onClick={() => setCompletingTaskId(null)} className="flex-1 py-4 text-slate-400 font-black text-sm hover:bg-slate-50 rounded-2xl">Hủy</button>
+                      <button onClick={() => { toggleTask(completingTaskId, true, completionNote); setCompletingTaskId(null); }} className="flex-[2] py-4 bg-emerald-600 text-white font-black text-sm rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-200 transition-all uppercase tracking-widest">Hoàn tất</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Header Area */}
       <div className="px-8 pt-10 pb-8 relative z-10 shrink-0">
         <div className="flex flex-col gap-10">
           <div className="flex justify-between items-end">
             <div className="animate-slide-right">
               <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-5 shadow-sm border ${activeGroup ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-indigo-600 text-white border-indigo-500'}`}>
                 {activeGroup ? <Users size={12} strokeWidth={3}/> : <UserIcon size={12} strokeWidth={3}/>}
-                {activeGroup ? 'WorkSpace Dự án' : 'Private Space'}
+                {activeGroup ? 'Dự án Nhóm' : 'Không gian Cá nhân'}
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter transition-all duration-700">
                 {filterStatus === 'archived' ? 'Kho lưu trữ' : (activeGroup ? activeGroup.name : "Việc cần làm")}
@@ -379,7 +473,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
               {filterStatus !== 'archived' && (
                 <div className="flex items-center gap-5 mt-8">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Tiến độ</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Tiến độ ngày</span>
                     <div className="flex items-center gap-4">
                        <span className="text-2xl font-black text-slate-900 tracking-tight leading-none">{stats.progress}%</span>
                        <div className="h-2.5 w-40 md:w-56 bg-slate-100 rounded-full overflow-hidden shadow-inner relative ring-4 ring-slate-50">
@@ -391,7 +485,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   </div>
                   <div className="w-px h-10 bg-slate-100 mx-1"></div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Công việc</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Số lượng</span>
                     <span className="text-2xl font-black text-slate-900 tracking-tight leading-none">{stats.completed}<span className="text-slate-200 mx-1">/</span>{stats.total}</span>
                   </div>
                 </div>
@@ -442,14 +536,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         </div>
       </div>
 
-      {/* Task List Container - Improved card design */}
+      {/* Task List Container */}
       <div className="flex-1 overflow-y-auto px-8 pb-48 custom-scrollbar space-y-4 relative z-0">
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-200 animate-scale-in">
             <div className="w-24 h-24 bg-white/60 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-sm border border-slate-100 group">
               <Archive size={36} className="group-hover:scale-110 transition-transform duration-500 text-slate-300" />
             </div>
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{filterStatus === 'archived' ? 'Chưa có mục lưu trữ' : 'Danh sách trống'}</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
+              {filterStatus === 'archived' ? 'Chưa có mục lưu trữ' : 'Danh sách trống'}
+            </p>
           </div>
         ) : (
           filteredTasks.map((task, index) => {
@@ -470,7 +566,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   <button 
                     onClick={(e) => handleToggleClick(task, e)} 
                     disabled={task.archived}
-                    className={`mt-1 transition-all active:scale-90 ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-400'} ${task.archived ? 'opacity-30' : ''}`}
+                    className={`mt-1 transition-all active:scale-90 ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-200 hover:text-indigo-400'} ${task.archived ? 'opacity-30 cursor-not-allowed' : ''}`}
                   >
                     {task.completed ? <CheckCircle2 size={36} strokeWidth={2} /> : <Circle size={36} strokeWidth={2.5} />}
                   </button>
@@ -497,11 +593,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                       
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-3 group-hover:translate-x-0">
                         {task.archived ? (
-                          <button onClick={(e) => { e.stopPropagation(); toggleTask(task.id, false); }} className="p-3 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all"><RotateCcw size={18} /></button>
+                          <button onClick={(e) => restoreTask(task.id, e)} className="p-3 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all" title="Phục hồi"><RotateCcw size={18} /></button>
                         ) : (
-                          <button onClick={(e) => { e.stopPropagation(); toggleTask(task.id, true); }} className="p-3 text-slate-300 hover:text-amber-500 hover:bg-amber-50 rounded-2xl transition-all"><Archive size={18} /></button>
+                          <button onClick={(e) => archiveTask(task.id, e)} className="p-3 text-slate-300 hover:text-amber-500 hover:bg-amber-50 rounded-2xl transition-all" title="Lưu trữ"><Archive size={18} /></button>
                         )}
-                        <button onClick={(e) => deleteTask(task.id, e)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"><Trash2 size={18} /></button>
+                        <button onClick={(e) => deleteTask(task.id, e)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all" title="Xóa vĩnh viễn"><Trash2 size={18} /></button>
                       </div>
                     </div>
                     
@@ -527,7 +623,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         )}
       </div>
 
-      {/* QUICK ADD BAR - Modern bottom-float design */}
+      {/* QUICK ADD BAR */}
       <div className="absolute bottom-10 left-0 right-0 px-8 z-30 pointer-events-none">
         <div className="max-w-4xl mx-auto pointer-events-auto">
           <div className={`bg-white/95 backdrop-blur-3xl rounded-[2.8rem] border shadow-2xl transition-all duration-500 overflow-hidden ${
@@ -592,7 +688,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 value={inputValue} 
                 onChange={e => setInputValue(e.target.value)} 
                 onKeyDown={e => e.key === 'Enter' && addTask()} 
-                placeholder="Bạn cần thực hiện công việc gì tiếp theo?..." 
+                placeholder="Nhập nội dung công việc..." 
                 className="flex-1 bg-transparent border-none focus:ring-0 text-lg font-bold text-slate-800 h-14 placeholder:text-slate-300" 
               />
               <button 
