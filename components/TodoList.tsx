@@ -19,21 +19,6 @@ interface TodoListProps {
   activeGroup: Group | null;
 }
 
-const PriorityBadge = React.memo(({ priority }: { priority: Priority }) => {
-    const { t } = useLanguage();
-    const configs = {
-      high: { color: 'bg-rose-100 text-rose-700 ring-rose-200', label: t.high },
-      medium: { color: 'bg-amber-100 text-amber-700 ring-amber-200', label: t.medium },
-      low: { color: 'bg-emerald-100 text-emerald-700 ring-emerald-200', label: t.low }
-    };
-    const config = configs[priority] || configs.medium;
-    return (
-      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ring-1 ring-inset ${config.color}`}>
-        {config.label}
-      </span>
-    );
-});
-
 // MEMOIZED TASK ITEM
 const TaskItem = React.memo(({ 
   task, 
@@ -43,7 +28,7 @@ const TaskItem = React.memo(({
   lastCheckedId, 
   onToggle, 
   onDelete, 
-  onEdit,
+  onEdit, 
   onProgressChange
 }: { 
   task: Task, 
@@ -90,40 +75,51 @@ const TaskItem = React.memo(({
     const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
     const attachmentsCount = task.attachments?.length || 0;
 
+    const priorityColor = useMemo(() => {
+        switch(task.priority) {
+            case 'high': return 'bg-rose-500 shadow-rose-200';
+            case 'medium': return 'bg-amber-500 shadow-amber-200';
+            case 'low': return 'bg-emerald-500 shadow-emerald-200';
+            default: return 'bg-slate-300 shadow-slate-200';
+        }
+    }, [task.priority]);
+
     return (
         <div 
             onClick={() => onEdit(task)}
-            className={`group relative p-3 sm:p-4 rounded-2xl transition-all duration-300 cursor-pointer mb-2.5 border ${
+            className={`group relative pl-4 pr-3 py-4 rounded-2xl transition-all duration-300 cursor-pointer mb-3 border bg-white overflow-hidden ${
                 task.completed 
-                ? 'bg-slate-50/50 border-slate-100 opacity-60' 
-                : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 hover:-translate-y-0.5'
+                ? 'border-slate-100 opacity-50 bg-slate-50' 
+                : 'border-white shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] hover:-translate-y-0.5'
             }`}
             style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'both' }}
         >
-            <div className="flex items-start gap-3">
+            {/* Priority Indicator Bar */}
+            <div className={`absolute left-0 top-0 bottom-0 w-1 ${priorityColor} transition-all`}></div>
+
+            <div className="flex items-start gap-3.5">
                 <button 
                   onClick={(e) => onToggle(task, e)} 
-                  className={`mt-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center transition-all duration-300 shadow-sm border ${
+                  className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
                     task.completed 
                       ? 'bg-emerald-500 border-emerald-500 text-white scale-105' 
-                      : 'bg-white border-slate-200 text-transparent hover:border-indigo-400 hover:shadow-indigo-100'
+                      : 'bg-transparent border-slate-200 text-transparent hover:border-emerald-400'
                   }`}
                 >
                     <Check size={14} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
                 </button>
 
                 <div className="flex-1 min-w-0 pt-0.5">
-                    <p className={`text-[15px] font-semibold leading-snug mb-2 transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
+                    <p className={`text-[15px] font-semibold leading-relaxed mb-2.5 transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
                     
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
-                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
-                        {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-100"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
-                        {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-500 border border-indigo-100"><Paperclip size={10}/> {attachmentsCount}</span>}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                        {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-100"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
+                        {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-500 border border-indigo-100"><Paperclip size={10}/> {attachmentsCount}</span>}
                         {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
                     </div>
 
-                    {/* Minimal Progress Bar */}
+                    {/* Progress Slider */}
                     <div className="flex items-center gap-2 pt-1 group/slider" onClick={(e) => e.stopPropagation()}>
                         <div className="flex-1 h-1.5 bg-slate-100 rounded-full relative overflow-hidden">
                             <div 
@@ -226,7 +222,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
-      Array.from(files).forEach(file => {
+      Array.from(files).forEach((file: File) => {
           if (file.size > 2 * 1024 * 1024) { // Limit 2MB
               alert(`File "${file.name}" quá lớn. Vui lòng chọn file dưới 2MB.`);
               return;
@@ -835,19 +831,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         )}
       </div>
 
-      {/* FIXED FLOATING CAPSULE INPUT - Refined Modern Look */}
-      <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe">
-          <div className="max-w-2xl mx-auto flex items-center gap-2 p-2 pl-4 bg-white/90 backdrop-blur-xl border border-white rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] ring-1 ring-black/5 animate-slide-up hover:shadow-[0_12px_40px_rgba(99,102,241,0.15)] transition-shadow duration-300 group focus-within:ring-2 focus-within:ring-indigo-500/20">
+      {/* FIXED FLOATING CAPSULE INPUT - Refined Modern Look (Dynamic Island Style) */}
+      <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
+          <div className="w-full max-w-2xl bg-black/90 backdrop-blur-2xl rounded-[2rem] p-1.5 pl-2 shadow-[0_8px_40px_-10px_rgba(0,0,0,0.3)] ring-1 ring-white/10 animate-slide-up flex items-center gap-2 group transition-all hover:scale-[1.01] hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)]">
               <button 
                 onClick={() => setShowInputDetails(!showInputDetails)} 
-                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-indigo-50 text-indigo-600 rotate-90' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-white text-black rotate-90' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}
               >
-                <SlidersHorizontal size={18} />
+                <SlidersHorizontal size={20} />
               </button>
               
               <div className="flex-1 min-w-0 relative">
                   {showInputDetails && (
-                      <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-xl border border-white/50 animate-slide-up origin-bottom">
+                      <div className="absolute bottom-full left-0 right-0 mb-3 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white/50 animate-slide-up origin-bottom">
                           <div className="flex flex-col gap-3">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
                             
@@ -906,16 +902,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     onChange={e => setInputValue(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && addTask()} 
                     placeholder={t.newTaskPlaceholder} 
-                    className="w-full bg-transparent border-none px-2 py-2 text-[16px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none" 
+                    className="w-full bg-transparent border-none px-2 py-2 text-[16px] font-medium text-white placeholder:text-white/40 focus:ring-0 outline-none" 
                   />
               </div>
 
               <button 
                 onClick={addTask} 
                 disabled={!inputValue.trim()} 
-                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 shadow-lg shrink-0 ${inputValue.trim() ? (activeGroup ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/30' : 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-indigo-500/30') + ' text-white hover:scale-105 active:scale-95' : 'bg-slate-100 text-slate-300 shadow-none'}`}
+                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${inputValue.trim() ? (activeGroup ? 'bg-emerald-500 text-white hover:scale-110' : 'bg-indigo-500 text-white hover:scale-110') : 'bg-white/10 text-white/30'}`}
               >
-                <Plus size={24} strokeWidth={3} />
+                <Plus size={20} strokeWidth={3} />
               </button>
           </div>
       </div>

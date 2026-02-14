@@ -16,13 +16,6 @@ const AiAssistant = React.lazy(() => import('./components/AiAssistant').then(mod
 const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
 ];
 
 const LoadingFallback = () => (
@@ -78,13 +71,13 @@ const NavItem: React.FC<NavItemProps> = ({ tab, icon: Icon, label, activeTab, ac
   return (
     <button
       onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group relative ${
+      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group relative overflow-hidden ${
         isActive
-          ? `text-white shadow-lg shadow-indigo-500/30` 
+          ? `text-white shadow-lg shadow-indigo-500/25` 
           : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'
       }`}
     >
-      {isActive && <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl"></div>}
+      {isActive && <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 animate-gradient-x rounded-2xl"></div>}
       <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-100' : 'group-hover:scale-110'}`} />
       <span className="relative z-10 text-[14px] font-bold tracking-wide">{label}</span>
     </button>

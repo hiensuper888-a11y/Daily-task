@@ -559,15 +559,6 @@ const viTranslations = {
 export const translations = {
   en: enTranslations,
   vi: viTranslations,
-  // Other languages fallbacks using English as base
-  zh: { ...enTranslations, prevMonth: "上个月", nextMonth: "下个月" },
-  ja: { ...enTranslations, prevMonth: "先月", nextMonth: "来月" },
-  fr: { ...enTranslations, prevMonth: "Mois Précédent", nextMonth: "Mois Suivant" },
-  ko: { ...enTranslations, prevMonth: "지난 달", nextMonth: "다음 달" },
-  de: { ...enTranslations, prevMonth: "Letzter Monat", nextMonth: "Nächster Monat" },
-  es: { ...enTranslations, prevMonth: "Mes Anterior", nextMonth: "Mes Siguiente" },
-  ru: { ...enTranslations, prevMonth: "Прошлый месяц", nextMonth: "Следующий месяц" },
-  hi: { ...enTranslations, prevMonth: "पिछला महीना", nextMonth: "अगला महीना" },
 };
 
 export const getTranslation = (lang: Language) => translations[lang];
