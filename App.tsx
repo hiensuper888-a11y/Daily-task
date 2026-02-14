@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, LayoutGrid } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
@@ -26,11 +26,11 @@ const languages: { code: Language; label: string; flag: string }[] = [
 ];
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-full w-full bg-slate-50/50 backdrop-blur-sm">
+  <div className="flex items-center justify-center h-full w-full bg-slate-50/50 backdrop-blur-sm z-50">
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
-        <Loader2 size={40} className="animate-spin text-indigo-600" />
-        <div className="absolute inset-0 animate-pulse bg-indigo-200 rounded-full blur-xl opacity-30"></div>
+        <Loader2 size={40} className="animate-spin text-primary-600" />
+        <div className="absolute inset-0 animate-pulse bg-primary-200 rounded-full blur-xl opacity-30"></div>
       </div>
     </div>
   </div>
@@ -78,15 +78,15 @@ const NavItem: React.FC<NavItemProps> = ({ tab, icon: Icon, label, activeTab, ac
   return (
     <button
       onClick={() => { setActiveTab(tab); setActiveGroupId(null); }}
-      className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold group mb-1 relative overflow-hidden ${
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold group relative ${
         isActive
-          ? `bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100` 
-          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+          ? `text-white shadow-lg shadow-indigo-500/30` 
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
-      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
-      <span className="text-[15px] tracking-tight">{label}</span>
-      {isActive && <div className="absolute right-3 w-1.5 h-1.5 bg-indigo-600 rounded-full"></div>}
+      {isActive && <div className="absolute inset-0 bg-indigo-600 rounded-xl"></div>}
+      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-100' : 'group-hover:scale-110'}`} />
+      <span className="relative z-10 text-[14px] font-semibold tracking-wide">{label}</span>
     </button>
   );
 };
@@ -347,24 +347,24 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden relative">
+    <div className="flex h-[100dvh] w-full overflow-hidden relative text-slate-900 bg-[#f8fafc]">
       
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
       
-      {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex flex-col w-[280px] bg-white/60 backdrop-blur-2xl border-r border-white/40 shrink-0 z-20 relative transition-all overflow-hidden h-full shadow-lg">
+      {/* DESKTOP SIDEBAR - Glassmorphism Style */}
+      <aside className="hidden lg:flex flex-col w-[280px] m-4 mr-0 rounded-[2rem] glass-panel z-20 relative transition-all overflow-hidden h-[calc(100vh-2rem)] shadow-2xl">
         <div className="p-6">
-          <div className="flex items-center gap-4 mb-10 cursor-pointer group" onClick={() => {setActiveTab('tasks'); setActiveGroupId(null);}}>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
-                <CheckSquare size={24} strokeWidth={2.5} />
+          <div className="flex items-center gap-4 mb-8 cursor-pointer group" onClick={() => {setActiveTab('tasks'); setActiveGroupId(null);}}>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
+                <CheckSquare size={20} strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-                <span className="text-xl font-black tracking-tight text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">Daily Task</span>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">by Mr.Hien</span>
+                <span className="text-lg font-bold tracking-tight text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">Daily Task</span>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Workspace</span>
             </div>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-1">
              <NavItem tab="tasks" icon={Home} label="Tổng quan" activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="ai" icon={MessageSquare} label={t.ai} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="reports" icon={Activity} label={t.reports} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
@@ -373,49 +373,49 @@ const AppContent: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 px-4 overflow-y-auto custom-scrollbar pt-4">
-          <div className="flex items-center justify-between mb-4 px-3">
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dự án & Nhóm</p>
+        <div className="flex-1 px-4 overflow-y-auto custom-scrollbar pt-2">
+          <div className="flex items-center justify-between mb-2 px-4 mt-4">
+             <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Groups</p>
              <button onClick={handleOpenCreateGroup} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-sm" title="Tạo mới"><Plus size={14}/></button>
           </div>
 
-          <div className="space-y-2 pb-20">
+          <div className="space-y-1 pb-20">
               {myGroups.map(group => (
                   <div key={group.id} className="relative group/item">
                     <button
                         onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 border ${
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                             activeGroupId === group.id
-                            ? `bg-white border-white shadow-lg shadow-indigo-100 z-10 relative` 
-                            : 'bg-transparent border-transparent hover:bg-white/50 text-slate-600 hover:shadow-sm'
+                            ? `bg-white shadow-md text-slate-900 z-10 relative ring-1 ring-slate-100` 
+                            : 'bg-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                         }`}
                     >
                         {group.avatar ? (
-                            <img src={group.avatar} className={`w-6 h-6 rounded-lg object-cover ${activeGroupId === group.id ? 'ring-2 ring-indigo-100' : ''}`} alt="" />
+                            <img src={group.avatar} className={`w-8 h-8 rounded-lg object-cover shadow-sm ${activeGroupId === group.id ? 'ring-2 ring-indigo-100' : ''}`} alt="" />
                         ) : (
-                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold ${activeGroupId === group.id ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500'}`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-sm ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
                                 {group.name.substring(0,2).toUpperCase()}
                             </div>
                         )}
-                        <span className={`text-sm font-bold truncate flex-1 text-left ${activeGroupId === group.id ? 'text-slate-800' : 'text-slate-500'}`}>{group.name}</span>
+                        <span className={`text-sm font-semibold truncate flex-1 text-left`}>{group.name}</span>
                         {activeGroupId === group.id && <Settings size={14} className="text-slate-300 hover:text-indigo-600 cursor-pointer animate-fade-in" onClick={(e) => {e.stopPropagation(); setShowSettingsModal(true); setSettingsTab('info');}} />}
                     </button>
                   </div>
               ))}
-              <button onClick={() => setShowJoinModal(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl mt-4 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors border-t border-dashed border-slate-200 hover:bg-white/30">
-                  <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center"><ScanLine size={14}/></div>
-                  <span>Nhập mã tham gia...</span>
+              <button onClick={() => setShowJoinModal(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl mt-2 text-xs font-semibold text-slate-400 hover:text-indigo-600 transition-colors border border-dashed border-slate-200 hover:border-indigo-200 hover:bg-white/50">
+                  <ScanLine size={14}/>
+                  <span>Nhập mã tham gia</span>
               </button>
           </div>
         </div>
 
         {/* Language & Settings Footer */}
-        <div className="p-4 border-t border-white/40 relative">
+        <div className="p-4 border-t border-slate-100/50 bg-white/30 backdrop-blur-md">
             <button 
                 onClick={() => setShowLangMenu(!showLangMenu)} 
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/50 transition-all text-slate-600 font-bold text-sm bg-white/30 backdrop-blur-sm border border-white/50 shadow-sm"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/60 transition-all text-slate-600 font-bold text-xs"
             >
-                <Globe size={20} className="text-indigo-500" />
+                <Globe size={16} className="text-indigo-500" />
                 <span className="flex-1 text-left">{languages.find(l => l.code === language)?.label}</span>
                 <span className="text-lg">{languages.find(l => l.code === language)?.flag}</span>
             </button>
@@ -423,7 +423,7 @@ const AppContent: React.FC = () => {
             {showLangMenu && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)}></div>
-                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 p-2 max-h-[300px] overflow-y-auto custom-scrollbar animate-scale-in z-50 origin-bottom">
+                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 p-2 max-h-[300px] overflow-y-auto custom-scrollbar animate-scale-in z-50 origin-bottom">
                         {languages.map(lang => (
                             <button
                                 key={lang.code}
@@ -441,9 +441,9 @@ const AppContent: React.FC = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col relative h-full overflow-hidden z-10">
-           <div className="flex-1 overflow-hidden animate-fade-in h-full relative">
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col relative h-full overflow-hidden z-10 lg:p-4 lg:pl-0">
+           <div className="flex-1 overflow-hidden animate-fade-in h-full relative lg:rounded-[2rem] bg-slate-50/50 lg:bg-transparent">
                <Suspense fallback={<LoadingFallback />}>
                    {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
                    activeTab === 'ai' ? <AiAssistant /> :
@@ -452,11 +452,11 @@ const AppContent: React.FC = () => {
                </Suspense>
            </div>
 
-        {/* MOBILE FLOATING DOCK - Modern iOS Style */}
+        {/* MOBILE FLOATING DOCK - Premium iOS Style */}
         <div className="lg:hidden fixed bottom-6 left-4 right-4 z-[40]">
-            <div className="glass-modern rounded-[2.5rem] shadow-2xl shadow-indigo-500/10 p-2 flex justify-between items-center border border-white/60 relative backdrop-blur-3xl">
+            <div className="glass-modal rounded-[2rem] p-1.5 flex justify-between items-center shadow-2xl shadow-indigo-900/10 border border-white/50">
               {[
-                  { id: 'tasks', icon: Home, label: 'Việc' },
+                  { id: 'tasks', icon: LayoutGrid, label: 'Việc' },
                   { id: 'reports', icon: BarChart3, label: 'TK' },
                   { id: 'create', icon: Plus, special: true },
                   { id: 'ai', icon: MessageSquare, label: 'AI' },
@@ -465,7 +465,7 @@ const AppContent: React.FC = () => {
                   if (item.special) {
                       return (
                         <div key="create" className="relative -top-8 mx-2">
-                           <button onClick={activeGroupId ? () => {setShowSettingsModal(true); setSettingsTab('info')} : handleOpenCreateGroup} className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 border-[6px] border-[#f8fafc] flex items-center justify-center btn-bounce hover:scale-105 transition-transform">
+                           <button onClick={activeGroupId ? () => {setShowSettingsModal(true); setSettingsTab('info')} : handleOpenCreateGroup} className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 border-[4px] border-[#f8fafc] flex items-center justify-center btn-bounce hover:scale-105 transition-transform">
                                 {activeGroupId ? <Settings size={28}/> : <Plus size={32} strokeWidth={3} />}
                            </button>
                         </div>
@@ -477,10 +477,12 @@ const AppContent: React.FC = () => {
                     <button 
                         key={item.id}
                         onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
-                        className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`flex-1 flex flex-col items-center justify-center py-2 rounded-2xl transition-all duration-300 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
                     >
-                        <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} className={`mb-0.5 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                        {isActive && <span className="w-1 h-1 rounded-full bg-indigo-500 mt-1"></span>}
+                        <div className={`relative ${isActive ? '-translate-y-1' : ''} transition-transform duration-300`}>
+                            <item.icon size={26} strokeWidth={isActive ? 2.5 : 2} />
+                            {isActive && <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600"></span>}
+                        </div>
                     </button>
                   );
               })}
@@ -488,23 +490,25 @@ const AppContent: React.FC = () => {
         </div>
       </main>
 
-      {/* Modals - Wrapped in Glassmorphism */}
+      {/* --- MODALS --- */}
+      
+      {/* Join Group Modal */}
       {showJoinModal && (
-          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-xl animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
-                  <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors bg-white/50 p-2 rounded-full"><X size={20}/></button>
+          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative">
+                  <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
-                      <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl mx-auto flex items-center justify-center text-indigo-600 mb-4 shadow-sm">
+                      <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl mx-auto flex items-center justify-center text-indigo-600 mb-4 shadow-sm ring-4 ring-indigo-50">
                           <ScanLine size={32} />
                       </div>
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight">Tham gia nhóm</h3>
-                      <p className="text-slate-500 text-sm font-medium mt-2">Nhập mã code được chia sẻ để tham gia</p>
+                      <p className="text-slate-500 text-sm font-medium mt-2">Nhập mã code được chia sẻ</p>
                   </div>
                   <div className="space-y-4">
                       <input 
                         value={joinCodeInput} 
                         onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())} 
-                        className="w-full p-5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-3xl font-mono text-center text-3xl font-bold text-slate-800 outline-none tracking-[0.3em] uppercase placeholder:text-slate-300 transition-all shadow-inner" 
+                        className="w-full p-5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl font-mono text-center text-3xl font-bold text-slate-800 outline-none tracking-[0.3em] uppercase placeholder:text-slate-300 transition-all shadow-inner focus:shadow-lg focus:shadow-indigo-100/50" 
                         placeholder="CODE" 
                       />
                       <button onClick={handleJoinGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">Tham gia ngay</button>
@@ -515,9 +519,9 @@ const AppContent: React.FC = () => {
 
       {/* Group Creation Modal */}
       {showGroupModal && (
-          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-xl animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
-                  <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors bg-white/50 p-2 rounded-full"><X size={20}/></button>
+          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative">
+                  <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight">Tạo nhóm mới</h3>
                       <p className="text-slate-500 text-sm font-medium mt-1">Không gian làm việc chung</p>
@@ -526,7 +530,7 @@ const AppContent: React.FC = () => {
                       <div className="flex justify-center">
                           <div 
                             onClick={() => groupImageInputRef.current?.click()}
-                            className="relative w-32 h-32 rounded-[2.5rem] bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all overflow-hidden group/upload shadow-inner"
+                            className="relative w-32 h-32 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all overflow-hidden group/upload shadow-inner"
                           >
                               {newGroupImage ? <img src={newGroupImage} alt="Group" className="w-full h-full object-cover" /> : <ImageIcon size={32} className="text-slate-300 group-hover/upload:scale-110 transition-transform" />}
                               <input ref={groupImageInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setNewGroupImage(reader.result as string); reader.readAsDataURL(file); } e.target.value = ''; }} />
@@ -534,8 +538,8 @@ const AppContent: React.FC = () => {
                           </div>
                       </div>
                       <div className="space-y-3">
-                          <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl font-bold text-lg text-slate-800 outline-none text-center placeholder:text-slate-400 transition-all" placeholder="Đặt tên nhóm..." />
-                          <input value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} className="w-full p-4 bg-slate-50/50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl font-medium text-sm text-slate-600 outline-none text-center placeholder:text-slate-400 transition-all" placeholder="Mô tả ngắn (tùy chọn)..." />
+                          <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl font-bold text-lg text-slate-800 outline-none text-center placeholder:text-slate-400 transition-all" placeholder="Đặt tên nhóm..." />
+                          <input value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl font-medium text-sm text-slate-600 outline-none text-center placeholder:text-slate-400 transition-all" placeholder="Mô tả ngắn (tùy chọn)..." />
                       </div>
                       <button onClick={handleCreateGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">Tạo nhóm</button>
                   </div>
@@ -543,17 +547,17 @@ const AppContent: React.FC = () => {
           </div>
       )}
 
-      {/* Settings Modal - Enhanced for Management */}
+      {/* Settings Modal */}
       {showSettingsModal && activeGroup && (
-          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-xl animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modern rounded-[3rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] border border-white/60">
-                  <div className="p-8 pb-4 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-xl z-10 rounded-t-[3rem]">
+          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-md animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] overflow-hidden">
+                  <div className="p-6 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-xl z-10">
                       <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-4">
                               {activeGroup.avatar ? (
-                                  <img src={activeGroup.avatar} className="w-14 h-14 rounded-[1.2rem] object-cover bg-slate-100 shadow-md" alt=""/>
+                                  <img src={activeGroup.avatar} className="w-14 h-14 rounded-2xl object-cover bg-slate-100 shadow-md ring-4 ring-white" alt=""/>
                               ) : (
-                                  <div className="w-14 h-14 rounded-[1.2rem] bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm"><Users size={28}/></div>
+                                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm ring-4 ring-white"><Users size={28}/></div>
                               )}
                               <div>
                                   <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{activeGroup.name}</h3>
@@ -563,23 +567,21 @@ const AppContent: React.FC = () => {
                           <button onClick={() => setShowSettingsModal(false)} className="p-3 text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 rounded-full hover:bg-slate-200"><X size={20}/></button>
                       </div>
                       
-                      <div className="flex bg-slate-100/80 p-1.5 rounded-2xl">
-                          <button onClick={() => setSettingsTab('info')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all duration-300 ${settingsTab === 'info' ? 'bg-white shadow-md text-indigo-600 scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>Thông tin & Share</button>
-                          <button onClick={() => setSettingsTab('members')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all duration-300 ${settingsTab === 'members' ? 'bg-white shadow-md text-indigo-600 scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>Thành viên</button>
-                          <button onClick={() => setSettingsTab('personalize')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all duration-300 ${settingsTab === 'personalize' ? 'bg-white shadow-md text-indigo-600 scale-[1.02]' : 'text-slate-500 hover:text-slate-700'}`}>Giao diện</button>
+                      <div className="flex bg-slate-100 p-1 rounded-xl">
+                          <button onClick={() => setSettingsTab('info')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'info' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Thông tin</button>
+                          <button onClick={() => setSettingsTab('members')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'members' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Thành viên</button>
+                          <button onClick={() => setSettingsTab('personalize')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'personalize' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Giao diện</button>
                       </div>
                   </div>
 
-                  <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar bg-white/40">
+                  <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar bg-slate-50/50 flex-1">
                       {settingsTab === 'info' && (
-                        <div className="space-y-8 animate-slide-up">
-                             {/* Share Card */}
-                             <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
+                        <div className="space-y-6 animate-slide-up">
+                             <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-20 bg-white opacity-10 rounded-full blur-3xl -translate-y-10 translate-x-10 group-hover:translate-x-5 transition-transform duration-700"></div>
                                 <div className="relative z-10 flex flex-col items-center text-center">
-                                    <h4 className="text-xs font-bold uppercase tracking-widest opacity-90 mb-6 flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full"><QrCode size={14}/> Quét mã tham gia</h4>
                                     <div className="bg-white p-3 rounded-2xl shadow-lg mb-6 transform group-hover:scale-105 transition-transform duration-500">
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${activeGroup.joinCode}`} alt="QR Code" className="w-40 h-40 rounded-xl mix-blend-multiply" />
+                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${activeGroup.joinCode}`} alt="QR Code" className="w-32 h-32 rounded-xl mix-blend-multiply" />
                                     </div>
                                     <div className="flex items-center gap-2 bg-black/20 p-2 pr-2 pl-4 rounded-2xl backdrop-blur-md border border-white/10 w-full max-w-[280px]">
                                         <div className="font-mono text-2xl font-black text-white tracking-widest flex-1">{activeGroup.joinCode}</div>
@@ -588,13 +590,11 @@ const AppContent: React.FC = () => {
                                         </button>
                                     </div>
                                     <button onClick={handleShareGroup} className="mt-4 px-6 py-2.5 bg-white text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg shadow-indigo-900/20 active:scale-95">
-                                        <Share2 size={16}/> Chia sẻ thông tin nhóm
+                                        <Share2 size={16}/> Chia sẻ
                                     </button>
-                                    <p className="text-[11px] mt-4 opacity-70 font-medium">Chia sẻ mã này với những người bạn muốn mời vào nhóm.</p>
                                 </div>
                              </div>
 
-                             {/* Group Info */}
                              <div className="space-y-3">
                                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Mô tả nhóm</h4>
                                  <div className="bg-white p-5 rounded-2xl border border-slate-100 text-sm font-medium text-slate-600 shadow-sm leading-relaxed">
@@ -617,7 +617,7 @@ const AppContent: React.FC = () => {
                               <div className="flex gap-2">
                                   <div className="relative flex-1">
                                       <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
-                                      <input type="text" value={memberSearchQuery} onChange={(e) => setMemberSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()} placeholder="Email, ID..." className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-medium outline-none transition-all shadow-sm"/>
+                                      <input type="text" value={memberSearchQuery} onChange={(e) => setMemberSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()} placeholder="Email, ID..." className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-medium outline-none transition-all shadow-sm"/>
                                   </div>
                                   <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-5 rounded-2xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center min-w-[60px] shadow-lg shadow-indigo-200 transition-transform active:scale-95">{isSearching ? <Loader2 size={20} className="animate-spin"/> : "Tìm"}</button>
                               </div>
@@ -627,7 +627,6 @@ const AppContent: React.FC = () => {
                            <div className="space-y-4">
                               <div className="flex justify-between items-center px-1">
                                   <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Danh sách ({activeGroup.members?.length || 0})</label>
-                                  {activeGroup.leaderId === currentUserId && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><Shield size={10}/> Admin</span>}
                               </div>
                               <div className="space-y-3">
                                   {activeGroup.members?.map((member) => (
@@ -641,7 +640,6 @@ const AppContent: React.FC = () => {
                                                   <div>
                                                       <div className="flex items-center gap-2">
                                                           <p className="text-sm font-bold text-slate-800">{member.name}</p>
-                                                          {member.role === 'leader' && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-wider">Leader</span>}
                                                       </div>
                                                       <p className="text-xs text-indigo-500 font-bold bg-indigo-50 inline-block px-2 py-0.5 rounded-md mt-1">{member.customTitle || 'Thành viên'}</p>
                                                   </div>
