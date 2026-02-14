@@ -31,8 +31,9 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   
   // If Group View: Use group specific keys and isGlobal=true
   // If Personal View: Use generic keys and isGlobal=false (user specific)
-  const taskStorageKey = isGroupView && activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
-  const reflectionStorageKey = isGroupView && activeGroup ? `group_${activeGroup.id}_reflections` : 'reflections';
+  // Use optional chaining to satisfy TypeScript even though isGroupView checks existence
+  const taskStorageKey = isGroupView ? `group_${activeGroup?.id}_tasks` : 'daily_tasks';
+  const reflectionStorageKey = isGroupView ? `group_${activeGroup?.id}_reflections` : 'reflections';
   const isGlobalStorage = isGroupView;
 
   const [tasks] = useRealtimeStorage<Task[]>(taskStorageKey, [], isGlobalStorage);
