@@ -69,6 +69,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
   const isLeader = !activeGroup || activeGroup.leaderId === currentUserId;
 
+  // Reset form when switching groups
+  useEffect(() => {
+      setInputValue('');
+      setNewPriority('medium');
+      setAssignedDate('');
+      setDeadline('');
+      setAssignedTo('');
+      setNewAttachments([]);
+      setShowInputDetails(false);
+  }, [activeGroup]);
+
   // Fix timezone issue for datetime-local input
   const toLocalISOString = (date: Date) => {
     if (!date || isNaN(date.getTime())) return '';
@@ -648,7 +659,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
             const subtasksCount = task.subtasks?.length || 0;
             const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
-            const isNew = Date.now() - new Date(task.createdAt).getTime() < 3000;
+            const diff = Date.now() - new Date(task.createdAt).getTime();
+            const isNew = diff >= 0 && diff < 3000;
             const assignedMember = activeGroup?.members.find(m => m.id === task.assignedTo);
             
             return (

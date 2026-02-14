@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Task } from '../types';
 
 export interface DeadlineNotification {
@@ -68,9 +68,9 @@ export function useDeadlineNotifications(tasks: Task[]) {
     return () => clearInterval(interval);
   }, [tasks]);
 
-  const dismissNotification = (id: string) => {
+  const dismissNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+  }, []);
 
   return { notifications, dismissNotification };
 }

@@ -150,6 +150,9 @@ export const Reports: React.FC = () => {
       return path;
   };
 
+  // Helper for text sanitization in XML/HTML
+  const sanitize = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   const exportToExcel = () => {
     const data = getFilteredTasks();
     const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
@@ -169,9 +172,60 @@ export const Reports: React.FC = () => {
     downloadFile(blob, `nano-report-${period}.csv`);
   };
 
-  const exportToWord = () => { /* ... existing ... */ }; // Kept simple for brevity as structure didn't change
-  const exportToXML = () => { /* ... existing ... */ };
-  const exportToPowerPoint = async () => { /* ... existing ... */ };
+  const exportToWord = () => {
+      const data = getFilteredTasks();
+      const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      
+      let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>Report</title></head><body>`;
+      html += `<h1>${t.reportHeader} - ${period.toUpperCase()}</h1>`;
+      html += `<h2>Summary</h2><p>Score: ${chartData.currentScore}% | Tasks: ${chartData.currentCount}</p>`;
+      html += `<h3>Reflection</h3><p><strong>Evaluation:</strong> ${sanitize(reflection.evaluation || "N/A")}</p>`;
+      html += `<p><strong>Improvement:</strong> ${sanitize(reflection.improvement || "N/A")}</p>`;
+      html += `<h3>Tasks</h3><table border="1" style="border-collapse:collapse;width:100%"><tr><th>Time</th><th>Task</th><th>Status</th><th>Progress</th></tr>`;
+      data.forEach(t => {
+         const d = new Date(t.createdAt);
+         html += `<tr><td>${d.toLocaleString()}</td><td>${sanitize(t.text)}</td><td>${t.completed ? "Done" : "Active"}</td><td>${t.progress}%</td></tr>`;
+      });
+      html += `</table></body></html>`;
+      
+      const blob = new Blob([html], { type: 'application/msword' });
+      downloadFile(blob, `nano-report-${period}.doc`);
+  };
+
+  const exportToXML = () => {
+      const data = getFilteredTasks();
+      const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<report>\n';
+      xml += `  <meta>\n    <period>${period}</period>\n    <score>${chartData.currentScore}</score>\n    <totalTasks>${chartData.currentCount}</totalTasks>\n  </meta>\n`;
+      xml += `  <reflection>\n    <evaluation>${sanitize(reflection.evaluation || "")}</evaluation>\n    <improvement>${sanitize(reflection.improvement || "")}</improvement>\n  </reflection>\n`;
+      xml += `  <tasks>\n`;
+      data.forEach(t => {
+          xml += `    <task id="${t.id}">\n      <text>${sanitize(t.text)}</text>\n      <status>${t.completed ? 'completed' : 'active'}</status>\n      <progress>${t.progress}</progress>\n      <created>${t.createdAt}</created>\n    </task>\n`;
+      });
+      xml += `  </tasks>\n</report>`;
+      const blob = new Blob([xml], { type: 'text/xml' });
+      downloadFile(blob, `nano-report-${period}.xml`);
+  };
+
+  const exportToPowerPoint = async () => {
+      const pres = new PptxGenJS();
+      const reflection = reflections[currentReflectionKey] || { evaluation: '', improvement: '' };
+      
+      // Slide 1: Title
+      let slide = pres.addSlide();
+      slide.addText(`Productivity Report - ${period.toUpperCase()}`, { x: 1, y: 1, fontSize: 24, bold: true, color: '363636' });
+      slide.addText(`Score: ${chartData.currentScore}%`, { x: 1, y: 2, fontSize: 18, color: '00CC99' });
+      slide.addText(`Tasks Completed: ${chartData.currentCount}`, { x: 1, y: 2.5, fontSize: 18 });
+
+      // Slide 2: Reflection
+      slide = pres.addSlide();
+      slide.addText("Self Reflection", { x: 0.5, y: 0.5, fontSize: 20, bold: true, color: '6366F1' });
+      slide.addText(`Evaluation: ${reflection.evaluation || "N/A"}`, { x: 0.5, y: 1.5, fontSize: 14, w: 8 });
+      slide.addText(`Improvement: ${reflection.improvement || "N/A"}`, { x: 0.5, y: 3.5, fontSize: 14, w: 8 });
+
+      pres.writeFile({ fileName: `nano-report-${period}.pptx` });
+  };
 
   const downloadFile = (blob: Blob, fileName: string) => {
     const link = document.createElement('a');
