@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare, Paperclip, FileText, Image as ImageIcon, Video, Send, Download, Eye, Users } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, Archive, ChevronLeft, ChevronRight, PlusCircle, CheckSquare, Square, X, Search, SlidersHorizontal, Clock, CalendarClock, Flag, Hourglass, CalendarDays, AlertCircle, Timer, Edit2, Save, XCircle, Calculator, ListChecks, GripVertical, ArrowUpDown, ArrowDownWideNarrow, ArrowUpNarrowWide, Play, Pause, User as UserIcon, MessageSquare, Paperclip, FileText, Image as ImageIcon, Video, Send, Download, Eye, Users, Calendar } from 'lucide-react';
 import { Task, FilterType, Priority, Subtask, Group, UserProfile, Attachment, Comment } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -34,6 +34,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [filterStatus, setFilterStatus] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewDate, setViewDate] = useState<Date>(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
   
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
@@ -43,16 +45,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const offset = date.getTimezoneOffset();
     const localDate = new Date(date.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().slice(0, 16);
-  };
-
-  const formatDisplayDate = (isoString?: string) => {
-      if (!isoString) return null;
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return null;
-      return date.toLocaleString(language, {
-          weekday: 'short', month: 'short', day: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-      });
   };
 
   const formatDeadline = (isoString: string) => {
@@ -178,8 +170,91 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       };
   }, [tasks, viewDate]);
 
+  // Calendar Logic
+  const calendarDays = useMemo(() => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    // Padding for first week
+    for (let i = 0; i < firstDay; i++) {
+        days.push(null);
+    }
+    // Days of the month
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push(new Date(year, month, i));
+    }
+    return days;
+  }, [calendarViewDate]);
+
+  const changeMonth = (delta: number) => {
+      const newDate = new Date(calendarViewDate);
+      newDate.setMonth(calendarViewDate.getMonth() + delta);
+      setCalendarViewDate(newDate);
+  };
+
+  const handleDateSelect = (date: Date) => {
+      setViewDate(date);
+      setShowCalendar(false);
+  };
+
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
+      {/* Calendar Modal */}
+      {showCalendar && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+              <div className="bg-white rounded-[3rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white">
+                  <div className="flex items-center justify-between mb-8">
+                      <button onClick={() => changeMonth(-1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronLeft size={20}/></button>
+                      <div className="text-center">
+                          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">{calendarViewDate.getFullYear()}</p>
+                          <h4 className="text-xl font-black text-slate-900 tracking-tight">{calendarViewDate.toLocaleString(language, { month: 'long' })}</h4>
+                      </div>
+                      <button onClick={() => changeMonth(1)} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><ChevronRight size={20}/></button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                          <div key={i} className="text-center text-[10px] font-black text-slate-300 py-2">{d}</div>
+                      ))}
+                      {calendarDays.map((date, i) => {
+                          if (!date) return <div key={i} className="aspect-square"></div>;
+                          
+                          const isSelected = date.toDateString() === viewDate.toDateString();
+                          const isCurrentToday = date.toDateString() === new Date().toDateString();
+                          
+                          return (
+                              <button
+                                key={i}
+                                onClick={() => handleDateSelect(date)}
+                                className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all relative group ${
+                                    isSelected 
+                                    ? (activeGroup ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100')
+                                    : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                  {date.getDate()}
+                                  {isCurrentToday && !isSelected && (
+                                      <div className={`absolute bottom-1 w-1 h-1 rounded-full ${activeGroup ? 'bg-emerald-500' : 'bg-indigo-500'}`}></div>
+                                  )}
+                              </button>
+                          );
+                      })}
+                  </div>
+
+                  <button 
+                    onClick={() => { setViewDate(new Date()); setCalendarViewDate(new Date()); setShowCalendar(false); }}
+                    className={`w-full py-4 mt-6 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${activeGroup ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                  >
+                      Quay lại hôm nay
+                  </button>
+                  <button onClick={() => setShowCalendar(false)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900 mt-2">Đóng</button>
+              </div>
+          </div>
+      )}
+
       {completingTaskId && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
               <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-scale-in border border-slate-100">
@@ -228,13 +303,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 animate-fade-in">
-                <div className="bg-white p-2 rounded-[1.5rem] shadow-sm border border-slate-100 flex items-center justify-between min-w-[240px]">
-                    <button onClick={() => navigateDate(-1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl"><ChevronLeft size={22} /></button>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-0.5">{isToday(viewDate) ? "Hôm nay" : viewDate.toLocaleDateString(language, { weekday: 'long' })}</span>
-                        <span className="text-[15px] font-black text-slate-800 tracking-tight">{viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long' })}</span>
-                    </div>
-                    <button onClick={() => navigateDate(1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl"><ChevronRight size={22} /></button>
+                <div className="bg-white p-2 rounded-[1.5rem] shadow-sm border border-slate-100 flex items-center justify-between min-w-[280px]">
+                    <button onClick={() => navigateDate(-1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl transition-all"><ChevronLeft size={22} /></button>
+                    <button 
+                      onClick={() => { setShowCalendar(true); setCalendarViewDate(new Date(viewDate)); }}
+                      className="flex flex-col items-center hover:scale-105 transition-transform group"
+                    >
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-0.5 group-hover:text-indigo-400">{isToday(viewDate) ? "Hôm nay" : viewDate.toLocaleDateString(language, { weekday: 'long' })}</span>
+                        <span className="text-[15px] font-black text-slate-800 tracking-tight flex items-center gap-2">
+                            {viewDate.toLocaleDateString(language, { day: 'numeric', month: 'long' })}
+                            <CalendarIcon size={14} className="text-indigo-500 opacity-40 group-hover:opacity-100 transition-opacity" />
+                        </span>
+                    </button>
+                    <button onClick={() => navigateDate(1)} className="p-3 text-slate-300 hover:text-indigo-600 rounded-2xl transition-all"><ChevronRight size={22} /></button>
                 </div>
 
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
