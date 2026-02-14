@@ -291,7 +291,8 @@ const AppContent: React.FC = () => {
   const handleLeaveGroup = () => {
       if (!activeGroup) return;
       if (confirm(`Bạn có chắc chắn muốn rời nhóm "${activeGroup.name}"?`)) {
-          const updatedMembers = activeGroup.members.filter(m => m.id !== currentUserId);
+          // Safety check: ensure members exists
+          const updatedMembers = (activeGroup.members || []).filter(m => m.id !== currentUserId);
           const updatedGroup = { ...activeGroup, members: updatedMembers };
           saveGlobalGroup(updatedGroup);
           setMyGroups(prev => prev.filter(g => g.id !== activeGroup.id));
@@ -345,7 +346,8 @@ const AppContent: React.FC = () => {
       if(confirm("Xóa thành viên này khỏi nhóm?")) {
           const updatedGroup = {
               ...activeGroup,
-              members: activeGroup.members.filter(m => m.id !== memberId)
+              // Safety check: ensure members exists
+              members: (activeGroup.members || []).filter(m => m.id !== memberId)
           };
           setMyGroups(myGroups.map(g => g.id === activeGroup.id ? updatedGroup : g));
           saveGlobalGroup(updatedGroup);
@@ -354,7 +356,8 @@ const AppContent: React.FC = () => {
 
   const handleUpdateMemberInfo = (memberId: string) => {
       if (!activeGroup) return;
-      const updatedMembers = activeGroup.members.map(m => {
+      // Safety check: ensure members exists
+      const updatedMembers = (activeGroup.members || []).map(m => {
           if (m.id === memberId) {
               return { ...m, customTitle: editMemberTitle, note: editMemberNote };
           }
