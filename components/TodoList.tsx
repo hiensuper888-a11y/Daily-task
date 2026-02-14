@@ -4,7 +4,7 @@ import {
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
   CalendarClock, Timer, AlertCircle, 
   Edit3, CheckSquare, Square, ListChecks,
-  PlusCircle, Sun, Moon, Sunrise, Sunset
+  PlusCircle, Sun, Moon, Sunrise, Sunset, Users, User
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -138,7 +138,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       archived: false,
       priority: newPriority,
       groupId: activeGroup?.id,
-      assignedTo: assignedTo || undefined,
+      assignedTo: assignedTo || undefined, // Set assigned user
       attachments: newAttachments,
       subtasks: [],
       comments: []
@@ -199,24 +199,53 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const deleteSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId); setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); };
   const deleteTask = (id: number, e?: React.MouseEvent) => { if (e) e.stopPropagation(); if (confirm("Xóa công việc này vĩnh viễn?")) { setTasks(prev => prev.filter(t => t.id !== id)); if (editingTask?.id === id) setEditingTask(null); } };
 
+  // --- FILTERING LOGIC ---
   const filteredTasks = useMemo(() => {
     const targetDateStr = getLocalDateString(viewDate);
+    
     return tasks
       .filter(t => {
-        if (filterStatus === 'archived') { if (!t.archived) return false; if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase()); return true; } 
+        // 1. Archived Filter
+        if (filterStatus === 'archived') { 
+          if (!t.archived) return false; 
+          if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase()); 
+          return true; 
+        } 
         if (t.archived) return false;
+
+        // 2. Search Filter
         if (searchQuery && !t.text.toLowerCase().includes(searchQuery.toLowerCase())) { return false; }
-        if (filterStatus === 'assigned_to_me') { return t.assignedTo === currentUserId && !t.completed; }
-        if (filterStatus === 'delegated') { return t.assignedTo && t.assignedTo !== currentUserId && !t.completed; }
+
+        // 3. Assignment Filters (Bypass Date Logic)
+        if (filterStatus === 'assigned_to_me') { 
+          // Show tasks assigned to current user, excluding completed ones usually (act as inbox)
+          return t.assignedTo === currentUserId && !t.completed; 
+        }
+        if (filterStatus === 'delegated') { 
+          // Show tasks assigned to others (not me), excluding unassigned
+          return t.assignedTo && t.assignedTo !== currentUserId && !t.completed; 
+        }
+
+        // 4. Date Filter (For 'all', 'active', 'completed')
         const tDate = new Date(t.createdAt);
         const isSameDay = getLocalDateString(tDate) === targetDateStr;
         if (!isSameDay) return false;
+        
+        // 5. Status Filter
         if (filterStatus === 'active') return !t.completed;
         if (filterStatus === 'completed') return t.completed;
+        
         return true;
       })
       .sort((a, b) => {
+        // Sort Logic
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        // If viewing assignment lists, sort by deadline proximity first, then priority
+        if (filterStatus === 'assigned_to_me' || filterStatus === 'delegated') {
+             if (a.deadline && !b.deadline) return -1;
+             if (!a.deadline && b.deadline) return 1;
+             if (a.deadline && b.deadline) return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        }
         const pMap = { high: 3, medium: 2, low: 1 };
         return (pMap[b.priority || 'medium'] - pMap[a.priority || 'medium']);
       });
@@ -256,7 +285,30 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 <button onClick={() => setEditingTask(null)} className="p-2.5 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-200 rounded-xl transition-all"><X size={20}/></button>
             </div>
             <div className="p-8 space-y-8">
+                {/* Task Title Input */}
                 <textarea rows={2} value={editingTask.text} onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} className="w-full p-0 bg-transparent border-none text-2xl font-bold text-slate-800 focus:ring-0 outline-none resize-none placeholder:text-slate-300"/>
+                 
+                 {/* Group Assignment Section in Edit Modal */}
+                 {activeGroup && (
+                    <div className="space-y-2">
+                         <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-wider"><Users size={16}/> Giao công việc</label>
+                         <div className="flex flex-wrap gap-2">
+                            {activeGroup.members?.map(member => (
+                                <button
+                                    key={member.id}
+                                    onClick={() => setEditingTask({...editingTask, assignedTo: editingTask.assignedTo === member.id ? undefined : member.id})}
+                                    className={`flex items-center gap-2 pr-3 pl-1 py-1 rounded-full border transition-all ${editingTask.assignedTo === member.id ? 'bg-indigo-100 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                >
+                                    <img src={member.avatar} className="w-6 h-6 rounded-full" alt={member.name}/>
+                                    <span className="text-xs font-bold">{member.name}</span>
+                                    {editingTask.assignedTo === member.id && <CheckCircle2 size={12} className="ml-1"/>}
+                                </button>
+                            ))}
+                         </div>
+                    </div>
+                 )}
+
+                 {/* Subtasks Section */}
                  <div className="space-y-4">
                     <div className="flex justify-between items-center mb-1">
                         <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-wider"><ListChecks size={16}/> Các bước thực hiện</label>
@@ -419,13 +471,34 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
               
               <div className="flex-1 flex flex-col gap-2 py-1">
                   {showInputDetails && (
-                      <div className="flex gap-2 animate-slide-up mb-2 px-1">
-                          <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="bg-slate-100 rounded-xl text-xs px-3 py-2 border-none outline-none focus:ring-2 focus:ring-indigo-500/20 w-full font-medium text-slate-600" />
-                          <div className="flex bg-slate-100 rounded-xl p-1 shrink-0">
-                               {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                                <button key={p} onClick={() => setNewPriority(p)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${newPriority === p ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>{p.substring(0,1)}</button>
-                              ))}
+                      <div className="flex flex-col gap-3 animate-slide-up mb-2 px-1">
+                          <div className="flex gap-2">
+                            <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="bg-slate-100 rounded-xl text-xs px-3 py-2 border-none outline-none focus:ring-2 focus:ring-indigo-500/20 w-full font-medium text-slate-600" />
+                            <div className="flex bg-slate-100 rounded-xl p-1 shrink-0">
+                                {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                                    <button key={p} onClick={() => setNewPriority(p)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${newPriority === p ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>{p.substring(0,1)}</button>
+                                ))}
+                            </div>
                           </div>
+                          {/* Assignment UI in Creation Bar */}
+                          {activeGroup && (
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Giao:</span>
+                                {activeGroup.members?.map(member => (
+                                    <button
+                                        key={member.id}
+                                        onClick={() => setAssignedTo(assignedTo === member.id ? '' : member.id)}
+                                        className={`relative shrink-0 w-8 h-8 rounded-full border-2 transition-all ${assignedTo === member.id ? 'border-indigo-500 scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                    >
+                                        <img src={member.avatar} className="w-full h-full rounded-full bg-slate-100 object-cover" alt={member.name}/>
+                                        {assignedTo === member.id && <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full border border-white"></div>}
+                                    </button>
+                                ))}
+                                <button onClick={() => setAssignedTo('')} className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 border-dashed border-slate-300 text-slate-400 text-[10px] font-bold ${!assignedTo ? 'bg-slate-100 text-slate-600 border-slate-400' : ''}`}>
+                                    <User size={12}/>
+                                </button>
+                            </div>
+                          )}
                       </div>
                   )}
                   <input 
