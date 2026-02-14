@@ -31,6 +31,9 @@
         user-select: none;
         overflow: hidden;
         color: #1e293b;
+        /* Performance: Optimize text rendering */
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
       }
 
       ::selection {
@@ -38,7 +41,7 @@
         color: #4338ca;
       }
       
-      /* Premium Mesh Background */
+      /* Premium Mesh Background - Optimized: Fixed position, own layer */
       .mesh-bg {
         position: fixed;
         inset: 0;
@@ -50,6 +53,8 @@
           radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
           radial-gradient(at 0% 100%, rgba(20, 184, 166, 0.05) 0px, transparent 50%);
         filter: blur(60px);
+        transform: translateZ(0); /* Force GPU layer */
+        pointer-events: none;
       }
 
       /* Polished Scrollbar */
@@ -66,7 +71,7 @@
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
-      /* Animations */
+      /* Animations - Optimized with will-change where appropriate */
       @keyframes float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-10px); }
@@ -90,40 +95,43 @@
         100% { transform: scale(1); }
       }
       
-      .animate-float { animation: float 6s ease-in-out infinite; }
-      .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      .animate-slide-right { animation: slideRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .animate-float { animation: float 6s ease-in-out infinite; will-change: transform; }
+      .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+      .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+      .animate-slide-right { animation: slideRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
       .animate-check { animation: checkPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
       
-      /* Glass Morphism Utilities */
+      /* Glass Morphism Utilities - Optimized for Mobile */
       .glass-panel {
         background: rgba(255, 255, 255, 0.65);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.4);
+        transform: translateZ(0);
       }
       
       .glass-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        background: rgba(255, 255, 255, 0.75); /* Slightly more opaque for performance */
+        backdrop-filter: blur(12px); /* Reduced blur for performance */
+        -webkit-backdrop-filter: blur(12px);
         box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.02), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.6);
+        transform: translateZ(0); /* Promote to own layer */
       }
       
       .glass-modern {
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(24px) saturate(180%);
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.5);
+        transform: translateZ(0);
       }
 
       /* Interactive Elements */
-      .btn-bounce { transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; }
+      .btn-bounce { transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; will-change: transform; }
       .btn-bounce:active { transform: scale(0.94); }
       
-      .btn-press { transition: transform 0.1s ease-in-out; cursor: pointer; }
+      .btn-press { transition: transform 0.1s ease-in-out; cursor: pointer; will-change: transform; }
       .btn-press:active { transform: scale(0.9); }
 
       /* Safe Areas */

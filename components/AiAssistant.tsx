@@ -1,10 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { Send, Bot, Sparkles, User, Trash2, Zap, MessageSquare, ListChecks, Loader2, WifiOff, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AiModel, ChatMessage, Task } from '../types';
 import { chatWithGemini } from '../services/geminiService';
 import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+
+// Memoized Chat Bubble Component
+const ChatBubble = memo(({ msg }: { msg: ChatMessage }) => {
+    return (
+        <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-scale-in`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-sm ${msg.role === 'user' ? 'bg-slate-800' : 'bg-indigo-600'}`}>
+                {msg.role === 'user' ? <User size={14} className="text-white"/> : <Sparkles size={14} className="text-white"/>}
+            </div>
+            <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm'}`}>
+                {msg.text}
+            </div>
+        </div>
+    );
+});
 
 export const AiAssistant: React.FC = () => {
     const { t } = useLanguage();
@@ -82,14 +96,7 @@ export const AiAssistant: React.FC = () => {
                     </div>
                 )}
                 {messages.map((msg) => (
-                    <div key={msg.id} className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'} animate-scale-in`}>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-sm ${msg.role === 'user' ? 'bg-slate-800' : 'bg-indigo-600'}`}>
-                            {msg.role === 'user' ? <User size={14} className="text-white"/> : <Sparkles size={14} className="text-white"/>}
-                        </div>
-                        <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm'}`}>
-                            {msg.text}
-                        </div>
-                    </div>
+                    <ChatBubble key={msg.id} msg={msg} />
                 ))}
                 {isLoading && (
                     <div className="flex gap-3 mr-auto animate-fade-in">

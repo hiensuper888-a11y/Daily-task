@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   Plus, Trash2, CheckCircle2, Circle, Calendar as CalendarIcon, 
   Archive, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, 
@@ -16,7 +16,7 @@ interface TodoListProps {
   activeGroup: Group | null;
 }
 
-const PriorityBadge = ({ priority }: { priority: Priority }) => {
+const PriorityBadge = React.memo(({ priority }: { priority: Priority }) => {
     const configs = {
       high: { color: 'bg-rose-100 text-rose-700 ring-rose-200', label: 'Cao' },
       medium: { color: 'bg-amber-100 text-amber-700 ring-amber-200', label: 'TB' },
@@ -28,7 +28,86 @@ const PriorityBadge = ({ priority }: { priority: Priority }) => {
         {config.label}
       </span>
     );
-};
+});
+
+// MEMOIZED TASK ITEM COMPONENT TO PREVENT RE-RENDERS OF ENTIRE LIST
+const TaskItem = React.memo(({ 
+  task, 
+  index,
+  language, 
+  activeGroup, 
+  lastCheckedId, 
+  onToggle, 
+  onDelete, 
+  onEdit 
+}: { 
+  task: Task, 
+  index: number,
+  language: string, 
+  activeGroup: Group | null, 
+  lastCheckedId: number | null, 
+  onToggle: (task: Task, e?: React.MouseEvent) => void,
+  onDelete: (id: number, e?: React.MouseEvent) => void,
+  onEdit: (task: Task) => void
+}) => {
+    
+    // Helper within item to avoid re-calculating on parent
+    const formatDeadline = (isoString: string) => {
+        const target = new Date(isoString);
+        if (isNaN(target.getTime())) return null;
+        const now = new Date();
+        const diffMs = target.getTime() - now.getTime();
+        const diffHrs = diffMs / (1000 * 60 * 60);
+        const isOverdue = diffMs < 0;
+        const isSoon = diffHrs > 0 && diffHrs < 24;
+
+        let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        let colorClass = 'text-slate-500 bg-slate-100';
+        let icon = <CalendarClock size={12} />;
+
+        if (isOverdue) {
+            text = 'Quá hạn';
+            colorClass = 'text-rose-600 bg-rose-50 font-bold';
+            icon = <AlertCircle size={12} />;
+        } else if (isSoon) {
+            text = `${Math.ceil(diffHrs)}h nữa`;
+            colorClass = 'text-amber-600 bg-amber-50 font-bold';
+            icon = <Timer size={12} />;
+        }
+        return { text, colorClass, icon, isOverdue };
+    };
+
+    const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
+    const subtasksCount = task.subtasks?.length || 0;
+    const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
+    const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
+
+    return (
+        <div 
+            onClick={() => onEdit(task)}
+            className={`glass-card group relative px-6 py-5 rounded-[1.8rem] transition-all duration-300 cursor-pointer border border-white/60 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-1 ${
+                task.completed ? 'opacity-60 grayscale-[0.5]' : 'bg-white/80'
+            }`}
+            style={{ animationDelay: `${Math.min(index * 50, 500)}ms`, animationFillMode: 'both' }}
+        >
+            <div className="flex items-start gap-4">
+                <button onClick={(e) => onToggle(task, e)} className={`mt-0.5 transition-all btn-press duration-300 ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-500'}`}>
+                    {task.completed ? <CheckCircle2 size={28} strokeWidth={2.5} fill="currentColor" className="text-emerald-100" /> : <Circle size={28} strokeWidth={2} />}
+                </button>
+                <div className="flex-1 min-w-0">
+                    <p className={`text-[17px] font-bold tracking-tight leading-snug mb-2.5 ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.text}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
+                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
+                        {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
+                        {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
+                    </div>
+                </div>
+                {!task.completed && <button onClick={(e) => onDelete(task.id, e)} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-rose-500 bg-white/80 backdrop-blur-sm rounded-xl transition-all shadow-sm hover:shadow-md hover:bg-rose-50"><Trash2 size={18} /></button>}
+            </div>
+        </div>
+    );
+});
 
 export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const storageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
@@ -92,31 +171,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     return { text: "Chào buổi tối", icon: Moon };
   };
 
-  const formatDeadline = (isoString: string) => {
-    const target = new Date(isoString);
-    const now = new Date();
-    if (isNaN(target.getTime())) return null;
-    const diffMs = target.getTime() - now.getTime();
-    const diffHrs = diffMs / (1000 * 60 * 60);
-    const isOverdue = diffMs < 0;
-    const isSoon = diffHrs > 0 && diffHrs < 24;
-
-    let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    let colorClass = 'text-slate-500 bg-slate-100';
-    let icon = <CalendarClock size={12} />;
-
-    if (isOverdue) {
-      text = 'Quá hạn';
-      colorClass = 'text-rose-600 bg-rose-50 font-bold';
-      icon = <AlertCircle size={12} />;
-    } else if (isSoon) {
-      text = `${Math.ceil(diffHrs)}h nữa`;
-      colorClass = 'text-amber-600 bg-amber-50 font-bold';
-      icon = <Timer size={12} />;
-    }
-    return { text, colorClass, icon, isOverdue };
-  };
-
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
 
   const addTask = () => {
@@ -161,22 +215,33 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setEditingTask(null);
   };
 
-  const handleToggleClick = (task: Task, e?: React.MouseEvent) => {
+  // useCallback optimizes these handlers so they don't break memoization of TaskItem
+  const handleToggleClick = useCallback((task: Task, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (task.archived) return; 
     setLastCheckedId(task.id);
     setTimeout(() => setLastCheckedId(null), 500);
 
-    if (task.completed) toggleTask(task.id, false);
+    if (task.completed) {
+        // Toggle off immediately
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: false, completedAt: undefined, completedBy: undefined, completionNote: undefined } : t));
+    }
     else {
       if (activeGroup) { 
           setCompletingTaskId(task.id); 
           setCompletionNote(''); 
       } else {
-          toggleTask(task.id, true);
+          // Toggle on immediately
+          setTasks(prev => prev.map(t => {
+              if (t.id === task.id) {
+                  playSuccessSound();
+                  return { ...t, completed: true, completedAt: new Date().toISOString(), completedBy: currentUserId, progress: 100 };
+              }
+              return t;
+          }));
       }
     }
-  };
+  }, [activeGroup, currentUserId, setTasks]);
 
   const toggleTask = (id: number, forceState?: boolean, note?: string) => {
     setTasks(prev => prev.map(task => {
@@ -199,7 +264,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const addSubtask = () => { if (!editingTask || !newSubtaskText.trim()) return; const newSub: Subtask = { id: Date.now(), text: newSubtaskText.trim(), completed: false }; const updatedSubtasks = [...(editingTask.subtasks || []), newSub]; setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); setNewSubtaskText(''); };
   const toggleSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).map(st => st.id === subId ? { ...st, completed: !st.completed } : st); const completedCount = updatedSubtasks.filter(st => st.completed).length; const progress = Math.round((completedCount / updatedSubtasks.length) * 100); setEditingTask({ ...editingTask, subtasks: updatedSubtasks, progress, completed: progress === 100 }); };
   const deleteSubtask = (subId: number) => { if (!editingTask) return; const updatedSubtasks = (editingTask.subtasks || []).filter(st => st.id !== subId); setEditingTask({ ...editingTask, subtasks: updatedSubtasks }); };
-  const deleteTask = (id: number, e?: React.MouseEvent) => { if (e) e.stopPropagation(); if (confirm("Xóa công việc này vĩnh viễn?")) { setTasks(prev => prev.filter(t => t.id !== id)); if (editingTask?.id === id) setEditingTask(null); } };
+  
+  const deleteTask = useCallback((id: number, e?: React.MouseEvent) => { 
+      if (e) e.stopPropagation(); 
+      if (confirm("Xóa công việc này vĩnh viễn?")) { 
+          setTasks(prev => prev.filter(t => t.id !== id)); 
+          if (editingTask?.id === id) setEditingTask(null); 
+      } 
+  }, [editingTask, setTasks]);
+
+  const handleEditClick = useCallback((task: Task) => setEditingTask(task), []);
 
   // --- FILTERING LOGIC ---
   const filteredTasks = useMemo(() => {
@@ -220,13 +294,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
         // 3. Assignment Filters (Bypass Date Logic)
         if (filterStatus === 'assigned_to_me') { 
-          // Show tasks assigned to current user
           return t.assignedTo === currentUserId && !t.completed; 
         }
         if (filterStatus === 'delegated') { 
-          // Show tasks delegated by current user to others
-          // Logic: assignedTo exists AND assignedTo is NOT me AND (createdBy is me OR I'm implicitly interested)
-          // To be robust: If createdBy exists, check it. If not (legacy), assume standard 'assigned to others' view.
           if (t.createdBy) {
              return t.assignedTo && t.assignedTo !== currentUserId && t.createdBy === currentUserId && !t.completed;
           }
@@ -245,9 +315,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         return true;
       })
       .sort((a, b) => {
-        // Sort Logic
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        // If viewing assignment lists, sort by deadline proximity first, then priority
         if (filterStatus === 'assigned_to_me' || filterStatus === 'delegated') {
              if (a.deadline && !b.deadline) return -1;
              if (!a.deadline && b.deadline) return 1;
@@ -275,7 +343,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
 
-  // Filter Configuration for UI
   const filterConfig: Record<FilterType, { icon: any, label: string, colorClass: string, shadowClass: string }> = {
     all: { icon: Layers, label: t.all, colorClass: 'from-slate-700 to-slate-900', shadowClass: 'shadow-slate-500/30' },
     active: { icon: Zap, label: t.active, colorClass: 'from-indigo-500 to-violet-600', shadowClass: 'shadow-indigo-500/30' },
@@ -463,39 +530,19 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             <p className="text-xs font-black text-slate-300 uppercase tracking-[0.2em]">{filterStatus === 'archived' ? 'Trống' : 'Thảnh thơi!'}</p>
           </div>
         ) : (
-          filteredTasks.map((task, index) => {
-            const deadlineInfo = task.deadline ? formatDeadline(task.deadline) : null;
-            const subtasksCount = task.subtasks?.length || 0;
-            const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
-            const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
-            
-            return (
-              <div 
+          filteredTasks.map((task, index) => (
+             <TaskItem 
                 key={task.id} 
-                onClick={() => setEditingTask(task)}
-                className={`glass-card group relative px-6 py-5 rounded-[1.8rem] transition-all duration-300 cursor-pointer border border-white/60 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-1 ${
-                  task.completed ? 'opacity-60 grayscale-[0.5]' : 'bg-white/80'
-                }`}
-                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
-              >
-                <div className="flex items-start gap-4">
-                  <button onClick={(e) => handleToggleClick(task, e)} className={`mt-0.5 transition-all btn-press duration-300 ${lastCheckedId === task.id ? 'animate-check' : ''} ${task.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-500'}`}>
-                    {task.completed ? <CheckCircle2 size={28} strokeWidth={2.5} fill="currentColor" className="text-emerald-100" /> : <Circle size={28} strokeWidth={2} />}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[17px] font-bold tracking-tight leading-snug mb-2.5 ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.text}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                        {task.priority !== 'medium' && <PriorityBadge priority={task.priority || 'medium'} />}
-                        {deadlineInfo && <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${deadlineInfo.colorClass}`}>{deadlineInfo.icon} {deadlineInfo.text}</span>}
-                        {subtasksCount > 0 && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200"><ListChecks size={10}/> {subtasksCompleted}/{subtasksCount}</span>}
-                        {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee"/>}
-                    </div>
-                  </div>
-                   {!task.completed && <button onClick={(e) => deleteTask(task.id, e)} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-rose-500 bg-white/80 backdrop-blur-sm rounded-xl transition-all shadow-sm hover:shadow-md hover:bg-rose-50"><Trash2 size={18} /></button>}
-                </div>
-              </div>
-            );
-          })
+                task={task} 
+                index={index}
+                language={language}
+                activeGroup={activeGroup}
+                lastCheckedId={lastCheckedId}
+                onToggle={handleToggleClick}
+                onDelete={deleteTask}
+                onEdit={handleEditClick}
+             />
+          ))
         )}
       </div>
 

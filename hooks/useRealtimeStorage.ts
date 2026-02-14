@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Key used to store the currently logged-in email/UID
 export const SESSION_KEY = 'daily_task_active_session_user';
 
 /**
  * A hook that syncs with localStorage and updates in real-time across tabs.
+ * OPTIMIZED: Uses adaptive polling based on visibility to save resources.
  */
 export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: boolean = false) {
   
@@ -30,6 +31,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
   }, [initialValue, getStorageKey]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
+  const isTabVisible = useRef(true);
 
   // Wrap setValue in useCallback to maintain stable reference
   const setValue = useCallback((value: T | ((val: T) => T)) => {
@@ -40,6 +42,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
         if (typeof window !== 'undefined') {
           const finalKey = getStorageKey();
           window.localStorage.setItem(finalKey, JSON.stringify(valueToStore));
+          // Dispatch manual event for same-tab updates
           window.dispatchEvent(new Event('local-storage'));
         }
         return valueToStore;
@@ -51,25 +54,39 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
 
   // Sync when key changes or external updates happen
   useEffect(() => {
-    // Immediate update when key changes to prevent stale data
+    // Immediate update when key changes
     setStoredValue(readValue());
 
     const handleSync = () => setStoredValue(readValue());
 
+    // Basic listeners
     window.addEventListener('storage', handleSync);
     window.addEventListener('local-storage', handleSync);
     window.addEventListener('auth-change', handleSync);
 
-    // Poll for session changes to ensure multi-tab consistency
-    const interval = setInterval(() => {
-      handleSync();
-    }, 1000);
+    // Visibility handlers to optimize polling
+    const handleVisibilityChange = () => {
+        isTabVisible.current = document.visibilityState === 'visible';
+        if (isTabVisible.current) {
+            handleSync(); // Sync immediately when returning to tab
+        }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Adaptive Polling
+    const intervalId = setInterval(() => {
+      // Only poll if tab is visible to save battery/CPU
+      if (isTabVisible.current) {
+          handleSync();
+      }
+    }, 2000); // Relaxed polling to 2s for better performance
 
     return () => {
       window.removeEventListener('storage', handleSync);
       window.removeEventListener('local-storage', handleSync);
       window.removeEventListener('auth-change', handleSync);
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
     };
   }, [readValue]); 
 
