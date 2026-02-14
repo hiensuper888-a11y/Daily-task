@@ -110,13 +110,13 @@ export const Profile: React.FC = () => {
                      <div className="w-20 h-20 bg-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-200">
                          <Sparkles className="text-white" size={32} />
                      </div>
-                     <h2 className="text-2xl font-black text-slate-800 tracking-tight">{authMode === 'login' ? 'Chào mừng trở lại' : 'Tạo tài khoản mới'}</h2>
-                     <p className="text-slate-400 text-sm mt-1 font-medium">{authMode === 'login' ? 'Đăng nhập để tiếp tục' : 'Bắt đầu hành trình năng suất'}</p>
+                     <h2 className="text-2xl font-black text-slate-800 tracking-tight">{authMode === 'login' ? t.welcomeBack : t.createAccount}</h2>
+                     <p className="text-slate-400 text-sm mt-1 font-medium">{authMode === 'login' ? t.loginContinue : t.startJourney}</p>
                 </div>
 
                 <div className="space-y-4">
                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-500 ml-1">Email</label>
+                        <label className="text-xs font-bold text-slate-500 ml-1">{t.emailLabel}</label>
                         <div className="relative">
                             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
                             <input 
@@ -129,7 +129,7 @@ export const Profile: React.FC = () => {
                         </div>
                      </div>
                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-500 ml-1">Mật khẩu</label>
+                        <label className="text-xs font-bold text-slate-500 ml-1">{t.passwordLabel}</label>
                         <div className="relative">
                             <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
                             <input 
@@ -152,7 +152,7 @@ export const Profile: React.FC = () => {
                     className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                     {isSyncing ? <RefreshCw size={20} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={20}/> : <UserPlus size={20}/>)}
-                    {authMode === 'login' ? 'Đăng Nhập' : 'Đăng Ký'}
+                    {authMode === 'login' ? t.loginBtn : t.registerBtn}
                 </button>
 
                 <div className="mt-6 text-center">
@@ -160,7 +160,7 @@ export const Profile: React.FC = () => {
                         onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
                         className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors"
                     >
-                        {authMode === 'login' ? "Chưa có tài khoản? Đăng ký ngay" : "Đã có tài khoản? Đăng nhập"}
+                        {authMode === 'login' ? t.noAccountPrompt : t.hasAccountPrompt}
                     </button>
                 </div>
              </div>
@@ -198,9 +198,9 @@ export const Profile: React.FC = () => {
                  
                  <div className="flex gap-3 justify-center md:justify-start">
                      {isEditing ? (
-                         <button onClick={handleSave} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-2"><Save size={16}/> Lưu thay đổi</button>
+                         <button onClick={handleSave} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-2"><Save size={16}/> {t.save}</button>
                      ) : (
-                         <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors flex items-center gap-2"><LayoutDashboard size={16}/> Chỉnh sửa</button>
+                         <button onClick={() => setIsEditing(true)} className="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors flex items-center gap-2"><LayoutDashboard size={16}/> {t.edit}</button>
                      )}
                      <button onClick={logout} className="px-4 py-2.5 bg-red-50 text-red-500 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors"><LogOut size={16}/></button>
                  </div>
@@ -209,17 +209,17 @@ export const Profile: React.FC = () => {
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InfoCard title="Thông tin cá nhân" icon={User} color="orange">
+            <InfoCard title={t.personalInfo} icon={User} color="orange">
                 <InfoRow icon={Calendar} label={t.birthYear} name="birthYear" value={editForm.birthYear} isEditing={isEditing} onChange={handleInputChange} />
                 <InfoRow icon={Phone} label={t.phoneNumber} name="phoneNumber" value={editForm.phoneNumber} isEditing={isEditing} onChange={handleInputChange} />
                 <InfoRow icon={Home} label={t.address} name="address" value={editForm.address} isEditing={isEditing} onChange={handleInputChange} />
             </InfoCard>
 
-            <InfoCard title="Công việc" icon={Briefcase} color="blue">
+            <InfoCard title={t.work} icon={Briefcase} color="blue">
                  <InfoRow icon={Briefcase} label={t.company} name="company" value={editForm.company} isEditing={isEditing} onChange={handleInputChange} />
                  <InfoRow icon={MapPin} label={t.hometown} name="hometown" value={editForm.hometown} isEditing={isEditing} onChange={handleInputChange} />
                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Trạng thái</span>
+                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.statusLabel}</span>
                      <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                          <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                          {isOnline ? 'Online' : 'Offline'}
@@ -256,16 +256,19 @@ const InfoCard = ({ title, icon: Icon, color, children }: any) => {
     );
 };
 
-const InfoRow = ({ icon: Icon, label, name, value, isEditing, onChange }: any) => (
-    <div className="group">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">{label}</label>
-        {isEditing ? (
-            <input name={name} value={value} onChange={onChange} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-200 outline-none transition-all"/>
-        ) : (
-            <div className="text-sm font-bold text-slate-700 flex items-center gap-3 h-10 border-b border-slate-50">
-                <Icon size={16} className="text-slate-300"/>
-                {value || <span className="text-slate-300 italic font-normal text-xs">Chưa cập nhật</span>}
-            </div>
-        )}
-    </div>
-);
+const InfoRow = ({ icon: Icon, label, name, value, isEditing, onChange }: any) => {
+    const { t } = useLanguage();
+    return (
+        <div className="group">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">{label}</label>
+            {isEditing ? (
+                <input name={name} value={value} onChange={onChange} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-200 outline-none transition-all"/>
+            ) : (
+                <div className="text-sm font-bold text-slate-700 flex items-center gap-3 h-10 border-b border-slate-50">
+                    <Icon size={16} className="text-slate-300"/>
+                    {value || <span className="text-slate-300 italic font-normal text-xs">{t.notUpdated}</span>}
+                </div>
+            )}
+        </div>
+    );
+};

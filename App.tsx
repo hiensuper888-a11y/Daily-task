@@ -264,7 +264,7 @@ const AppContent: React.FC = () => {
       setActiveTab('tasks'); 
       setShowJoinModal(false); 
       resetModalState(); 
-      alert(`Đã tham gia nhóm "${updatedGroup.name}" thành công!`);
+      alert(t.groupJoined);
   };
 
   const handleDeleteGroup = () => { 
@@ -305,7 +305,7 @@ const AppContent: React.FC = () => {
   
   const handlePromoteMember = (memberId: string) => {
       if (!activeGroup || activeGroup.leaderId !== currentUserId) return;
-      if (!confirm("⚠️ Chuyển quyền Trưởng nhóm?\n\nBạn sẽ mất quyền quản trị cao nhất và trở thành thành viên thường.")) return;
+      if (!confirm(t.promoteConfirm)) return;
 
       const updatedMembers = activeGroup.members.map(m => {
           if (m.id === memberId) return { ...m, role: 'leader' as const }; // New leader
@@ -372,13 +372,13 @@ const AppContent: React.FC = () => {
                 <CheckSquare size={20} strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-                <span className="text-lg font-bold tracking-tight text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">Daily Task</span>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Workspace</span>
+                <span className="text-lg font-bold tracking-tight text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">{t.appTitle}</span>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{t.workspace}</span>
             </div>
           </div>
           
           <div className="space-y-1">
-             <NavItem tab="tasks" icon={Home} label="Tổng quan" activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
+             <NavItem tab="tasks" icon={Home} label={t.overview} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="ai" icon={MessageSquare} label={t.ai} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="reports" icon={Activity} label={t.reports} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
              <NavItem tab="studio" icon={Wand2} label={t.studio} activeTab={activeTab} activeGroupId={activeGroupId} setActiveTab={setActiveTab} setActiveGroupId={setActiveGroupId} />
@@ -388,8 +388,8 @@ const AppContent: React.FC = () => {
 
         <div className="flex-1 px-4 overflow-y-auto custom-scrollbar pt-2">
           <div className="flex items-center justify-between mb-2 px-4 mt-4">
-             <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Groups</p>
-             <button onClick={handleOpenCreateGroup} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-sm" title="Tạo mới"><Plus size={14}/></button>
+             <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">{t.groupsHeader}</p>
+             <button onClick={handleOpenCreateGroup} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-sm" title={t.create}><Plus size={14}/></button>
           </div>
 
           <div className="space-y-1 pb-20">
@@ -417,7 +417,7 @@ const AppContent: React.FC = () => {
               ))}
               <button onClick={() => setShowJoinModal(true)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl mt-2 text-xs font-semibold text-slate-400 hover:text-indigo-600 transition-colors border border-dashed border-slate-200 hover:border-indigo-200 hover:bg-white/50">
                   <ScanLine size={14}/>
-                  <span>Nhập mã tham gia</span>
+                  <span>{t.joinCodeBtn}</span>
               </button>
           </div>
         </div>
@@ -469,11 +469,11 @@ const AppContent: React.FC = () => {
         <div className="lg:hidden fixed bottom-6 left-4 right-4 z-[40]">
             <div className="glass-modal rounded-[2rem] p-1.5 flex justify-between items-center shadow-2xl shadow-indigo-900/10 border border-white/50">
               {[
-                  { id: 'tasks', icon: LayoutGrid, label: 'Việc' },
+                  { id: 'tasks', icon: LayoutGrid, label: t.tasks },
                   { id: 'reports', icon: BarChart3, label: 'TK' },
                   { id: 'create', icon: Plus, special: true },
                   { id: 'ai', icon: MessageSquare, label: 'AI' },
-                  { id: 'profile', icon: UserCircle2, label: 'Tôi' }
+                  { id: 'profile', icon: UserCircle2, label: t.profile }
               ].map((item) => {
                   if (item.special) {
                       return (
@@ -514,8 +514,8 @@ const AppContent: React.FC = () => {
                       <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-white rounded-2xl mx-auto flex items-center justify-center text-indigo-600 mb-4 shadow-sm ring-4 ring-indigo-50">
                           <ScanLine size={32} />
                       </div>
-                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">Tham gia nhóm</h3>
-                      <p className="text-slate-500 text-sm font-medium mt-2">Nhập mã code được chia sẻ</p>
+                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.joinGroupHeader}</h3>
+                      <p className="text-slate-500 text-sm font-medium mt-2">{t.joinCodePrompt}</p>
                   </div>
                   <div className="space-y-4">
                       <input 
@@ -524,7 +524,7 @@ const AppContent: React.FC = () => {
                         className="w-full p-5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl font-mono text-center text-3xl font-bold text-slate-800 outline-none tracking-[0.3em] uppercase placeholder:text-slate-300 transition-all shadow-inner focus:shadow-lg focus:shadow-indigo-100/50" 
                         placeholder="CODE" 
                       />
-                      <button onClick={handleJoinGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">Tham gia ngay</button>
+                      <button onClick={handleJoinGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">{t.joinNow}</button>
                   </div>
               </div>
           </div>
@@ -536,8 +536,8 @@ const AppContent: React.FC = () => {
               <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative">
                   <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
-                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">Tạo nhóm mới</h3>
-                      <p className="text-slate-500 text-sm font-medium mt-1">Không gian làm việc chung</p>
+                      <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.createGroupHeader}</h3>
+                      <p className="text-slate-500 text-sm font-medium mt-1">{t.createGroupSub}</p>
                   </div>
                   <div className="space-y-6">
                       <div className="flex justify-center">
@@ -547,14 +547,14 @@ const AppContent: React.FC = () => {
                           >
                               {newGroupImage ? <img src={newGroupImage} alt="Group" className="w-full h-full object-cover" /> : <ImageIcon size={32} className="text-slate-300 group-hover/upload:scale-110 transition-transform" />}
                               <input ref={groupImageInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => setNewGroupImage(reader.result as string); reader.readAsDataURL(file); } e.target.value = ''; }} />
-                              <div className="absolute bottom-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full opacity-0 group-hover/upload:opacity-100 transition-opacity font-bold">Upload</div>
+                              <div className="absolute bottom-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full opacity-0 group-hover/upload:opacity-100 transition-opacity font-bold">{t.upload}</div>
                           </div>
                       </div>
                       <div className="space-y-3">
-                          <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl font-bold text-lg text-slate-800 outline-none text-center placeholder:text-slate-400 transition-all" placeholder="Đặt tên nhóm..." />
-                          <input value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl font-medium text-sm text-slate-600 outline-none text-center placeholder:text-slate-400 transition-all" placeholder="Mô tả ngắn (tùy chọn)..." />
+                          <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl font-bold text-lg text-slate-800 outline-none text-center placeholder:text-slate-400 transition-all" placeholder={t.groupNamePlaceholder} />
+                          <input value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-2xl font-medium text-sm text-slate-600 outline-none text-center placeholder:text-slate-400 transition-all" placeholder={t.groupDescPlaceholder} />
                       </div>
-                      <button onClick={handleCreateGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">Tạo nhóm</button>
+                      <button onClick={handleCreateGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">{t.createGroupBtn}</button>
                   </div>
               </div>
           </div>
@@ -574,16 +574,16 @@ const AppContent: React.FC = () => {
                               )}
                               <div>
                                   <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-none">{activeGroup.name}</h3>
-                                  <p className="text-sm text-slate-500 font-bold mt-1 bg-slate-100 inline-block px-2 py-0.5 rounded-lg">{activeGroup.members?.length} thành viên</p>
+                                  <p className="text-sm text-slate-500 font-bold mt-1 bg-slate-100 inline-block px-2 py-0.5 rounded-lg">{activeGroup.members?.length} {t.member}</p>
                               </div>
                           </div>
                           <button onClick={() => setShowSettingsModal(false)} className="p-3 text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 rounded-full hover:bg-slate-200"><X size={20}/></button>
                       </div>
                       
                       <div className="flex bg-slate-100 p-1 rounded-xl">
-                          <button onClick={() => setSettingsTab('info')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'info' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Thông tin</button>
-                          <button onClick={() => setSettingsTab('members')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'members' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Thành viên</button>
-                          <button onClick={() => setSettingsTab('personalize')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'personalize' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Giao diện</button>
+                          <button onClick={() => setSettingsTab('info')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'info' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>{t.infoTab}</button>
+                          <button onClick={() => setSettingsTab('members')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'members' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>{t.membersTab}</button>
+                          <button onClick={() => setSettingsTab('personalize')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all duration-300 ${settingsTab === 'personalize' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>{t.themeTab}</button>
                       </div>
                   </div>
 
@@ -599,27 +599,27 @@ const AppContent: React.FC = () => {
                                     <div className="flex items-center gap-2 bg-black/20 p-2 pr-2 pl-4 rounded-2xl backdrop-blur-md border border-white/10 w-full max-w-[280px]">
                                         <QrCode size={20} className="text-white/80"/>
                                         <div className="font-mono text-2xl font-black text-white tracking-widest flex-1">{activeGroup.joinCode}</div>
-                                        <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-3 bg-white/20 text-white rounded-xl hover:bg-white hover:text-indigo-600 active:scale-95 transition-all shadow-md" title="Sao chép mã">
+                                        <button onClick={() => copyToClipboard(activeGroup.joinCode)} className="p-3 bg-white/20 text-white rounded-xl hover:bg-white hover:text-indigo-600 active:scale-95 transition-all shadow-md" title={t.copyLink}>
                                             {copiedCode ? <Check size={20} className="text-emerald-300"/> : <Copy size={20}/>}
                                         </button>
                                     </div>
                                     <button onClick={handleShareGroup} className="mt-4 px-6 py-2.5 bg-white text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-50 transition-all flex items-center gap-2 shadow-lg shadow-indigo-900/20 active:scale-95">
-                                        <Share2 size={16}/> Chia sẻ
+                                        <Share2 size={16}/> {t.shareGroup}
                                     </button>
                                 </div>
                              </div>
 
                              <div className="space-y-3">
-                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Mô tả nhóm</h4>
+                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.groupDesc}</h4>
                                  <div className="bg-white p-5 rounded-2xl border border-slate-100 text-sm font-medium text-slate-600 shadow-sm leading-relaxed">
-                                     {activeGroup.description || "Chưa có mô tả."}
+                                     {activeGroup.description || t.noDesc}
                                  </div>
                              </div>
 
                              {activeGroup.leaderId === currentUserId ? (
-                                  <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-100 hover:text-red-600 transition-colors flex items-center justify-center gap-2 border border-red-100"><Trash2 size={18}/> Xóa nhóm vĩnh viễn</button>
+                                  <button onClick={handleDeleteGroup} className="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-100 hover:text-red-600 transition-colors flex items-center justify-center gap-2 border border-red-100"><Trash2 size={18}/> {t.deleteGroup}</button>
                               ) : (
-                                  <button onClick={handleLeaveGroup} className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 border border-slate-200"><LogOut size={18}/> Rời nhóm</button>
+                                  <button onClick={handleLeaveGroup} className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 border border-slate-200"><LogOut size={18}/> {t.leaveGroup}</button>
                               )}
                         </div>
                       )}
@@ -627,20 +627,20 @@ const AppContent: React.FC = () => {
                       {settingsTab === 'members' && (
                         <div className="space-y-8 animate-slide-up">
                            <div className="space-y-3">
-                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Mời thành viên</label>
+                              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.inviteMembers}</label>
                               <div className="flex gap-2">
                                   <div className="relative flex-1">
                                       <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
                                       <input type="text" value={memberSearchQuery} onChange={(e) => setMemberSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearchUsers()} placeholder="Email, ID..." className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-medium outline-none transition-all shadow-sm"/>
                                   </div>
-                                  <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-5 rounded-2xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center min-w-[60px] shadow-lg shadow-indigo-200 transition-transform active:scale-95">{isSearching ? <Loader2 size={20} className="animate-spin"/> : "Tìm"}</button>
+                                  <button onClick={handleSearchUsers} disabled={isSearching || !memberSearchQuery} className="bg-indigo-600 text-white px-5 rounded-2xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center min-w-[60px] shadow-lg shadow-indigo-200 transition-transform active:scale-95">{isSearching ? <Loader2 size={20} className="animate-spin"/> : t.search}</button>
                               </div>
                               {foundUsers.length > 0 && <div className="bg-white rounded-2xl p-2 space-y-1 border border-slate-100 shadow-md animate-fade-in">{foundUsers.map(u => (<div key={u.uid} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors"><div className="flex items-center gap-3"><img src={u.avatar} className="w-10 h-10 rounded-full border border-white shadow-sm" alt=""/><div className="min-w-0"><p className="text-sm font-bold text-slate-800 truncate">{u.name}</p><p className="text-xs text-slate-400 truncate">{u.email}</p></div></div><button onClick={() => handleAddMember(u)} className="p-2 bg-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-200 transition-colors"><Plus size={16}/></button></div>))}</div>}
                            </div>
                            
                            <div className="space-y-4">
                               <div className="flex justify-between items-center px-1">
-                                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Danh sách ({activeGroup.members?.length || 0})</label>
+                                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.memberList} ({activeGroup.members?.length || 0})</label>
                               </div>
                               <div className="space-y-3">
                                   {activeGroup.members?.map((member) => (
@@ -655,15 +655,15 @@ const AppContent: React.FC = () => {
                                                       <div className="flex items-center gap-2">
                                                           <p className="text-sm font-bold text-slate-800">{member.name}</p>
                                                       </div>
-                                                      <p className="text-xs text-indigo-500 font-bold bg-indigo-50 inline-block px-2 py-0.5 rounded-md mt-1">{member.customTitle || 'Thành viên'}</p>
+                                                      <p className="text-xs text-indigo-500 font-bold bg-indigo-50 inline-block px-2 py-0.5 rounded-md mt-1">{member.customTitle || t.member}</p>
                                                   </div>
                                               </div>
                                               {/* Only Leader can edit/remove others. Users can edit themselves? Maybe not in this version to keep simple. */}
                                               {activeGroup.leaderId === currentUserId && member.id !== currentUserId && (
                                                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                      <button onClick={() => handlePromoteMember(member.id)} className="p-2 text-amber-500 hover:text-amber-700 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors" title="Chuyển quyền trưởng nhóm"><Crown size={16}/></button>
-                                                      <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-xl hover:bg-indigo-50 transition-colors" title="Chỉnh sửa vai trò"><Edit2 size={16}/></button>
-                                                      <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 rounded-xl hover:bg-red-50 transition-colors" title="Xóa khỏi nhóm"><UserMinus size={16}/></button>
+                                                      <button onClick={() => handlePromoteMember(member.id)} className="p-2 text-amber-500 hover:text-amber-700 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors" title={t.leader}><Crown size={16}/></button>
+                                                      <button onClick={() => startEditingMember(member)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-xl hover:bg-indigo-50 transition-colors" title={t.edit}><Edit2 size={16}/></button>
+                                                      <button onClick={() => handleRemoveMember(member.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 rounded-xl hover:bg-red-50 transition-colors" title={t.delete}><UserMinus size={16}/></button>
                                                   </div>
                                               )}
                                           </div>
@@ -672,17 +672,17 @@ const AppContent: React.FC = () => {
                                               <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-50 animate-fade-in bg-slate-50/50 -mx-4 -mb-4 p-4 rounded-b-2xl">
                                                   <div className="grid grid-cols-2 gap-3">
                                                       <div className="space-y-1">
-                                                          <label className="text-[10px] font-bold text-slate-400 uppercase">Chức danh</label>
+                                                          <label className="text-[10px] font-bold text-slate-400 uppercase">{t.roleTitle}</label>
                                                           <input value={editMemberTitle} onChange={(e) => setEditMemberTitle(e.target.value)} placeholder="VD: Designer" className="w-full p-2.5 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl text-sm font-medium outline-none transition-all"/>
                                                       </div>
                                                       <div className="space-y-1">
-                                                          <label className="text-[10px] font-bold text-slate-400 uppercase">Ghi chú</label>
+                                                          <label className="text-[10px] font-bold text-slate-400 uppercase">{t.internalNote}</label>
                                                           <input value={editMemberNote} onChange={(e) => setEditMemberNote(e.target.value)} placeholder="Ghi chú nội bộ" className="w-full p-2.5 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl text-sm font-medium outline-none transition-all"/>
                                                       </div>
                                                   </div>
                                                   <div className="flex gap-3 justify-end mt-1">
-                                                      <button onClick={() => setEditingMemberId(null)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">Hủy</button>
-                                                      <button onClick={() => handleUpdateMemberInfo(member.id)} className="px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all">Lưu thay đổi</button>
+                                                      <button onClick={() => setEditingMemberId(null)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors">{t.cancel}</button>
+                                                      <button onClick={() => handleUpdateMemberInfo(member.id)} className="px-4 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all">{t.saveChanges}</button>
                                                   </div>
                                               </div>
                                           )}
@@ -696,7 +696,7 @@ const AppContent: React.FC = () => {
                       {settingsTab === 'personalize' && (
                         <div className="space-y-6 animate-slide-up">
                             <div className="p-6 bg-gradient-to-br from-indigo-50 to-white rounded-2xl border border-indigo-100 text-indigo-800 text-sm font-medium leading-relaxed shadow-sm">
-                                <p>🎨 Thay đổi hình nền header giúp không gian làm việc của bạn sinh động hơn. Cài đặt này chỉ áp dụng cho tài khoản của bạn.</p>
+                                <p>🎨 {t.themeHint}</p>
                             </div>
                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[ { val: '', bg: 'bg-slate-100 border-2 border-dashed border-slate-300' }, { val: 'linear-gradient(to right, #ec4899, #8b5cf6)', bg: 'bg-gradient-to-r from-pink-500 to-violet-500' }, { val: 'linear-gradient(to right, #3b82f6, #06b6d4)', bg: 'bg-gradient-to-r from-blue-500 to-cyan-500' }, { val: '#1e293b', bg: 'bg-slate-800' } ].map((c, i) => (
@@ -706,7 +706,7 @@ const AppContent: React.FC = () => {
                                 ))}
                             </div>
                             <button onClick={() => personalBgInputRef.current?.click()} className="w-full py-4 rounded-2xl border-2 border-dashed border-slate-200 font-bold text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 group">
-                                <ImageIcon size={20} className="group-hover:scale-110 transition-transform"/> Tải ảnh lên từ thiết bị
+                                <ImageIcon size={20} className="group-hover:scale-110 transition-transform"/> {t.uploadDevice}
                             </button>
                             <input type="file" ref={personalBgInputRef} className="hidden" accept="image/*" onChange={handlePersonalBgUpload} />
                         </div>

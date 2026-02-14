@@ -205,7 +205,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     csvContent += `Comparison vs Prev,${diff}%\n\n`;
     csvContent += `Self Evaluation,"${reflection.evaluation ? reflection.evaluation.replace(/"/g, '""') : 'N/A'}"\n`;
     csvContent += `Needs Improvement,"${reflection.improvement ? reflection.improvement.replace(/"/g, '""') : 'N/A'}"\n\n`;
-    csvContent += `${t.dateTime},${t.taskContent},${t.status},${t.progress},${t.subtasks}\n`;
+    csvContent += `${t.dateTime},${t.taskContent},${t.status},${t.progress},${t.subtasksHeader}\n`;
     data.forEach(task => {
         const d = new Date(task.createdAt);
         const subtasksStr = task.subtasks?.map(s => `[${s.completed ? 'x' : ' '}] ${s.text}`).join('; ') || '';
@@ -336,7 +336,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
                     >
                         <Users size={14} />
-                        Nhóm
+                        {t.groupView}
                     </button>
                 </div>
             )}
@@ -397,11 +397,11 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                         
                         <div className="flex flex-wrap gap-4">
                              <div className="flex-1 bg-white/10 p-5 rounded-2xl backdrop-blur-lg border border-white/20 group-hover:bg-white/20 transition-all duration-500">
-                                 <p className="text-[10px] uppercase font-bold tracking-widest mb-2 text-white/60">Productivity Score</p>
+                                 <p className="text-[10px] uppercase font-bold tracking-widest mb-2 text-white/60">{t.productivityScore}</p>
                                  <p className="text-5xl font-black tracking-tighter">{chartData.currentScore}%</p>
                              </div>
                              <div className="flex-1 bg-white/10 p-5 rounded-2xl backdrop-blur-lg border border-white/20 group-hover:bg-white/20 transition-all duration-500 delay-75">
-                                 <p className="text-[10px] uppercase font-bold tracking-widest mb-2 text-white/60">Tasks Completed</p>
+                                 <p className="text-[10px] uppercase font-bold tracking-widest mb-2 text-white/60">{t.tasksCompleted}</p>
                                  <p className="text-5xl font-black tracking-tighter">{chartData.currentCount}</p>
                              </div>
                         </div>
@@ -527,9 +527,9 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                             })}
                         </svg>
                         <div className="absolute inset-x-0 bottom-0 flex justify-between text-[10px] text-slate-300 font-bold pt-4 border-t border-slate-50">
-                             <span>Start</span>
-                             <span>Middle</span>
-                             <span>End</span>
+                             <span>{t.start}</span>
+                             <span>{t.middle}</span>
+                             <span>{t.end}</span>
                         </div>
                     </div>
 
@@ -550,7 +550,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     </h3>
                     <div className="flex-1 space-y-6">
                         <div className="group">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block group-focus-within:text-orange-500 transition-colors">{t.selfEval} (Required)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block group-focus-within:text-orange-500 transition-colors">{t.selfEval} ({t.required})</label>
                             <textarea 
                                 className="w-full h-32 p-4 bg-slate-50 hover:bg-white border-none ring-1 ring-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-200 focus:bg-white resize-none placeholder:text-slate-400 transition-all shadow-inner"
                                 placeholder={t.writeReflection}
@@ -559,7 +559,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                             />
                         </div>
                         <div className="group">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block group-focus-within:text-blue-500 transition-colors">{t.improve} (Required)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block group-focus-within:text-blue-500 transition-colors">{t.improve} ({t.required})</label>
                             <textarea 
                                 className="w-full h-32 p-4 bg-slate-50 hover:bg-white border-none ring-1 ring-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white resize-none placeholder:text-slate-400 transition-all shadow-inner"
                                 placeholder={t.writeImprovement}

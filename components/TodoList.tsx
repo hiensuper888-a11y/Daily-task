@@ -20,10 +20,11 @@ interface TodoListProps {
 }
 
 const PriorityBadge = React.memo(({ priority }: { priority: Priority }) => {
+    const { t } = useLanguage();
     const configs = {
-      high: { color: 'bg-rose-100 text-rose-700', label: 'Cao' },
-      medium: { color: 'bg-amber-100 text-amber-700', label: 'TB' },
-      low: { color: 'bg-emerald-100 text-emerald-700', label: 'Thấp' }
+      high: { color: 'bg-rose-100 text-rose-700', label: t.high },
+      medium: { color: 'bg-amber-100 text-amber-700', label: t.medium },
+      low: { color: 'bg-emerald-100 text-emerald-700', label: t.low }
     };
     const config = configs[priority] || configs.medium;
     return (
@@ -56,6 +57,8 @@ const TaskItem = React.memo(({
   onProgressChange: (id: number, progress: number) => void
 }) => {
     
+    const { t } = useLanguage();
+
     const formatDeadline = (isoString: string) => {
         const target = new Date(isoString);
         if (isNaN(target.getTime())) return null;
@@ -70,11 +73,11 @@ const TaskItem = React.memo(({
         let icon = <CalendarClock size={12} />;
 
         if (isOverdue) {
-            text = 'Quá hạn';
+            text = t.overdue;
             colorClass = 'text-rose-600 bg-rose-50 font-bold animate-pulse';
             icon = <AlertCircle size={12} />;
         } else if (isSoon) {
-            text = `${Math.ceil(diffHrs)}h nữa`;
+            text = `${Math.ceil(diffHrs)}${t.hours}`;
             colorClass = 'text-amber-600 bg-amber-50 font-bold animate-pulse';
             icon = <Timer size={12} />;
         }
@@ -314,7 +317,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const addTask = () => {
     if (inputValue.trim() === '') return;
-    if (activeGroup && !isLeader) { alert("Chỉ trưởng nhóm mới có thể tạo nhiệm vụ."); return; }
+    if (activeGroup && !isLeader) { alert(t.leaderOnly); return; }
     
     const taskDate = new Date(viewDate);
     if (isToday(viewDate)) {
@@ -423,11 +426,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   
   const deleteTask = useCallback((id: number, e?: React.MouseEvent) => { 
       if (e) e.stopPropagation(); 
-      if (confirm("Xóa công việc này vĩnh viễn?")) { 
+      if (confirm(t.deleteTaskConfirm)) { 
           setTasks(prev => prev.filter(t => t.id !== id)); 
           if (editingTask?.id === id) setEditingTask(null); 
       } 
-  }, [editingTask, setTasks]);
+  }, [editingTask, setTasks, t]);
 
   const handleEditClick = useCallback((task: Task) => setEditingTask(task), []);
 
@@ -533,8 +536,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
   const sortOptionsConfig: Record<SortOption, { label: string, icon: any }> = {
       priority: { label: t.sortPriority || 'Ưu tiên', icon: ArrowUpDown },
-      date_new: { label: 'Mới nhất', icon: ArrowDownWideNarrow },
-      date_old: { label: 'Cũ nhất', icon: ArrowUpWideNarrow },
+      date_new: { label: t.newest, icon: ArrowDownWideNarrow },
+      date_old: { label: t.oldest, icon: ArrowUpWideNarrow },
       deadline: { label: t.deadline, icon: Clock },
   };
 
@@ -553,8 +556,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         <Edit3 size={24} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold text-slate-800 tracking-tight leading-none">Chi tiết</h3>
-                        <p className="text-slate-400 text-sm font-medium mt-1">Chỉnh sửa công việc</p>
+                        <h3 className="text-xl font-bold text-slate-800 tracking-tight leading-none">{t.taskDetails}</h3>
+                        <p className="text-slate-400 text-sm font-medium mt-1">{t.editTask}</p>
                     </div>
                 </div>
                 <button onClick={() => setEditingTask(null)} className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-200 rounded-full transition-all"><X size={20}/></button>
@@ -563,10 +566,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 {/* Task Title Input */}
                 <div className="group relative">
                     <div className="flex justify-between items-center mb-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Nội dung công việc</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.taskContent}</label>
                         {isOnline && (
                              <button onClick={handleAiRefineText} disabled={isAiProcessing} className="text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
-                                 {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Wand2 size={12}/>} Tối ưu hóa (AI)
+                                 {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Wand2 size={12}/>} {t.optimizeAi}
                              </button>
                         )}
                     </div>
@@ -576,7 +579,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 {/* Task Progress in Modal */}
                 <div className="group">
                     <div className="flex justify-between items-center mb-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Tiến độ</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.progress}</label>
                         <span className="text-sm font-bold text-indigo-600">{editingTask.progress || 0}%</span>
                     </div>
                     <input 
@@ -592,7 +595,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                  {/* Group Assignment Section in Edit Modal */}
                  {activeGroup && (
                     <div className="space-y-3">
-                         <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Users size={16}/> Giao công việc</label>
+                         <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Users size={16}/> {t.assignTask}</label>
                          <div className="flex flex-wrap gap-2">
                             {activeGroup.members?.map(member => (
                                 <button
@@ -612,8 +615,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                  {/* ATTACHMENTS SECTION IN EDIT MODAL */}
                  <div className="space-y-3">
                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Paperclip size={16}/> Tài liệu đính kèm</label>
-                        <button onClick={() => editFileInputRef.current?.click()} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><PlusCircle size={12}/> Thêm</button>
+                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Paperclip size={16}/> {t.attachments}</label>
+                        <button onClick={() => editFileInputRef.current?.click()} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><PlusCircle size={12}/> {t.add}</button>
                         <input type="file" multiple ref={editFileInputRef} className="hidden" onChange={(e) => handleFileUpload(e, true)} />
                      </div>
                      
@@ -639,7 +642,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                          {(!editingTask.attachments || editingTask.attachments.length === 0) && (
                              <div onClick={() => editFileInputRef.current?.click()} className="col-span-full py-4 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 cursor-pointer hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/50 transition-all">
                                  <Paperclip size={24} className="opacity-50"/>
-                                 <span className="text-xs font-bold">Chưa có tài liệu</span>
+                                 <span className="text-xs font-bold">{t.noAttachments}</span>
                              </div>
                          )}
                      </div>
@@ -648,11 +651,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                  {/* Subtasks Section */}
                  <div className="space-y-4">
                     <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><ListChecks size={16}/> Các bước thực hiện</label>
+                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><ListChecks size={16}/> {t.subtasksHeader}</label>
                          <div className="flex items-center gap-2">
                              {isOnline && (
                                 <button onClick={handleAiGenerateSubtasks} disabled={isAiProcessing || !editingTask.text} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
-                                    {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>} Tự động chia nhỏ (AI)
+                                    {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>} {t.breakdownAi}
                                 </button>
                              )}
                              <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{editingTask.subtasks?.filter(s => s.completed).length || 0}/{editingTask.subtasks?.length || 0}</div>
@@ -669,7 +672,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             </div>
                         ))}
                          <div className="flex gap-2 mt-2">
-                            <input type="text" value={newSubtaskText} onChange={(e) => setNewSubtaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()} placeholder="Thêm bước nhỏ..." className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-100 outline-none transition-all shadow-sm"/>
+                            <input type="text" value={newSubtaskText} onChange={(e) => setNewSubtaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubtask()} placeholder={t.addSubtaskPlaceholder} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-100 outline-none transition-all shadow-sm"/>
                             <button onClick={addSubtask} disabled={!newSubtaskText.trim()} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors shadow-lg shadow-slate-200"><PlusCircle size={20}/></button>
                         </div>
                      </div>
@@ -677,7 +680,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             </div>
             <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-8 border-t border-slate-100 rounded-b-[2.5rem] flex gap-4">
               <button onClick={(e) => deleteTask(editingTask.id, e)} className="p-4 rounded-xl text-rose-500 font-bold bg-rose-50 hover:bg-rose-100 transition-all"><Trash2 size={24}/></button>
-              <button onClick={updateTask} className="flex-1 py-4 rounded-xl text-white font-bold text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce">Lưu thay đổi</button>
+              <button onClick={updateTask} className="flex-1 py-4 rounded-xl text-white font-bold text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce">{t.saveChanges}</button>
             </div>
           </div>
         </div>
@@ -713,7 +716,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 );
               })}
             </div>
-             <button onClick={() => setShowCalendar(false)} className="w-full py-4 text-slate-500 font-bold text-xs uppercase tracking-widest hover:text-slate-900 hover:bg-slate-50 rounded-2xl transition-colors">Đóng</button>
+             <button onClick={() => setShowCalendar(false)} className="w-full py-4 text-slate-500 font-bold text-xs uppercase tracking-widest hover:text-slate-900 hover:bg-slate-50 rounded-2xl transition-colors">{t.close}</button>
           </div>
         </div>
       )}
@@ -729,7 +732,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                      <span className={`text-xs font-bold uppercase tracking-wider ${currentMember?.headerBackground ? 'text-white/80' : 'text-slate-500'}`}>{greeting.text}, {userProfile.name}</span>
                  </div>
                  <h2 className={`text-4xl md:text-5xl font-black tracking-tighter leading-none ${currentMember?.headerBackground ? 'text-white drop-shadow-sm' : 'text-slate-900'}`}>
-                    {filterStatus === 'archived' ? 'Lưu trữ' : (activeGroup ? activeGroup.name : (isToday(viewDate) ? "Hôm nay" : "Đã chọn"))}
+                    {filterStatus === 'archived' ? t.archived : (activeGroup ? activeGroup.name : (isToday(viewDate) ? t.today : t.custom))}
                  </h2>
                  {!activeGroup && !isToday(viewDate) && <p className={`text-lg font-bold mt-1 ${currentMember?.headerBackground ? 'text-white/80' : 'text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</p>}
              </div>
@@ -804,7 +807,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           </div>
           
           {searchQuery && (
-              <input type="text" autoFocus placeholder="Nhập từ khóa..." value={searchQuery === ' ' ? '' : searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full p-4 bg-white/80 backdrop-blur-xl rounded-2xl text-sm font-medium outline-none border border-white focus:ring-2 focus:ring-indigo-500 animate-scale-in shadow-lg shadow-indigo-100/50"/>
+              <input type="text" autoFocus placeholder={t.search} value={searchQuery === ' ' ? '' : searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full p-4 bg-white/80 backdrop-blur-xl rounded-2xl text-sm font-medium outline-none border border-white focus:ring-2 focus:ring-indigo-500 animate-scale-in shadow-lg shadow-indigo-100/50"/>
           )}
         </div>
       </div>
@@ -814,7 +817,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-300 animate-scale-in">
             <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner"><Archive size={48} className="text-slate-300 opacity-50" /></div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{filterStatus === 'archived' ? 'Trống' : 'Thảnh thơi!'}</p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{filterStatus === 'archived' ? t.emptyArchived : t.emptyChill}</p>
           </div>
         ) : (
           filteredTasks.map((task, index) => (
@@ -848,7 +851,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   {showInputDetails && (
                       <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-xl border border-white/50 animate-slide-up origin-bottom">
                           <div className="flex flex-col gap-3">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chi tiết nhiệm vụ</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
                             
                             {/* Attachments Preview in Capsule */}
                             {newAttachments.length > 0 && (
@@ -876,13 +879,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             {/* Attachment Button & Assignment */}
                             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shrink-0">
-                                    <Paperclip size={14}/> Đính kèm
+                                    <Paperclip size={14}/> {t.attachLabel}
                                 </button>
                                 <input type="file" multiple ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e)} />
 
                                 {activeGroup && (
                                     <>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mx-1">Giao:</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mx-1">{t.assignLabel}</span>
                                         {activeGroup.members?.map(member => (
                                             <button
                                                 key={member.id}
@@ -904,7 +907,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     value={inputValue} 
                     onChange={e => setInputValue(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && addTask()} 
-                    placeholder="Nhiệm vụ mới..." 
+                    placeholder={t.newTaskPlaceholder} 
                     className="w-full bg-transparent border-none px-2 py-2 text-[16px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none" 
                   />
               </div>
@@ -924,12 +927,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         <div onClick={() => setCompletingTaskId(null)} className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
           <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white/60">
              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-sm ring-4 ring-emerald-50"><CheckSquare size={32}/></div>
-             <h3 className="text-xl font-bold text-slate-800 mb-2 text-center tracking-tight">Hoàn thành công việc</h3>
-             <p className="text-sm font-medium text-slate-500 mb-6 text-center">Thêm ghi chú cho các thành viên khác</p>
-             <textarea value={completionNote} onChange={(e) => setCompletionNote(e.target.value)} placeholder="Nhập ghi chú..." className="w-full p-4 bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-medium outline-none resize-none h-32 mb-6 transition-all shadow-inner" autoFocus />
+             <h3 className="text-xl font-bold text-slate-800 mb-2 text-center tracking-tight">{t.completeTaskHeader}</h3>
+             <p className="text-sm font-medium text-slate-500 mb-6 text-center">{t.completionNotePrompt}</p>
+             <textarea value={completionNote} onChange={(e) => setCompletionNote(e.target.value)} placeholder={t.enterNotePlaceholder} className="w-full p-4 bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-medium outline-none resize-none h-32 mb-6 transition-all shadow-inner" autoFocus />
              <div className="flex gap-4">
-                 <button onClick={() => setCompletingTaskId(null)} className="flex-1 py-3 text-slate-500 font-bold text-xs uppercase hover:bg-slate-100 rounded-xl transition-colors">Bỏ qua</button>
-                 <button onClick={() => { if (completingTaskId !== null) { toggleTask(completingTaskId, true, completionNote); setCompletingTaskId(null); }}} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all btn-bounce">Xác nhận</button>
+                 <button onClick={() => setCompletingTaskId(null)} className="flex-1 py-3 text-slate-500 font-bold text-xs uppercase hover:bg-slate-100 rounded-xl transition-colors">{t.skip}</button>
+                 <button onClick={() => { if (completingTaskId !== null) { toggleTask(completingTaskId, true, completionNote); setCompletingTaskId(null); }}} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all btn-bounce">{t.confirm}</button>
              </div>
           </div>
         </div>
