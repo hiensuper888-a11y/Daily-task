@@ -322,6 +322,15 @@ const AppContent: React.FC = () => {
       );
   }
 
+  const handleGroupSelect = (groupId: string | null) => {
+      setActiveGroupId(groupId);
+      // If we're on the reports tab, stay there to show that group's report.
+      // Otherwise, default to tasks for a smooth workflow.
+      if (activeTab !== 'reports') {
+          setActiveTab('tasks');
+      }
+  };
+
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-transparent text-slate-900 overflow-hidden relative selection:bg-indigo-100 selection:text-indigo-900">
       
@@ -363,55 +372,70 @@ const AppContent: React.FC = () => {
                </div>
           </div>
 
-          {/* Horizontal Group Selector */}
-          <div className="flex items-center gap-3 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 snap-x">
-              {/* Personal */}
+          {/* Improved Project/Group Selector (Pill Style) */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 snap-x">
+              {/* Personal Workspace Pill */}
               <button 
-                  onClick={() => { setActiveTab('tasks'); setActiveGroupId(null); }}
-                  className="flex flex-col items-center gap-1.5 min-w-[60px] group snap-start transition-transform active:scale-95"
+                  onClick={() => handleGroupSelect(null)}
+                  className={`flex items-center gap-2 rounded-full border transition-all duration-500 ease-out snap-start shrink-0 group ${
+                      activeGroupId === null 
+                      ? 'bg-slate-900 text-white pl-1.5 pr-4 py-1.5 border-transparent shadow-lg shadow-slate-900/20' 
+                      : 'bg-white/50 text-slate-500 pl-1.5 pr-1.5 py-1.5 border-white/50 hover:bg-white hover:text-slate-800'
+                  }`}
               >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-300 p-0.5 ${activeGroupId === null && activeTab === 'tasks' ? 'border-indigo-500 scale-105 shadow-md shadow-indigo-200' : 'border-transparent opacity-80 hover:opacity-100'}`}>
-                      <div className={`w-full h-full rounded-xl flex items-center justify-center transition-all ${activeGroupId === null && activeTab === 'tasks' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
-                          <UserCircle2 size={24}/>
-                      </div>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${activeGroupId === null ? 'bg-white/20' : 'bg-slate-200 group-hover:bg-slate-300'}`}>
+                      <UserCircle2 size={20} />
                   </div>
-                  <span className={`text-[10px] font-bold truncate max-w-[70px] ${activeGroupId === null && activeTab === 'tasks' ? 'text-indigo-600' : 'text-slate-500'}`}>{t.personal}</span>
-              </button>
-
-              {/* Groups */}
-              {myGroups.map(group => (
-                  <button 
-                    key={group.id} 
-                    onClick={() => { setActiveTab('tasks'); setActiveGroupId(group.id); }}
-                    className="flex flex-col items-center gap-1.5 min-w-[60px] group snap-start transition-transform active:scale-95"
-                  >
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-300 p-0.5 ${activeGroupId === group.id ? 'border-indigo-500 scale-105 shadow-md shadow-indigo-200' : 'border-transparent opacity-80 hover:opacity-100'}`}>
-                           {group.avatar ? (
-                               <img src={group.avatar} className="w-full h-full rounded-xl object-cover bg-white" alt="" />
-                           ) : (
-                               <div className={`w-full h-full rounded-xl flex items-center justify-center text-sm font-black ${activeGroupId === group.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-100'}`}>
-                                   {group.name.substring(0,2).toUpperCase()}
-                               </div>
-                           )}
+                  {activeGroupId === null ? (
+                      <div className="flex flex-col items-start leading-none min-w-[60px] animate-fade-in">
+                          <span className="text-[10px] opacity-70 font-medium uppercase tracking-wide">{t.workspace}</span>
+                          <span className="text-sm font-bold">{t.personal}</span>
                       </div>
-                      <span className={`text-[10px] font-bold truncate max-w-[70px] ${activeGroupId === group.id ? 'text-indigo-600' : 'text-slate-500'}`}>{group.name}</span>
-                  </button>
-              ))}
+                  ) : null}
+              </button>
 
-              {/* Add Group Actions */}
-              <div className="h-8 w-[1px] bg-slate-300/30 mx-1 shrink-0"></div>
-              <button onClick={handleOpenCreateGroup} className="flex flex-col items-center gap-1.5 min-w-[50px] snap-start opacity-70 hover:opacity-100 transition-opacity">
-                   <div className="w-12 h-12 rounded-xl bg-white/40 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all backdrop-blur-sm">
+              {/* Divider */}
+              <div className="w-px h-8 bg-slate-300/30 mx-1 shrink-0"></div>
+
+              {/* Group Pills */}
+              {myGroups.map(group => {
+                  const isActive = activeGroupId === group.id;
+                  return (
+                    <button 
+                        key={group.id} 
+                        onClick={() => handleGroupSelect(group.id)}
+                        className={`flex items-center gap-2 rounded-full border transition-all duration-500 ease-out snap-start shrink-0 group ${
+                            isActive
+                            ? 'bg-indigo-600 text-white pl-1.5 pr-4 py-1.5 border-transparent shadow-lg shadow-indigo-600/30' 
+                            : 'bg-white/50 text-slate-500 pl-1.5 pr-1.5 py-1.5 border-white/50 hover:bg-white hover:text-slate-800'
+                        }`}
+                    >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center overflow-hidden border-2 transition-colors ${isActive ? 'border-white/30 bg-white/20' : 'border-transparent bg-indigo-50 group-hover:bg-indigo-100 text-indigo-600'}`}>
+                            {group.avatar ? (
+                                <img src={group.avatar} className="w-full h-full object-cover" alt="" />
+                            ) : (
+                                <span className="text-xs font-black">{group.name.substring(0,2).toUpperCase()}</span>
+                            )}
+                        </div>
+                        {isActive && (
+                            <div className="flex flex-col items-start leading-none min-w-[60px] animate-fade-in">
+                                <span className="text-[10px] opacity-70 font-medium uppercase tracking-wide">{t.groupView}</span>
+                                <span className="text-sm font-bold truncate max-w-[120px]">{group.name}</span>
+                            </div>
+                        )}
+                    </button>
+                  );
+              })}
+
+              {/* Action Buttons (Compact) */}
+              <div className="flex gap-2 ml-1">
+                  <button onClick={handleOpenCreateGroup} className="w-12 h-12 rounded-full bg-white/40 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-white transition-all snap-start shrink-0" title={t.createGroup}>
                        <Plus size={20}/>
-                   </div>
-                   <span className="text-[9px] font-bold text-slate-400">{t.create}</span>
-              </button>
-              <button onClick={() => setShowJoinModal(true)} className="flex flex-col items-center gap-1.5 min-w-[50px] snap-start opacity-70 hover:opacity-100 transition-opacity">
-                   <div className="w-12 h-12 rounded-xl bg-white/40 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all backdrop-blur-sm">
+                  </button>
+                  <button onClick={() => setShowJoinModal(true)} className="w-12 h-12 rounded-full bg-white/40 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-white transition-all snap-start shrink-0" title={t.joinGroup}>
                        <ScanLine size={18}/>
-                   </div>
-                   <span className="text-[9px] font-bold text-slate-400">{t.joinGroup}</span>
-              </button>
+                  </button>
+              </div>
           </div>
       </div>
 
