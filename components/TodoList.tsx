@@ -119,13 +119,20 @@ const TaskItem = React.memo(({
     return (
         <div 
             draggable={isDraggable}
-            onDragStart={(e) => onDragStart(e, task.id)}
+            onDragStart={(e) => {
+                // Add a visual class to the dragged element
+                e.currentTarget.classList.add('opacity-50', 'scale-95');
+                onDragStart(e, task.id);
+            }}
+            onDragEnd={(e) => {
+                e.currentTarget.classList.remove('opacity-50', 'scale-95');
+            }}
             onDragOver={onDragOver}
             onDrop={(e) => onDrop(e, task.id)}
             onClick={() => onEdit(task)}
-            className={`group relative pl-4 pr-4 py-4 rounded-2xl transition-all duration-300 cursor-pointer mb-3 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-lg hover:-translate-y-0.5 overflow-hidden ${
+            className={`group relative pl-4 pr-4 py-4 rounded-2xl transition-all duration-300 ease-out cursor-pointer mb-3 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-xl hover:-translate-y-1 overflow-hidden ${
                 task.completed ? 'opacity-60 grayscale-[0.5] bg-slate-50/50' : pStyles.bg
-            } ${isDraggable ? 'active:cursor-grabbing cursor-grab' : ''}`}
+            } ${isDraggable ? 'active:cursor-grabbing cursor-grab' : ''} transform-gpu`}
             style={{ animationDelay: `${Math.min(index * 50, 400)}ms`, animationFillMode: 'both' }}
         >
              {/* Priority Indicator Strip */}
@@ -134,7 +141,7 @@ const TaskItem = React.memo(({
              <div className="flex items-start gap-3.5">
                 {/* Drag Handle or Checkbox */}
                 {isDraggable && (
-                    <div className="mt-1 text-slate-300 group-hover:text-slate-500 transition-colors cursor-grab active:cursor-grabbing">
+                    <div className="mt-1 text-slate-300 group-hover:text-slate-500 transition-colors cursor-grab active:cursor-grabbing hover:scale-110">
                         <GripVertical size={20} />
                     </div>
                 )}
@@ -144,7 +151,7 @@ const TaskItem = React.memo(({
                   className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-[2px] shadow-sm relative overflow-hidden shrink-0 ${
                     task.completed 
                       ? 'bg-gradient-to-br from-indigo-500 to-violet-600 border-transparent text-white scale-110 shadow-glow' 
-                      : `bg-white border-slate-300 text-transparent hover:border-indigo-400 group-hover:scale-110`
+                      : `bg-white border-slate-300 text-transparent hover:border-indigo-400 group-hover:scale-110 group-hover:border-indigo-400`
                   }`}
                 >
                     <Check size={14} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
@@ -154,24 +161,24 @@ const TaskItem = React.memo(({
                     {/* Top Meta Row: Priority & Deadline */}
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         {!task.completed && (
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider border border-transparent ${pStyles.badge}`}>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider border border-transparent shadow-sm ${pStyles.badge}`}>
                                 <Flag size={8} fill="currentColor" /> {task.priority || 'MEDIUM'}
                             </span>
                         )}
                         {deadlineInfo && (
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] border ${deadlineInfo.colorClass}`}>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] border shadow-sm ${deadlineInfo.colorClass}`}>
                                 {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                         )}
                         {/* Rating Display */}
                         {task.leaderRating && task.leaderRating > 0 && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] bg-yellow-50 text-yellow-600 border border-yellow-200">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] bg-yellow-50 text-yellow-600 border border-yellow-200 shadow-sm">
                                 <Star size={8} fill="currentColor"/> {task.leaderRating}
                             </span>
                         )}
                     </div>
                     
-                    <p className={`text-[15px] font-semibold leading-snug transition-all line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-400' : 'text-slate-800'}`}>{task.text}</p>
+                    <p className={`text-[15px] font-semibold leading-snug transition-all duration-300 line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-400' : 'text-slate-800'}`}>{task.text}</p>
                     
                     {/* Bottom Metadata Row */}
                     {(subtasksCount > 0 || attachmentsCount > 0 || assignedMember || task.leaderFeedback) && (
@@ -194,7 +201,7 @@ const TaskItem = React.memo(({
              
              {/* Delete Action - Improved Hit Area */}
              <button 
-                className="absolute top-2 right-2 p-2 text-slate-300 hover:text-rose-500 hover:bg-white/80 rounded-xl transition-all z-20 opacity-0 group-hover:opacity-100"
+                className="absolute top-2 right-2 p-2 text-slate-300 hover:text-rose-500 hover:bg-white/80 rounded-xl transition-all duration-200 z-20 opacity-0 group-hover:opacity-100 hover:scale-110"
                 onClick={(e) => {
                     e.stopPropagation(); 
                     onDelete(task.id, e);

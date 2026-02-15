@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users, Trophy, Medal, Crown, Table2, CheckCircle2, Circle, Download } from 'lucide-react';
 import { Task, ReflectionMap, Group } from '../types';
-import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
+import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 // @ts-ignore
 import PptxGenJS from 'pptxgenjs';
@@ -15,6 +15,10 @@ interface ReportsProps {
 
 export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   const [viewMode, setViewMode] = useState<ViewMode>(activeGroup ? 'group' : 'personal');
+  
+  // Logic to determine if user is leader of active group
+  const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+  const isLeader = activeGroup?.leaderId === currentUserId;
 
   useEffect(() => {
       if (activeGroup) {
@@ -357,214 +361,4 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     <button onClick={() => setViewMode('personal')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                         <User size={14} /> {t.personal}
                     </button>
-                    <button onClick={() => setViewMode('group')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-                        <Users size={14} /> {t.groupView}
-                    </button>
-                </div>
-            )}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar pb-28 md:pb-8">
-        <div className="max-w-6xl mx-auto w-full space-y-6">
-            
-            <div className="flex bg-white/70 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-white overflow-x-auto ring-1 ring-slate-100/50">
-            {(['day', 'week', 'month', 'year', 'custom'] as Period[]).map((p) => (
-                <button key={p} onClick={() => setPeriod(p)} className={`flex-1 min-w-[70px] py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${period === p ? (isGroupView ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-indigo-500 to-violet-600') + ' text-white shadow-md shadow-indigo-500/20' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
-                {t[p as keyof typeof t]}
-                </button>
-            ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in flex flex-col justify-between shadow-premium" style={{animationDelay: '0.1s'}}>
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <TrendingUp size={18} className={isGroupView ? "text-teal-500" : "text-indigo-500"}/>
-                                {t.comparison}
-                            </h3>
-                            <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wide">{t.vsPrev}</p>
-                        </div>
-                        <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest">
-                            <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span> {t.periodPrev}</div>
-                            <div className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full ${isGroupView ? 'bg-teal-500' : 'bg-indigo-500'}`}></span> {t.periodCurrent}</div>
-                        </div>
-                    </div>
-                    
-                    <div className="w-full h-56 relative group/chart">
-                        <svg viewBox="0 0 100 50" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                            <defs>
-                                <linearGradient id="gradientCurrent" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor={isGroupView ? "#2dd4bf" : "#818cf8"} stopOpacity="0.5" />
-                                    <stop offset="100%" stopColor={isGroupView ? "#2dd4bf" : "#818cf8"} stopOpacity="0" />
-                                </linearGradient>
-                                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                                </filter>
-                            </defs>
-                            <path d={generateAreaPath(chartData.prevPoints, 100, 50)} fill="#f1f5f9" opacity="0.5" />
-                            <path d={generateLinePath(chartData.prevPoints, 100, 50)} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
-                            <path d={generateAreaPath(chartData.currentPoints, 100, 50)} fill="url(#gradientCurrent)" className="animate-fade-in" style={{animationDuration: '1.5s'}} />
-                            <path key={`line-${period}-${isGroupView}-${activeGroup?.id}`} d={generateLinePath(chartData.currentPoints, 100, 50)} fill="none" stroke={isGroupView ? "#14b8a6" : "#6366f1"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-draw-path" filter="url(#glow)"/>
-                            
-                            {chartData.currentPoints.map((point, index) => {
-                                const x = index * (100 / (chartData.currentPoints.length - 1));
-                                const y = 50 - (point.value / 100) * 50;
-                                const isHovered = hoveredIndex === index;
-                                const isRightSide = index > 4;
-                                return (
-                                    <g key={index} onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)}>
-                                        <rect x={x - 8} y="0" width="16" height="50" fill="transparent" className="cursor-crosshair"/>
-                                        {isHovered && (
-                                            <>
-                                                <line x1={x} y1={y} x2={x} y2="50" stroke={isGroupView ? "#14b8a6" : "#6366f1"} strokeWidth="1" strokeDasharray="2,2" opacity="0.6"/>
-                                                <circle cx={x} cy={y} r="3" fill="white" stroke={isGroupView ? "#14b8a6" : "#6366f1"} strokeWidth="2" filter="url(#glow)"/>
-                                                <g transform={`translate(${isRightSide ? x - 35 : x - 10}, ${y - 15})`} className="drop-shadow-lg">
-                                                    <rect x="0" y="0" width="45" height="16" rx="4" fill="white" fillOpacity="0.95" stroke={isGroupView ? "#ccfbf1" : "#e0e7ff"} strokeWidth="0.5"/>
-                                                    <text x="22.5" y="7" textAnchor="middle" fontSize="3.5" fontWeight="bold" fill="#334155" fontFamily="Plus Jakarta Sans">{point.value}%</text>
-                                                    <text x="22.5" y="12" textAnchor="middle" fontSize="2.5" fontWeight="500" fill="#94a3b8" fontFamily="Plus Jakarta Sans">{point.date.getDate()}/{point.date.getMonth() + 1}</text>
-                                                </g>
-                                            </>
-                                        )}
-                                    </g>
-                                )
-                            })}
-                        </svg>
-                    </div>
-                </div>
-
-                {isGroupView && groupStats ? (
-                    <div className="glass-card rounded-[2.5rem] p-8 flex flex-col animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
-                        <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <Trophy size={18} className="text-amber-500"/>
-                            {t.leaderboard}
-                        </h3>
-                        <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-2 max-h-[350px]">
-                            {groupStats.memberStats.map((member, idx) => {
-                                const isTop = idx === 0 && member.totalTasks > 0;
-                                return (
-                                    <div key={member.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isTop ? 'bg-gradient-to-r from-amber-50 to-white border-amber-200 shadow-sm' : 'bg-white border-slate-100'}`}>
-                                        <div className="relative shrink-0">
-                                            <img src={member.avatar} className="w-10 h-10 rounded-xl bg-slate-100 object-cover" alt={member.name}/>
-                                            {isTop && <div className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white text-[10px]"><Crown size={10} fill="currentColor"/></div>}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <h4 className="text-sm font-bold text-slate-700 truncate">{member.name}</h4>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${member.completionRate >= 80 ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{member.completionRate}%</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                <div className={`h-full rounded-full ${isTop ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{width: `${member.completionRate}%`}}></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                ) : (
-                     <div className="glass-card rounded-[2.5rem] p-8 flex flex-col animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
-                        <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <PenSquare size={18} className="text-orange-500"/>
-                            {t.selfEval}
-                        </h3>
-                        <div className="flex-1 space-y-6">
-                            <textarea className="w-full h-32 p-4 bg-slate-50 border-none ring-1 ring-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-200 focus:bg-white resize-none transition-all" placeholder={t.writeReflection} value={(reflections[currentReflectionKey] || {}).evaluation || ''} onChange={(e) => handleReflectionChange('evaluation', e.target.value)} />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in shadow-premium" style={{animationDelay: '0.2s'}}>
-                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <Table2 size={18} className="text-indigo-500"/> {t.taskDetails}
-                    </h3>
-                    <div className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{chartData.filteredTasks.length} {t.items}</div>
-                 </div>
-                 
-                 <div className="overflow-x-auto">
-                     <table className="w-full text-left border-collapse">
-                         <thead>
-                             <tr className="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                 <th className="py-3 px-2">{t.dateTime}</th>
-                                 <th className="py-3 px-2">{t.taskContent}</th>
-                                 <th className="py-3 px-2">{t.status}</th>
-                                 {isGroupView && <th className="py-3 px-2">{t.assignedTo}</th>}
-                             </tr>
-                         </thead>
-                         <tbody className="text-sm font-medium text-slate-600">
-                             {chartData.filteredTasks.length === 0 ? (
-                                 <tr><td colSpan={4} className="py-8 text-center text-slate-400 italic">{t.noData}</td></tr>
-                             ) : (
-                                 chartData.filteredTasks.slice(0, 10).map(task => { 
-                                     const member = isGroupView ? activeGroup?.members.find(m => m.id === task.assignedTo) : null;
-                                     return (
-                                        <tr key={task.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
-                                            <td className="py-3 px-2 whitespace-nowrap text-xs text-slate-400">{new Date(task.createdAt).toLocaleDateString()}</td>
-                                            <td className="py-3 px-2 max-w-[200px] truncate">{task.text}</td>
-                                            <td className="py-3 px-2">
-                                                {task.completed 
-                                                    ? <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-[10px] font-bold"><CheckCircle2 size={10}/> {t.completed}</span>
-                                                    : <span className="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold"><Circle size={10}/> {t.active}</span>
-                                                }
-                                            </td>
-                                            {isGroupView && (
-                                                <td className="py-3 px-2">
-                                                    {member ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <img src={member.avatar} className="w-5 h-5 rounded-full bg-slate-200" alt=""/>
-                                                            <span className="text-xs truncate max-w-[80px]">{member.name}</span>
-                                                        </div>
-                                                    ) : <span className="text-xs text-slate-400 italic">Unassigned</span>}
-                                                </td>
-                                            )}
-                                        </tr>
-                                     )
-                                 })
-                             )}
-                         </tbody>
-                     </table>
-                     {chartData.filteredTasks.length > 10 && <div className="text-center text-xs text-slate-400 mt-4 italic">...and {chartData.filteredTasks.length - 10} more items (visible in export)</div>}
-                 </div>
-            </div>
-
-            <div className="glass-card rounded-[2.5rem] p-8 animate-fade-in shadow-premium" style={{animationDelay: '0.3s'}}>
-                <h3 className="text-base font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <Share2 size={18} className="text-emerald-500"/> {t.export}
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onClick={exportToExcel} className="flex flex-col items-center p-5 bg-white border border-slate-100 hover:bg-emerald-50 hover:border-emerald-200 rounded-[1.5rem] transition-all hover:-translate-y-1 hover:shadow-lg group">
-                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <FileSpreadsheet size={24} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 group-hover:text-emerald-700">Excel</span>
-                    </button>
-                    <button onClick={exportToWord} className="flex flex-col items-center p-5 bg-white border border-slate-100 hover:bg-blue-50 hover:border-blue-200 rounded-[1.5rem] transition-all hover:-translate-y-1 hover:shadow-lg group">
-                        <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <FileText size={24} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 group-hover:text-blue-700">Word</span>
-                    </button>
-                     <button onClick={exportToPowerPoint} className="flex flex-col items-center p-5 bg-white border border-slate-100 hover:bg-orange-50 hover:border-orange-200 rounded-[1.5rem] transition-all hover:-translate-y-1 hover:shadow-lg group">
-                        <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <Presentation size={24} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 group-hover:text-orange-700">PPTX</span>
-                    </button>
-                    <button onClick={exportToXML} className="flex flex-col items-center p-5 bg-white border border-slate-100 hover:bg-purple-50 hover:border-purple-200 rounded-[1.5rem] transition-all hover:-translate-y-1 hover:shadow-lg group">
-                        <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <FileCode size={24} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 group-hover:text-purple-700">XML</span>
-                    </button>
-                </div>
-            </div>
-            
-        </div>
-      </div>
-    </div>
-  );
-};
+                    <button onClick={() => setViewMode('group')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover
