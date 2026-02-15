@@ -361,4 +361,183 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                     <button onClick={() => setViewMode('personal')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'personal' ? 'bg-white text-indigo-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                         <User size={14} /> {t.personal}
                     </button>
-                    <button onClick={() => setViewMode('group')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover
+                    <button onClick={() => setViewMode('group')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'group' ? 'bg-white text-emerald-600 shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+                        <Users size={14} /> {t.groupView}
+                    </button>
+                </div>
+            )}
+        </div>
+
+        <div className="flex items-center gap-2 mt-8 overflow-x-auto pb-2 scrollbar-none mask-gradient-x relative z-10">
+             {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
+                <button 
+                    key={p} 
+                    onClick={() => setPeriod(p)} 
+                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${period === p ? 'bg-white text-slate-900 border-white shadow-lg' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
+                >
+                    {t[p]}
+                </button>
+            ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-32 custom-scrollbar space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{t.productivityScore}</span>
+                  <div className="text-4xl font-black text-indigo-600">{chartData.currentScore}%</div>
+                  <div className={`flex items-center text-[10px] font-bold mt-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {isPositive ? <TrendingUp size={12} className="mr-1"/> : <TrendingDown size={12} className="mr-1"/>}
+                      {Math.abs(diff)}% {t.vsPrev}
+                  </div>
+              </div>
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{t.totalTasks}</span>
+                  <div className="text-4xl font-black text-slate-800">{chartData.currentCount}</div>
+              </div>
+              
+              {isGroupView && groupStats?.topPerformer ? (
+                  <div className="col-span-2 bg-gradient-to-br from-amber-100 to-orange-50 p-5 rounded-2xl shadow-sm border border-amber-200 flex items-center gap-4 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-8 bg-white opacity-40 rounded-full blur-xl -translate-y-4 translate-x-4"></div>
+                      <div className="relative">
+                          <img src={groupStats.topPerformer.avatar} className="w-14 h-14 rounded-2xl shadow-md border-2 border-white bg-white object-cover" alt="" />
+                          <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-1 rounded-full shadow-sm"><Trophy size={12} fill="currentColor"/></div>
+                      </div>
+                      <div className="flex-1 relative z-10">
+                          <span className="text-amber-700 text-[10px] font-bold uppercase tracking-widest">{t.topPerformer}</span>
+                          <h3 className="text-lg font-black text-slate-800 leading-tight">{groupStats.topPerformer.name}</h3>
+                          <p className="text-xs font-bold text-amber-600 mt-0.5">{groupStats.topPerformer.score}% {t.completionRate}</p>
+                      </div>
+                  </div>
+              ) : (
+                  <div className="col-span-2 bg-gradient-to-br from-indigo-50 to-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-center">
+                      <span className="text-indigo-600 text-xs font-bold uppercase tracking-wider mb-1">{t.productivityTrend}</span>
+                      <p className="text-sm font-medium text-slate-600 leading-snug">
+                          {isPositive ? t.greatJob : t.keepGoing} {t.productivityScore} {isPositive ? "increased" : "changed"} by {Math.abs(diff)}% this {period}.
+                      </p>
+                  </div>
+              )}
+          </div>
+
+          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><ArrowUpRight size={20} className="text-indigo-500"/> {t.productivityTrend}</h3>
+              <div className="h-48 w-full relative flex items-end justify-between px-2">
+                  <svg className="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none">
+                      <defs>
+                          <linearGradient id="gradientArea" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={isGroupView ? "#10b981" : "#6366f1"} stopOpacity="0.2" />
+                              <stop offset="100%" stopColor={isGroupView ? "#10b981" : "#6366f1"} stopOpacity="0" />
+                          </linearGradient>
+                      </defs>
+                      <path d={generateAreaPath(chartData.currentPoints, 100, 100)} fill="url(#gradientArea)" vectorEffect="non-scaling-stroke" transform="scale(1, 0.8) translate(0, 20)" />
+                      <path d={generateLinePath(chartData.currentPoints, 100, 100)} fill="none" stroke={isGroupView ? "#10b981" : "#6366f1"} strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" className="animate-draw-path" transform="scale(1, 0.8) translate(0, 20)" />
+                  </svg>
+                  
+                  {chartData.currentPoints.map((p, i) => (
+                      <div 
+                        key={i} 
+                        className="relative group flex flex-col items-center justify-end h-full w-8"
+                        onMouseEnter={() => setHoveredIndex(i)}
+                        onMouseLeave={() => setHoveredIndex(null)}
+                      >
+                          <div 
+                            className={`w-3 h-3 rounded-full border-2 transition-all z-10 ${hoveredIndex === i ? (isGroupView ? 'bg-emerald-500 border-white scale-125' : 'bg-indigo-600 border-white scale-125') : (isGroupView ? 'bg-white border-emerald-500' : 'bg-white border-indigo-500')}`}
+                            style={{ marginBottom: `${p.value * 0.8}%` }}
+                          ></div>
+                          
+                          {/* Tooltip */}
+                          <div className={`absolute bottom-full mb-2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg whitespace-nowrap transition-all ${hoveredIndex === i ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+                              {p.value}% - {p.date.toLocaleDateString(language, { day: 'numeric', month: 'short' })}
+                          </div>
+                          
+                          <div className="h-full w-px bg-slate-100 absolute top-0 -z-10 group-hover:bg-slate-200 transition-colors"></div>
+                      </div>
+                  ))}
+              </div>
+          </div>
+
+          {/* Group: Leaderboard */}
+          {isGroupView && groupStats && (
+              <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-slate-800 px-2 flex items-center gap-2"><Medal size={20} className="text-amber-500"/> {t.leaderboard}</h3>
+                  <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                      {groupStats.memberStats.map((member, index) => (
+                          <div key={member.id} className="flex items-center p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors gap-4">
+                              <div className="font-black text-slate-300 w-6 text-center text-sm">{index + 1}</div>
+                              <img src={member.avatar} className="w-10 h-10 rounded-xl bg-slate-100 object-cover" alt="" />
+                              <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-bold text-slate-800 truncate">{member.name}</h4>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                      <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
+                                          <div className="h-full bg-emerald-500 rounded-full" style={{width: `${member.completionRate}%`}}></div>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-slate-400">{member.completionRate}%</span>
+                                  </div>
+                              </div>
+                              <div className="text-right">
+                                  <div className="text-sm font-black text-slate-800">{member.score}</div>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase">Score</div>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          )}
+
+          {/* Personal: Reflection */}
+          {!isGroupView && (
+              <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-[2rem] border border-indigo-100 shadow-sm space-y-4">
+                      <h3 className="text-sm font-bold text-indigo-800 uppercase tracking-widest flex items-center gap-2"><PenSquare size={16}/> {t.reportToday}</h3>
+                      <div className="space-y-4">
+                          <div>
+                              <label className="text-xs font-bold text-slate-400 ml-2 mb-1 block">{t.selfEval}</label>
+                              <textarea 
+                                  value={reflections[currentReflectionKey]?.evaluation || ''}
+                                  onChange={(e) => handleReflectionChange('evaluation', e.target.value)}
+                                  placeholder={t.writeReflection}
+                                  className="w-full p-4 bg-white border border-indigo-50 focus:border-indigo-300 rounded-2xl text-sm font-medium text-slate-700 outline-none transition-all resize-none shadow-sm h-24 placeholder:text-slate-300"
+                              />
+                          </div>
+                          <div>
+                              <label className="text-xs font-bold text-slate-400 ml-2 mb-1 block">{t.improve}</label>
+                              <textarea 
+                                  value={reflections[currentReflectionKey]?.improvement || ''}
+                                  onChange={(e) => handleReflectionChange('improvement', e.target.value)}
+                                  placeholder={t.writeImprovement}
+                                  className="w-full p-4 bg-white border border-indigo-50 focus:border-indigo-300 rounded-2xl text-sm font-medium text-slate-700 outline-none transition-all resize-none shadow-sm h-24 placeholder:text-slate-300"
+                              />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
+
+          {/* Export Actions - Shown if Personal or if Group Leader */}
+          {(!isGroupView || isLeader) && (
+              <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-slate-800 px-2 flex items-center gap-2"><Share2 size={20} className="text-indigo-500"/> {t.export}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                      <button onClick={exportToExcel} className="p-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center gap-2 transition-all">
+                          <FileSpreadsheet size={24}/>
+                          <span className="text-xs font-bold">Excel</span>
+                      </button>
+                      <button onClick={exportToPowerPoint} className="p-4 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-2xl border border-orange-100 flex flex-col items-center justify-center gap-2 transition-all">
+                          <Presentation size={24}/>
+                          <span className="text-xs font-bold">PowerPoint</span>
+                      </button>
+                      <button onClick={exportToWord} className="p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-2xl border border-blue-100 flex flex-col items-center justify-center gap-2 transition-all">
+                          <FileText size={24}/>
+                          <span className="text-xs font-bold">Word</span>
+                      </button>
+                      <button onClick={exportToXML} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-2 transition-all">
+                          <FileCode size={24}/>
+                          <span className="text-xs font-bold">XML</span>
+                      </button>
+                  </div>
+              </div>
+          )}
+      </div>
+    </div>
+  );
+};
