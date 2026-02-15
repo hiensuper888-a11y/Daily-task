@@ -337,7 +337,7 @@ const AppContent: React.FC = () => {
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
 
       {/* TOP HEADER & GROUPS (Refined Glass) */}
-      <div className="pt-safe px-4 pb-4 bg-white/60 backdrop-blur-2xl border-b border-white/40 z-30 shrink-0 shadow-sm transition-all duration-500">
+      <div className="pt-safe px-4 pb-4 bg-white/70 backdrop-blur-2xl border-b border-white/40 z-30 shrink-0 shadow-sm transition-all duration-500">
           <div className="flex items-center justify-between mb-4 mt-2">
                <div className="flex items-center gap-3">
                    <div 
@@ -488,10 +488,13 @@ const AppContent: React.FC = () => {
                         onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
                         className="flex-1 relative h-14 flex flex-col items-center justify-center gap-1 group"
                     >
-                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 ease-out ${isActive ? 'bg-slate-900 text-white -translate-y-4 shadow-xl shadow-slate-900/30 scale-110' : 'text-slate-400 hover:text-indigo-600 hover:bg-white/50'}`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 ease-out z-10 ${isActive ? 'text-white -translate-y-4 scale-110' : 'text-slate-400 hover:text-indigo-600 hover:bg-white/50'}`}>
+                            {isActive && (
+                                <div className="absolute inset-0 bg-slate-900 rounded-2xl shadow-lg shadow-slate-900/30 -z-10 animate-scale-in"></div>
+                            )}
                             <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                         </div>
-                        {isActive && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-slate-900 animate-scale-in"></div>}
+                        {isActive && <div className="absolute bottom-1.5 w-1 h-1 rounded-full bg-slate-900 animate-scale-in delay-75"></div>}
                     </button>
                   );
               })}

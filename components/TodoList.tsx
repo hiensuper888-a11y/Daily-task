@@ -7,7 +7,8 @@ import {
   Sun, Moon, Sunrise, Users, User,
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
   Paperclip, FileText, Loader2,
-  MoreVertical, Sparkles, Flag, GripVertical, MessageSquare, Star, Crown
+  MoreVertical, Sparkles, Flag, GripVertical, MessageSquare, Star, Crown,
+  Maximize2, Minimize2
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -34,7 +35,11 @@ const TaskItem = React.memo(({
   isDraggable,
   onDragStart,
   onDragOver,
-  onDrop
+  onDrop,
+  onDragEnter,
+  onDragEnd,
+  isDragging,
+  isDragOver
 }: { 
   task: Task, 
   index: number,
@@ -48,7 +53,11 @@ const TaskItem = React.memo(({
   isDraggable: boolean,
   onDragStart: (e: React.DragEvent, id: number) => void,
   onDragOver: (e: React.DragEvent) => void,
-  onDrop: (e: React.DragEvent, id: number) => void
+  onDrop: (e: React.DragEvent, id: number) => void,
+  onDragEnter: (id: number) => void,
+  onDragEnd: () => void,
+  isDragging: boolean,
+  isDragOver: boolean
 }) => {
     
     const { t } = useLanguage();
@@ -88,27 +97,27 @@ const TaskItem = React.memo(({
     const getPriorityStyles = (p: Priority = 'medium') => {
         switch(p) {
             case 'high': return { 
-                border: 'border-l-rose-500', 
-                bg: 'bg-rose-50/40 hover:bg-rose-50/80',
-                badge: 'text-rose-600 bg-rose-100',
+                border: 'bg-rose-500', 
+                bg: 'bg-white/95 hover:bg-rose-50',
+                badge: 'text-rose-600 bg-rose-50 border-rose-100',
                 iconColor: 'text-rose-500'
             };
             case 'medium': return { 
-                border: 'border-l-amber-500', 
-                bg: 'bg-amber-50/40 hover:bg-amber-50/80',
-                badge: 'text-amber-600 bg-amber-100',
+                border: 'bg-amber-500', 
+                bg: 'bg-white/95 hover:bg-amber-50',
+                badge: 'text-amber-600 bg-amber-50 border-amber-100',
                 iconColor: 'text-amber-500'
             };
             case 'low': return { 
-                border: 'border-l-sky-500', 
-                bg: 'bg-sky-50/40 hover:bg-sky-50/80',
-                badge: 'text-sky-600 bg-sky-100',
+                border: 'bg-sky-500', 
+                bg: 'bg-white/95 hover:bg-sky-50',
+                badge: 'text-sky-600 bg-sky-50 border-sky-100',
                 iconColor: 'text-sky-500'
             };
             default: return { 
-                border: 'border-l-slate-300', 
-                bg: 'bg-white/60 hover:bg-white',
-                badge: 'text-slate-500 bg-slate-100',
+                border: 'bg-slate-300', 
+                bg: 'bg-white/95 hover:bg-white',
+                badge: 'text-slate-500 bg-slate-50 border-slate-100',
                 iconColor: 'text-slate-400'
             };
         }
@@ -120,53 +129,61 @@ const TaskItem = React.memo(({
         <div 
             draggable={isDraggable}
             onDragStart={(e) => {
-                // Add a visual class to the dragged element
-                e.currentTarget.classList.add('opacity-50', 'scale-95');
                 onDragStart(e, task.id);
             }}
-            onDragEnd={(e) => {
-                e.currentTarget.classList.remove('opacity-50', 'scale-95');
-            }}
+            onDragEnd={onDragEnd}
             onDragOver={onDragOver}
+            onDragEnter={(e) => {
+                if(isDraggable) {
+                    e.preventDefault();
+                    onDragEnter(task.id);
+                }
+            }}
             onDrop={(e) => onDrop(e, task.id)}
             onClick={() => onEdit(task)}
-            className={`group relative pl-4 pr-4 py-4 rounded-2xl transition-all duration-300 ease-out cursor-pointer mb-3 backdrop-blur-md border border-white/60 shadow-sm hover:shadow-xl hover:-translate-y-1 overflow-hidden ${
-                task.completed ? 'opacity-60 grayscale-[0.5] bg-slate-50/50' : pStyles.bg
-            } ${isDraggable ? 'active:cursor-grabbing cursor-grab' : ''} transform-gpu`}
-            style={{ animationDelay: `${Math.min(index * 50, 400)}ms`, animationFillMode: 'both' }}
+            className={`group relative pl-4 pr-4 py-4 rounded-2xl transition-all duration-700 ease-[cubic-bezier(0.25,0.8,0.25,1)] cursor-pointer mb-3 backdrop-blur-xl border shadow-sm overflow-hidden transform-gpu animate-slide-up
+                ${task.completed 
+                    ? 'opacity-60 grayscale-[0.4] bg-slate-50/80 border-slate-100 shadow-none scale-[0.98]' 
+                    : `${pStyles.bg} border-white/70 hover:shadow-xl hover:-translate-y-1 hover:border-indigo-200/60`
+                }
+                ${isDraggable ? 'active:cursor-grabbing cursor-grab' : ''} 
+                ${isDragging ? 'opacity-40 scale-[0.95] rotate-1 border-dashed border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200 shadow-none grayscale' : ''}
+                ${isDragOver && !isDragging ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-slate-100 scale-[1.02] z-20 shadow-2xl bg-white rotate-0' : ''}
+            `}
+            style={{ animationDelay: `${Math.min(index * 40, 600)}ms`, animationFillMode: 'both' }}
         >
-             {/* Priority Indicator Strip */}
-             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${pStyles.border} transition-colors`}></div>
+             {/* Floating Priority Pill */}
+             <div className={`absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full ${pStyles.border} transition-all duration-500 ${task.completed ? 'opacity-20 h-[80%] top-[10%]' : 'opacity-80 group-hover:opacity-100 group-hover:h-full group-hover:top-0'}`}></div>
 
-             <div className="flex items-start gap-3.5">
+             <div className="flex items-start gap-3.5 pl-1.5">
                 {/* Drag Handle or Checkbox */}
                 {isDraggable && (
-                    <div className="mt-1 text-slate-300 group-hover:text-slate-500 transition-colors cursor-grab active:cursor-grabbing hover:scale-110">
+                    <div className={`mt-1 text-slate-300 group-hover:text-slate-500 transition-all duration-300 cursor-grab active:cursor-grabbing ${isDragging ? 'text-indigo-500 scale-110' : 'hover:scale-125'}`}>
                         <GripVertical size={20} />
                     </div>
                 )}
 
                 <button 
                   onClick={(e) => onToggle(task, e)} 
-                  className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-[2px] shadow-sm relative overflow-hidden shrink-0 ${
+                  className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] border-[2px] shadow-sm relative overflow-hidden shrink-0 active:scale-75 ${
                     task.completed 
-                      ? 'bg-gradient-to-br from-indigo-500 to-violet-600 border-transparent text-white scale-110 shadow-glow' 
-                      : `bg-white border-slate-300 text-transparent hover:border-indigo-400 group-hover:scale-110 group-hover:border-indigo-400`
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-500 border-transparent text-white scale-110 shadow-glow rotate-0 ring-2 ring-emerald-200 ring-offset-1' 
+                      : `bg-white border-slate-300 text-transparent hover:border-indigo-400 group-hover:scale-110 group-hover:border-indigo-400 rotate-0`
                   }`}
                 >
-                    <Check size={14} strokeWidth={4} className={task.completed ? 'animate-check' : 'scale-0'}/>
+                    <Check size={14} strokeWidth={4} className={`transition-all duration-500 ${task.completed ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-0 -rotate-90'}`}/>
                 </button>
 
                 <div className="flex-1 min-w-0 pr-8">
                     {/* Top Meta Row: Priority & Deadline */}
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         {!task.completed && (
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider border border-transparent shadow-sm ${pStyles.badge}`}>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider border shadow-sm transition-transform group-hover:scale-105 ${pStyles.badge}`}>
                                 <Flag size={8} fill="currentColor" /> {task.priority || 'MEDIUM'}
                             </span>
                         )}
                         {deadlineInfo && (
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] border shadow-sm ${deadlineInfo.colorClass}`}>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] border shadow-sm transition-transform group-hover:scale-105 ${deadlineInfo.colorClass}`}>
                                 {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                         )}
@@ -178,22 +195,22 @@ const TaskItem = React.memo(({
                         )}
                     </div>
                     
-                    <p className={`text-[15px] font-semibold leading-snug transition-all duration-300 line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-400' : 'text-slate-800'}`}>{task.text}</p>
+                    <p className={`text-[15px] font-semibold leading-snug transition-all duration-500 line-clamp-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-400/50 decoration-2' : 'text-slate-800'}`}>{task.text}</p>
                     
                     {/* Bottom Metadata Row */}
                     {(subtasksCount > 0 || attachmentsCount > 0 || assignedMember || task.leaderFeedback) && (
-                        <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-slate-200/50">
+                        <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-slate-200/50 transition-opacity duration-300">
                             {subtasksCount > 0 && (
                                 <div className="flex items-center gap-1.5 flex-1 max-w-[100px]" title="Subtasks progress">
                                     <ListChecks size={12} className="text-slate-400"/>
                                     <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                        <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${(subtasksCompleted/subtasksCount)*100}%` }}></div>
+                                        <div className="h-full bg-indigo-500 rounded-full transition-all duration-700 ease-out" style={{ width: `${(subtasksCompleted/subtasksCount)*100}%` }}></div>
                                     </div>
                                 </div>
                             )}
                             {attachmentsCount > 0 && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400"><Paperclip size={10}/> {attachmentsCount}</span>}
                             {task.leaderFeedback && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500"><MessageSquare size={10}/></span>}
-                            {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto" alt="assignee" title={assignedMember.name}/>}
+                            {assignedMember && <img src={assignedMember.avatar} className="w-5 h-5 rounded-full border border-white shadow-sm ml-auto ring-1 ring-slate-100" alt="assignee" title={assignedMember.name}/>}
                         </div>
                     )}
                 </div>
@@ -201,7 +218,7 @@ const TaskItem = React.memo(({
              
              {/* Delete Action - Improved Hit Area */}
              <button 
-                className="absolute top-2 right-2 p-2 text-slate-300 hover:text-rose-500 hover:bg-white/80 rounded-xl transition-all duration-200 z-20 opacity-0 group-hover:opacity-100 hover:scale-110"
+                className="absolute top-2 right-2 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 z-20 opacity-0 group-hover:opacity-100 hover:scale-110 hover:rotate-6"
                 onClick={(e) => {
                     e.stopPropagation(); 
                     onDelete(task.id, e);
@@ -221,6 +238,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { name: 'Người dùng', email: '', avatar: '', provider: null, isLoggedIn: false });
 
   // Creation State
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   const [assignedDate, setAssignedDate] = useState<string>(''); 
@@ -235,6 +253,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   
   // Drag and Drop State
   const [dragId, setDragId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
   
   // AI Loading States
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -251,6 +270,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -268,7 +288,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       setAssignedTo('');
       setNewAttachments([]);
       setShowInputDetails(false);
+      setIsInputExpanded(false);
   }, [activeGroup]);
+
+  // Click outside to collapse input
+  useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+          if (inputContainerRef.current && !inputContainerRef.current.contains(event.target as Node) && isInputExpanded && !inputValue.trim()) {
+              // Only collapse if empty to avoid accidental data loss
+              setIsInputExpanded(false);
+              setShowInputDetails(false);
+          }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isInputExpanded, inputValue]);
 
   const getLocalDateString = (date: Date) => {
     const year = date.getFullYear();
@@ -353,9 +387,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       e.dataTransfer.dropEffect = "move";
   };
 
+  const handleDragEnter = (id: number) => {
+      if (dragId !== null && dragId !== id) {
+          setDragOverId(id);
+      }
+  };
+
+  const handleDragEnd = () => {
+      setDragId(null);
+      setDragOverId(null);
+  };
+
   const handleDrop = (e: React.DragEvent, targetId: number) => {
       e.preventDefault();
-      if (dragId === null || dragId === targetId) return;
+      if (dragId === null || dragId === targetId) {
+          handleDragEnd();
+          return;
+      }
 
       const sourceIndex = tasks.findIndex(t => t.id === dragId);
       const targetIndex = tasks.findIndex(t => t.id === targetId);
@@ -366,7 +414,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
           newTasks.splice(targetIndex, 0, movedTask);
           setTasks(newTasks);
       }
-      setDragId(null);
+      handleDragEnd();
   };
 
   // --- AI HANDLERS ---
@@ -509,6 +557,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setNewPriority('medium'); // Reset priority
     setNewAttachments([]);
     setShowInputDetails(false);
+    setIsInputExpanded(false); // Collapse after adding
   };
 
   const updateTask = () => {
@@ -706,6 +755,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
         <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-md animate-fade-in">
+          {/* ... (Existing Edit Modal Code - No changes needed here, keeping logic) ... */}
           <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col border border-white/60">
               <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 flex items-center justify-between border-b border-slate-100 rounded-t-[2.5rem]">
                 <div className="flex items-center gap-4">
@@ -820,7 +870,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     <div className="space-y-3 pt-4 border-t border-slate-100">
                         <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Crown size={16} className="text-amber-500"/> {t.leaderEvaluation}</label>
                         {isLeader ? (
-                            // Leader View: Editable
                             <div className="space-y-3 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="text-[10px] font-bold text-amber-600 uppercase">{t.rating}</span>
@@ -845,7 +894,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                 />
                             </div>
                         ) : (
-                            // Member View: Read Only
                             (editingTask.leaderFeedback || editingTask.leaderRating) ? (
                                 <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 space-y-2">
                                     {editingTask.leaderRating && (
@@ -993,111 +1041,145 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 onDelete={deleteTask}
                 onEdit={handleEditClick}
                 onProgressChange={handleProgressChange}
-                isDraggable={sortOption === 'manual' && filterStatus === 'all' && !searchQuery}
+                isDraggable={sortOption === 'manual' && !searchQuery}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragEnd={handleDragEnd}
                 onDrop={handleDrop}
+                isDragging={dragId === task.id}
+                isDragOver={dragOverId === task.id}
              />
           ))
         )}
       </div>
 
-      {/* FIXED FLOATING CAPSULE INPUT */}
-      <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
-          <div className="w-full max-w-2xl bg-white/80 backdrop-blur-[30px] rounded-[2.5rem] p-2 pl-3 shadow-premium ring-1 ring-white/40 animate-slide-up flex items-center gap-3 group transition-all hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.15)]">
-              <button 
-                onClick={() => setShowInputDetails(!showInputDetails)} 
-                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-slate-900 text-white rotate-90' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-              >
-                <SlidersHorizontal size={20} />
-              </button>
-              
-              <div className="flex-1 min-w-0 relative">
-                  {/* EXPANDED DETAILS PANEL */}
-                  {showInputDetails && (
-                      <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-up origin-bottom">
-                          <div className="flex flex-col gap-4">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
-                            
-                            {newAttachments.length > 0 && (
-                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                                    {newAttachments.map(att => (
-                                        <div key={att.id} className="relative group shrink-0">
-                                            <div className="w-12 h-12 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
-                                                {att.type === 'image' ? <img src={att.url} className="w-full h-full object-cover"/> : <FileText size={20} className="text-slate-400"/>}
-                                            </div>
-                                            <button onClick={() => removeAttachment(att.id)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm"><X size={10}/></button>
+      {/* EXPANDABLE COMPACT INPUT */}
+      <div className="fixed bottom-[90px] lg:bottom-6 left-0 right-0 z-[40] pb-safe flex justify-center pointer-events-none px-4">
+          <div 
+            ref={inputContainerRef}
+            className={`pointer-events-auto bg-white/80 backdrop-blur-[30px] rounded-[2.5rem] shadow-premium ring-1 ring-white/40 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center gap-3 relative overflow-hidden group hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.2)] ${isInputExpanded ? 'w-full max-w-2xl p-2 pl-3' : 'w-14 h-14 p-0 hover:scale-110 active:scale-95 cursor-pointer bg-gradient-to-br from-indigo-500 to-violet-600 border-none'}`}
+            onClick={() => !isInputExpanded && setIsInputExpanded(true)}
+          >
+              {/* COMPACT STATE: Just Icon */}
+              {!isInputExpanded && (
+                  <div className="w-full h-full flex items-center justify-center text-white">
+                      <Plus size={28} strokeWidth={3} />
+                  </div>
+              )}
+
+              {/* EXPANDED STATE: Full Controls */}
+              {isInputExpanded && (
+                  <>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setShowInputDetails(!showInputDetails); }} 
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-slate-900 text-white rotate-90' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >
+                        <SlidersHorizontal size={20} />
+                    </button>
+                    
+                    <div className="flex-1 min-w-0 relative">
+                        {/* EXPANDED DETAILS PANEL */}
+                        {showInputDetails && (
+                            <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-up origin-bottom">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
+                                        <button onClick={() => setShowInputDetails(false)} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
+                                    </div>
+                                    
+                                    {newAttachments.length > 0 && (
+                                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                            {newAttachments.map(att => (
+                                                <div key={att.id} className="relative group shrink-0">
+                                                    <div className="w-12 h-12 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center">
+                                                        {att.type === 'image' ? <img src={att.url} className="w-full h-full object-cover"/> : <FileText size={20} className="text-slate-400"/>}
+                                                    </div>
+                                                    <button onClick={() => removeAttachment(att.id)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm"><X size={10}/></button>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                    )}
 
-                            <div className="flex gap-2">
-                                <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="bg-slate-50 rounded-xl text-xs px-3 py-2.5 border border-slate-100 outline-none focus:border-indigo-200 flex-1 font-medium text-slate-600" />
-                                
-                                <div className="flex bg-slate-100 rounded-xl p-1 shrink-0 border border-slate-200">
-                                    {(['low', 'medium', 'high'] as Priority[]).map(p => {
-                                        const isActive = newPriority === p;
-                                        let activeClass = "";
-                                        if (p === 'low') activeClass = "bg-sky-500 text-white shadow-md";
-                                        if (p === 'medium') activeClass = "bg-amber-500 text-white shadow-md";
-                                        if (p === 'high') activeClass = "bg-rose-500 text-white shadow-md";
+                                    <div className="flex gap-2">
+                                        <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="bg-slate-50 rounded-xl text-xs px-3 py-2.5 border border-slate-100 outline-none focus:border-indigo-200 flex-1 font-medium text-slate-600" />
+                                        
+                                        <div className="flex bg-slate-100 rounded-xl p-1 shrink-0 border border-slate-200">
+                                            {(['low', 'medium', 'high'] as Priority[]).map(p => {
+                                                const isActive = newPriority === p;
+                                                let activeClass = "";
+                                                if (p === 'low') activeClass = "bg-sky-500 text-white shadow-md";
+                                                if (p === 'medium') activeClass = "bg-amber-500 text-white shadow-md";
+                                                if (p === 'high') activeClass = "bg-rose-500 text-white shadow-md";
 
-                                        return (
-                                            <button 
-                                                key={p} 
-                                                onClick={() => setNewPriority(p)} 
-                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${isActive ? activeClass : 'text-slate-400 hover:text-slate-600'}`}
-                                            >
-                                                {p.substring(0,1)}
-                                            </button>
-                                        )
-                                    })}
+                                                return (
+                                                    <button 
+                                                        key={p} 
+                                                        onClick={() => setNewPriority(p)} 
+                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${isActive ? activeClass : 'text-slate-400 hover:text-slate-600'}`}
+                                                    >
+                                                        {p.substring(0,1)}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shrink-0">
+                                            <Paperclip size={14}/> {t.attachLabel}
+                                        </button>
+                                        <input type="file" multiple ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e)} />
+
+                                        {activeGroup && (
+                                            <>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mx-1">{t.assignLabel}</span>
+                                                {activeGroup.members?.map(member => (
+                                                    <button
+                                                        key={member.id}
+                                                        onClick={() => setAssignedTo(assignedTo === member.id ? '' : member.id)}
+                                                        className={`relative shrink-0 w-8 h-8 rounded-full border-2 transition-all ${assignedTo === member.id ? 'border-indigo-500 scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                                    >
+                                                        <img src={member.avatar} className="w-full h-full rounded-full bg-slate-100 object-cover" alt={member.name}/>
+                                                        {assignedTo === member.id && <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white flex items-center justify-center"><Check size={6} className="text-white"/></div>}
+                                                    </button>
+                                                ))}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shrink-0">
-                                    <Paperclip size={14}/> {t.attachLabel}
-                                </button>
-                                <input type="file" multiple ref={fileInputRef} className="hidden" onChange={(e) => handleFileUpload(e)} />
+                        )}
+                        <input 
+                            type="text" 
+                            value={inputValue} 
+                            onChange={e => setInputValue(e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && addTask()} 
+                            placeholder={t.newTaskPlaceholder} 
+                            className="w-full bg-transparent border-none px-2 py-2 text-[16px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none" 
+                            autoFocus
+                        />
+                    </div>
 
-                                {activeGroup && (
-                                    <>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mx-1">{t.assignLabel}</span>
-                                        {activeGroup.members?.map(member => (
-                                            <button
-                                                key={member.id}
-                                                onClick={() => setAssignedTo(assignedTo === member.id ? '' : member.id)}
-                                                className={`relative shrink-0 w-8 h-8 rounded-full border-2 transition-all ${assignedTo === member.id ? 'border-indigo-500 scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                                            >
-                                                <img src={member.avatar} className="w-full h-full rounded-full bg-slate-100 object-cover" alt={member.name}/>
-                                                {assignedTo === member.id && <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white flex items-center justify-center"><Check size={6} className="text-white"/></div>}
-                                            </button>
-                                        ))}
-                                    </>
-                                )}
-                            </div>
-                          </div>
-                      </div>
-                  )}
-                  <input 
-                    type="text" 
-                    value={inputValue} 
-                    onChange={e => setInputValue(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && addTask()} 
-                    placeholder={t.newTaskPlaceholder} 
-                    className="w-full bg-transparent border-none px-2 py-2 text-[16px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none" 
-                  />
-              </div>
-
-              <button 
-                onClick={addTask} 
-                disabled={!inputValue.trim() || !inputValue} 
-                className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${inputValue.trim() ? (activeGroup ? 'bg-emerald-500 text-white hover:scale-110 hover:bg-emerald-400' : 'bg-indigo-600 text-white hover:scale-110 hover:bg-indigo-500') : 'bg-slate-100 text-slate-300'}`}
-              >
-                <Plus size={22} strokeWidth={3} />
-              </button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={addTask} 
+                            disabled={!inputValue.trim() || !inputValue} 
+                            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${inputValue.trim() ? (activeGroup ? 'bg-emerald-500 text-white hover:scale-110 hover:bg-emerald-400' : 'bg-indigo-600 text-white hover:scale-110 hover:bg-indigo-500') : 'bg-slate-100 text-slate-300'}`}
+                        >
+                            <Plus size={22} strokeWidth={3} />
+                        </button>
+                        
+                        {/* Collapse Button */}
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setIsInputExpanded(false); }}
+                            className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+                  </>
+              )}
           </div>
       </div>
 
