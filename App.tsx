@@ -17,6 +17,7 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'zh', label: '中文', flag: '🇨🇳' },
+  { code: 'ja', label: '日本語', flag: '🇯🇵' },
 ];
 
 const LoadingFallback = () => (
@@ -459,9 +460,9 @@ const AppContent: React.FC = () => {
         </>
       )}
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT - WIDENED TO MAX-W-7XL */}
       <main className="flex-1 relative overflow-hidden flex flex-col items-center">
-           <div className="w-full h-full max-w-3xl mx-auto relative animate-fade-in">
+           <div className="w-full h-full max-w-7xl mx-auto relative animate-fade-in">
                <Suspense fallback={<LoadingFallback />}>
                    {activeTab === 'tasks' ? <TodoList activeGroup={activeGroup} /> : 
                    activeTab === 'ai' ? <AiAssistant /> :

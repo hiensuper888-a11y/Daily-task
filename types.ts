@@ -81,7 +81,7 @@ export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'de
 
 export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 
-export type Language = 'vi' | 'en' | 'zh';
+export type Language = 'vi' | 'en' | 'zh' | 'ja';
 
 export type SortOption = 'manual' | 'priority' | 'date_new' | 'date_old' | 'deadline';
 

@@ -724,7 +724,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   
   const headerClasses = useMemo(() => {
     if (currentMember?.headerBackground) return "pt-8 pb-4 px-6 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[2.5rem] lg:rounded-b-[3rem] mb-2 mx-0 lg:mx-4 mt-0 lg:mt-4";
-    return "pt-6 pb-2 px-6 relative z-10 shrink-0 transition-all duration-500 rounded-b-[2.5rem] lg:rounded-b-none mb-2 bg-transparent sticky top-0";
+    return "pt-2 pb-2 px-6 relative z-10 shrink-0 transition-all duration-500 rounded-b-[2.5rem] lg:rounded-b-none mb-2 bg-transparent sticky top-0";
   }, [currentMember]);
 
   const greeting = getGreeting();
@@ -957,7 +957,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* Header Area */}
       <div className={headerClasses} style={headerStyle}>
         {currentMember?.headerBackground && <div className="absolute inset-0 bg-black/40 z-[-1] rounded-b-[2.5rem]"></div>}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
           <div className="flex justify-between items-start pt-2">
              <div>
                  <div className="flex items-center gap-2 mb-2 animate-fade-in">
@@ -1021,41 +1021,43 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         </div>
       </div>
 
-      {/* Task List Container */}
-      <div className="flex-1 overflow-y-auto px-4 pb-44 custom-scrollbar space-y-1 relative z-0 pt-2">
-        {filteredTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-300 animate-scale-in">
-            <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner"><Archive size={48} className="text-slate-300 opacity-50" /></div>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{filterStatus === 'archived' ? t.emptyArchived : t.emptyChill}</p>
-          </div>
-        ) : (
-          filteredTasks.map((task, index) => (
-             <TaskItem 
-                key={task.id} 
-                task={task} 
-                index={index}
-                language={language}
-                activeGroup={activeGroup}
-                lastCheckedId={lastCheckedId}
-                onToggle={handleToggleClick}
-                onDelete={deleteTask}
-                onEdit={handleEditClick}
-                onProgressChange={handleProgressChange}
-                isDraggable={sortOption === 'manual' && !searchQuery}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnter={handleDragEnter}
-                onDragEnd={handleDragEnd}
-                onDrop={handleDrop}
-                isDragging={dragId === task.id}
-                isDragOver={dragOverId === task.id}
-             />
-          ))
-        )}
+      {/* Task List Container - Centered and Max Width Constrained */}
+      <div className="flex-1 overflow-y-auto px-4 pb-40 custom-scrollbar space-y-1 relative z-0 pt-2 flex flex-col items-center">
+        <div className="w-full max-w-4xl">
+            {filteredTasks.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-300 animate-scale-in py-20">
+                <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner"><Archive size={48} className="text-slate-300 opacity-50" /></div>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{filterStatus === 'archived' ? t.emptyArchived : t.emptyChill}</p>
+            </div>
+            ) : (
+            filteredTasks.map((task, index) => (
+                <TaskItem 
+                    key={task.id} 
+                    task={task} 
+                    index={index}
+                    language={language}
+                    activeGroup={activeGroup}
+                    lastCheckedId={lastCheckedId}
+                    onToggle={handleToggleClick}
+                    onDelete={deleteTask}
+                    onEdit={handleEditClick}
+                    onProgressChange={handleProgressChange}
+                    isDraggable={sortOption === 'manual' && !searchQuery}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDragEnter={handleDragEnter}
+                    onDragEnd={handleDragEnd}
+                    onDrop={handleDrop}
+                    isDragging={dragId === task.id}
+                    isDragOver={dragOverId === task.id}
+                />
+            ))
+            )}
+        </div>
       </div>
 
       {/* EXPANDABLE COMPACT INPUT */}
-      <div className="fixed bottom-[90px] lg:bottom-6 left-0 right-0 z-[40] pb-safe flex justify-center pointer-events-none px-4">
+      <div className="fixed bottom-[90px] lg:bottom-24 left-0 right-0 z-[40] pb-safe flex justify-center pointer-events-none px-4">
           <div 
             ref={inputContainerRef}
             className={`pointer-events-auto bg-white/80 backdrop-blur-[30px] rounded-[2.5rem] shadow-premium ring-1 ring-white/40 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center gap-3 relative overflow-hidden group hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.2)] ${isInputExpanded ? 'w-full max-w-2xl p-2 pl-3' : 'w-14 h-14 p-0 hover:scale-110 active:scale-95 cursor-pointer bg-gradient-to-br from-indigo-500 to-violet-600 border-none'}`}
