@@ -102,43 +102,42 @@ export const Profile: React.FC = () => {
 
   const renderLoginScreen = () => (
     <div className="w-full h-full flex flex-col items-center justify-center p-4">
-        <div className="glass-modal rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl animate-scale-in relative border border-white/60 overflow-hidden">
+        <div className="glass-modal rounded-[2.5rem] w-full max-w-sm p-8 shadow-premium animate-scale-in relative border border-white/60 overflow-hidden">
              {/* Decorative Background Elements */}
-             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-bl-[100px] -z-10 opacity-60"></div>
-             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-100 to-orange-100 rounded-tr-[80px] -z-10 opacity-60"></div>
-
+             <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-bl-[120px] -z-10 opacity-60"></div>
+             
              <div className="relative z-10">
-                <div className="text-center mb-8">
-                     <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-300/50 transform hover:scale-110 transition-transform duration-500">
+                <div className="text-center mb-10">
+                     <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-500/30 transform hover:scale-110 transition-transform duration-500">
                          <Sparkles className="text-white" size={32} />
                      </div>
-                     <h2 className="text-2xl font-black text-slate-800 tracking-tight">{authMode === 'login' ? t.welcomeBack : t.createAccount}</h2>
+                     <h2 className="text-3xl font-black text-slate-800 tracking-tight">{authMode === 'login' ? t.welcomeBack : t.createAccount}</h2>
                      <p className="text-slate-500 text-sm mt-1 font-medium">{authMode === 'login' ? t.loginContinue : t.startJourney}</p>
                 </div>
 
-                <div className="space-y-4">
-                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-wider">{t.emailLabel}</label>
+                <div className="space-y-5">
+                     <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">{t.emailLabel}</label>
                         <div className="relative group/input">
                             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors"/>
                             <input 
                                 type="email"
                                 value={emailInput}
                                 onChange={(e) => setEmailInput(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                className="w-full pl-11 pr-4 py-3.5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
                                 placeholder="name@example.com"
                             />
                         </div>
                      </div>
-                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-wider">{t.passwordLabel}</label>
+                     <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">{t.passwordLabel}</label>
                         <div className="relative group/input">
                             <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors"/>
                             <input 
                                 type={showPassword ? "text" : "password"}
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
-                                className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                className="w-full pl-11 pr-11 py-3.5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
                                 placeholder="••••••••"
                             />
                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors">
@@ -151,16 +150,16 @@ export const Profile: React.FC = () => {
                 <button 
                     onClick={handleEmailAuth}
                     disabled={isSyncing}
-                    className="w-full mt-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-indigo-700"
                 >
                     {isSyncing ? <RefreshCw size={20} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={20}/> : <UserPlus size={20}/>)}
                     {authMode === 'login' ? t.loginBtn : t.registerBtn}
                 </button>
 
-                <div className="mt-6 text-center">
+                <div className="mt-8 text-center">
                     <button 
                         onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-                        className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors underline decoration-2 decoration-transparent hover:decoration-indigo-200"
+                        className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors"
                     >
                         {authMode === 'login' ? t.noAccountPrompt : t.hasAccountPrompt}
                     </button>
@@ -173,7 +172,7 @@ export const Profile: React.FC = () => {
   const renderProfileScreen = () => (
     <div className="w-full max-w-5xl mx-auto animate-fade-in pb-28 pt-4 px-4">
         {/* Header Card */}
-        <div className="glass-panel rounded-[2.5rem] p-6 md:p-10 mb-6 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+        <div className="glass-panel rounded-[2.5rem] p-6 md:p-10 mb-6 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group border-white/60">
              <div className="absolute top-0 right-0 p-32 bg-gradient-to-br from-indigo-50 to-pink-50 rounded-full blur-3xl -z-10 opacity-60"></div>
              
              <div className="relative group">
@@ -248,7 +247,7 @@ const InfoCard = ({ title, icon: Icon, color, children }: any) => {
         blue: 'bg-blue-50 text-blue-600'
     };
     return (
-        <div className="glass-card rounded-[2rem] p-8 hover:shadow-lg transition-shadow">
+        <div className="glass-panel rounded-[2rem] p-8 hover:shadow-lg transition-shadow border-white/60">
             <div className="flex items-center gap-3 mb-6">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClasses[color as keyof typeof colorClasses]}`}>
                     <Icon size={20} />

@@ -338,106 +338,96 @@ const AppContent: React.FC = () => {
       
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
 
-      {/* TOP HEADER & GROUPS (Refined Glass) */}
-      <div className="pt-safe px-4 pb-4 bg-white/70 backdrop-blur-2xl border-b border-white/40 z-30 shrink-0 shadow-sm transition-all duration-500">
-          <div className="flex items-center justify-between mb-4 mt-2">
-               <div className="flex items-center gap-3">
+      {/* TOP HEADER & GROUPS */}
+      <div className="pt-safe px-6 pb-2 bg-white/60 backdrop-blur-xl border-b border-white/20 z-30 shrink-0 transition-all duration-500">
+          <div className="flex items-center justify-between mb-4 mt-3 max-w-7xl mx-auto w-full">
+               <div className="flex items-center gap-4">
                    <div 
                       onClick={() => {setActiveTab('profile'); setActiveGroupId(null);}} 
-                      className="w-10 h-10 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-md cursor-pointer hover:scale-105 transition-transform"
+                      className="w-11 h-11 rounded-2xl p-0.5 bg-gradient-to-tr from-indigo-500 to-violet-500 shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-transform"
                    >
-                       <img src={userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`} alt="User" className="w-full h-full object-cover rounded-full border-2 border-white"/>
+                       <img src={userProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserId}`} alt="User" className="w-full h-full object-cover rounded-[14px] border-2 border-white"/>
                    </div>
                    <div>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                           {new Date().toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short'})}
+                       <h1 className="text-xl font-black text-slate-800 leading-none tracking-tight">{t.appTitle}</h1>
+                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                           {activeGroup ? activeGroup.name : t.workspace}
                        </p>
-                       <h1 className="text-lg font-black text-slate-800 leading-none tracking-tight">{t.appTitle}</h1>
                    </div>
                </div>
                
                <div className="flex gap-2">
                    <button 
                         onClick={() => setShowLangMenu(!showLangMenu)} 
-                        className="w-9 h-9 rounded-full bg-white/60 border border-white text-slate-500 flex items-center justify-center hover:bg-white shadow-sm transition-all hover:scale-105 backdrop-blur-md"
+                        className="w-10 h-10 rounded-2xl bg-white/50 border border-white text-slate-500 flex items-center justify-center hover:bg-white shadow-sm transition-all hover:scale-105 backdrop-blur-md"
                    >
-                       <Globe size={16}/>
+                       <Globe size={18}/>
                    </button>
                    {activeGroup && (
                        <button 
                             onClick={() => {setShowSettingsModal(true); setSettingsTab('info')}}
-                            className="w-9 h-9 rounded-full bg-indigo-50/80 border border-indigo-100 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 shadow-sm transition-all hover:scale-105 backdrop-blur-md"
+                            className="w-10 h-10 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 shadow-sm transition-all hover:scale-105 backdrop-blur-md"
                        >
-                           <Settings size={16}/>
+                           <Settings size={18}/>
                        </button>
                    )}
                </div>
           </div>
 
-          {/* Improved Project/Group Selector (Pill Style) */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 snap-x">
-              {/* Personal Workspace Pill */}
-              <button 
-                  onClick={() => handleGroupSelect(null)}
-                  className={`flex items-center gap-2 rounded-full border transition-all duration-500 ease-out snap-start shrink-0 group ${
-                      activeGroupId === null 
-                      ? 'bg-slate-900 text-white pl-1.5 pr-4 py-1.5 border-transparent shadow-lg shadow-slate-900/20' 
-                      : 'bg-white/50 text-slate-500 pl-1.5 pr-1.5 py-1.5 border-white/50 hover:bg-white hover:text-slate-800'
-                  }`}
-              >
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${activeGroupId === null ? 'bg-white/20' : 'bg-slate-200 group-hover:bg-slate-300'}`}>
-                      <UserCircle2 size={20} />
-                  </div>
-                  {activeGroupId === null ? (
-                      <div className="flex flex-col items-start leading-none min-w-[60px] animate-fade-in">
-                          <span className="text-[10px] opacity-70 font-medium uppercase tracking-wide">{t.workspace}</span>
-                          <span className="text-sm font-bold">{t.personal}</span>
-                      </div>
-                  ) : null}
-              </button>
+          {/* Group Selector Pill List */}
+          <div className="w-full max-w-7xl mx-auto">
+             <div className="flex items-center gap-3 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 snap-x mask-gradient-x">
+                {/* Personal Workspace Pill */}
+                <button 
+                    onClick={() => handleGroupSelect(null)}
+                    className={`flex items-center gap-2 rounded-2xl border transition-all duration-300 ease-out snap-start shrink-0 group py-1.5 pl-1.5 pr-4 ${
+                        activeGroupId === null 
+                        ? 'bg-slate-900 text-white border-transparent shadow-lg shadow-slate-900/10' 
+                        : 'bg-white/40 text-slate-500 border-white/40 hover:bg-white/80 hover:text-slate-700'
+                    }`}
+                >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${activeGroupId === null ? 'bg-white/20' : 'bg-slate-100'}`}>
+                        <UserCircle2 size={18} />
+                    </div>
+                    <span className="text-xs font-bold whitespace-nowrap">{t.personal}</span>
+                </button>
 
-              {/* Divider */}
-              <div className="w-px h-8 bg-slate-300/30 mx-1 shrink-0"></div>
+                {/* Divider */}
+                <div className="w-px h-6 bg-slate-300/30 shrink-0"></div>
 
-              {/* Group Pills */}
-              {myGroups.map(group => {
-                  const isActive = activeGroupId === group.id;
-                  return (
-                    <button 
-                        key={group.id} 
-                        onClick={() => handleGroupSelect(group.id)}
-                        className={`flex items-center gap-2 rounded-full border transition-all duration-500 ease-out snap-start shrink-0 group ${
-                            isActive
-                            ? 'bg-indigo-600 text-white pl-1.5 pr-4 py-1.5 border-transparent shadow-lg shadow-indigo-600/30' 
-                            : 'bg-white/50 text-slate-500 pl-1.5 pr-1.5 py-1.5 border-white/50 hover:bg-white hover:text-slate-800'
-                        }`}
-                    >
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center overflow-hidden border-2 transition-colors ${isActive ? 'border-white/30 bg-white/20' : 'border-transparent bg-indigo-50 group-hover:bg-indigo-100 text-indigo-600'}`}>
-                            {group.avatar ? (
-                                <img src={group.avatar} className="w-full h-full object-cover" alt="" />
-                            ) : (
-                                <span className="text-xs font-black">{group.name.substring(0,2).toUpperCase()}</span>
-                            )}
-                        </div>
-                        {isActive && (
-                            <div className="flex flex-col items-start leading-none min-w-[60px] animate-fade-in">
-                                <span className="text-[10px] opacity-70 font-medium uppercase tracking-wide">{t.groupView}</span>
-                                <span className="text-sm font-bold truncate max-w-[120px]">{group.name}</span>
+                {/* Group Pills */}
+                {myGroups.map(group => {
+                    const isActive = activeGroupId === group.id;
+                    return (
+                        <button 
+                            key={group.id} 
+                            onClick={() => handleGroupSelect(group.id)}
+                            className={`flex items-center gap-2 rounded-2xl border transition-all duration-300 ease-out snap-start shrink-0 group py-1.5 pl-1.5 pr-4 ${
+                                isActive
+                                ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/20' 
+                                : 'bg-white/40 text-slate-500 border-white/40 hover:bg-white/80 hover:text-slate-700'
+                            }`}
+                        >
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden border transition-colors ${isActive ? 'border-white/20 bg-white/20' : 'border-transparent bg-indigo-50 text-indigo-600'}`}>
+                                {group.avatar ? (
+                                    <img src={group.avatar} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                    <span className="text-[10px] font-black">{group.name.substring(0,2).toUpperCase()}</span>
+                                )}
                             </div>
-                        )}
-                    </button>
-                  );
-              })}
+                            <span className="text-xs font-bold whitespace-nowrap max-w-[100px] truncate">{group.name}</span>
+                        </button>
+                    );
+                })}
 
-              {/* Action Buttons (Compact) */}
-              <div className="flex gap-2 ml-1">
-                  <button onClick={handleOpenCreateGroup} className="w-12 h-12 rounded-full bg-white/40 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-white transition-all snap-start shrink-0" title={t.createGroup}>
-                       <Plus size={20}/>
-                  </button>
-                  <button onClick={() => setShowJoinModal(true)} className="w-12 h-12 rounded-full bg-white/40 border border-slate-200 border-dashed flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-white transition-all snap-start shrink-0" title={t.joinGroup}>
-                       <ScanLine size={18}/>
-                  </button>
-              </div>
+                {/* Action Buttons */}
+                <button onClick={handleOpenCreateGroup} className="w-11 h-11 rounded-2xl bg-white/40 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-400 hover:bg-white transition-all snap-start shrink-0" title={t.createGroup}>
+                    <Plus size={20}/>
+                </button>
+                <button onClick={() => setShowJoinModal(true)} className="w-11 h-11 rounded-2xl bg-white/40 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-400 hover:bg-white transition-all snap-start shrink-0" title={t.joinGroup}>
+                    <ScanLine size={18}/>
+                </button>
+             </div>
           </div>
       </div>
 
@@ -445,14 +435,14 @@ const AppContent: React.FC = () => {
       {showLangMenu && (
         <>
             <div className="fixed inset-0 z-40" onClick={() => setShowLangMenu(false)}></div>
-            <div className="absolute top-20 right-4 w-48 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white z-50 overflow-hidden animate-scale-in origin-top-right">
+            <div className="absolute top-20 right-4 w-48 bg-white/90 backdrop-blur-xl rounded-2xl shadow-premium border border-white z-50 overflow-hidden animate-scale-in origin-top-right">
                 {languages.map(lang => (
                     <button
                         key={lang.code}
                         onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
-                        className={`w-full flex items-center gap-3 px-5 py-4 text-sm font-bold transition-colors ${language === lang.code ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                        className={`w-full flex items-center gap-3 px-5 py-3 text-sm font-bold transition-colors ${language === lang.code ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
-                        <span className="text-xl">{lang.flag}</span>
+                        <span className="text-lg">{lang.flag}</span>
                         <span>{lang.label}</span>
                         {language === lang.code && <Check size={16} className="ml-auto"/>}
                     </button>
@@ -461,7 +451,7 @@ const AppContent: React.FC = () => {
         </>
       )}
 
-      {/* MAIN CONTENT - WIDENED TO MAX-W-7XL */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 relative overflow-hidden flex flex-col items-center">
            <div className="w-full h-full max-w-7xl mx-auto relative animate-fade-in">
                <Suspense fallback={<LoadingFallback />}>
@@ -473,21 +463,20 @@ const AppContent: React.FC = () => {
            </div>
       </main>
 
-      {/* REPLACED FIXED DOCK WITH FLOATING DOCK */}
+      {/* FLOATING DOCK */}
       <FloatingDock 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         onTabChange={() => { if(activeTab !== 'tasks') setActiveGroupId(null); }}
       />
 
-
       {/* --- MODALS --- */}
       
       {/* Join Group Modal */}
       {showJoinModal && (
-          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
-                  <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
+          <div onClick={() => setShowJoinModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-sm animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm relative border border-white/60">
+                  <button onClick={() => { setShowJoinModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-50 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-white rounded-3xl mx-auto flex items-center justify-center text-indigo-600 mb-6 shadow-lg ring-4 ring-white">
                           <ScanLine size={36} />
@@ -499,7 +488,7 @@ const AppContent: React.FC = () => {
                       <input 
                         value={joinCodeInput} 
                         onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())} 
-                        className="w-full p-5 bg-white/50 border-2 border-white focus:border-indigo-500 focus:bg-white rounded-2xl font-mono text-center text-3xl font-bold text-slate-800 outline-none tracking-[0.3em] uppercase placeholder:text-slate-300 transition-all shadow-inner focus:shadow-lg focus:shadow-indigo-100/50" 
+                        className="w-full p-5 bg-white/50 border-2 border-white focus:border-indigo-500 focus:bg-white rounded-2xl font-mono text-center text-3xl font-bold text-slate-800 outline-none tracking-[0.3em] uppercase placeholder:text-slate-300 transition-all shadow-inner focus:shadow-float" 
                         placeholder="CODE" 
                       />
                       <button onClick={handleJoinGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce text-lg">{t.joinNow}</button>
@@ -510,9 +499,9 @@ const AppContent: React.FC = () => {
 
       {/* Group Creation Modal */}
       {showGroupModal && (
-          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in relative border border-white/60">
-                  <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-100 p-2 rounded-full transition-colors"><X size={20}/></button>
+          <div onClick={() => setShowGroupModal(false)} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-sm animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] p-8 w-full max-w-sm relative border border-white/60">
+                  <button onClick={() => { setShowGroupModal(false); resetModalState(); }} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 bg-slate-50 p-2 rounded-full transition-colors"><X size={20}/></button>
                   <div className="text-center mb-8 mt-2">
                       <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.createGroupHeader}</h3>
                       <p className="text-slate-500 text-sm font-medium mt-1">{t.createGroupSub}</p>
@@ -540,8 +529,8 @@ const AppContent: React.FC = () => {
 
       {/* Settings Modal */}
       {showSettingsModal && activeGroup && (
-          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-scale-in flex flex-col max-h-[85vh] overflow-hidden border border-white/60">
+          <div onClick={() => setShowSettingsModal(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-slate-900/20 backdrop-blur-sm animate-fade-in">
+              <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-lg flex flex-col max-h-[85vh] overflow-hidden border border-white/60">
                   <div className="p-6 border-b border-slate-100 flex flex-col sticky top-0 bg-white/80 backdrop-blur-xl z-10">
                       <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-4">
@@ -568,7 +557,7 @@ const AppContent: React.FC = () => {
                   <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar bg-slate-50/30 flex-1">
                       {settingsTab === 'info' && (
                         <div className="space-y-6 animate-slide-up">
-                             <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden group">
+                             <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[2rem] p-8 text-white shadow-float relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-20 bg-white opacity-10 rounded-full blur-3xl -translate-y-10 translate-x-10 group-hover:translate-x-5 transition-transform duration-700"></div>
                                 <div className="relative z-10 flex flex-col items-center text-center">
                                     <div className="bg-white p-3 rounded-2xl shadow-lg mb-6 transform group-hover:scale-105 transition-transform duration-500">
