@@ -243,11 +243,19 @@ const AuthenticatedApp: React.FC = () => {
           createdAt: Date.now()
       };
       saveGlobalGroup(newGroup);
-      setMyGroups(prev => [...prev, newGroup]);
+      
+      // FIX: Do not manually update state here, rely on syncGroups triggered by storage event
+      // setMyGroups(prev => [...prev, newGroup]); 
+      
       resetModalState(); 
       setShowGroupModal(false); 
-      setActiveGroupId(newGroup.id); 
-      setActiveTab('tasks');
+      
+      // Delay switch to ensure storage has propagated
+      setTimeout(() => {
+          setActiveGroupId(newGroup.id); 
+          setActiveTab('tasks');
+      }, 50);
+
       alert(t.groupCreated);
   };
   
@@ -274,9 +282,15 @@ const AuthenticatedApp: React.FC = () => {
           updatedGroup = { ...targetGroup, members: [...(targetGroup.members || []), newMember] }; 
           saveGlobalGroup(updatedGroup);
       }
-      setMyGroups(prev => [...prev, updatedGroup]); 
-      setActiveGroupId(updatedGroup.id); 
-      setActiveTab('tasks'); 
+      
+      // FIX: Rely on storage sync
+      // setMyGroups(prev => [...prev, updatedGroup]); 
+      
+      setTimeout(() => {
+          setActiveGroupId(updatedGroup.id); 
+          setActiveTab('tasks'); 
+      }, 50);
+
       setShowJoinModal(false); 
       resetModalState(); 
       alert(t.groupJoined);
@@ -292,7 +306,8 @@ const AuthenticatedApp: React.FC = () => {
           localStorage.removeItem(`group_${groupId}_tasks`); 
           localStorage.removeItem(`group_${groupId}_reflections`);
           deleteGlobalGroup(groupId);
-          setMyGroups(prev => prev.filter(g => g.id !== groupId)); 
+          // Rely on sync for state update
+          // setMyGroups(prev => prev.filter(g => g.id !== groupId)); 
           alert(t.groupDeleted);
       } 
   };
@@ -303,7 +318,8 @@ const AuthenticatedApp: React.FC = () => {
           const updatedMembers = (activeGroup.members || []).filter(m => m.id !== currentUserId); 
           const updatedGroup = { ...activeGroup, members: updatedMembers }; 
           saveGlobalGroup(updatedGroup); 
-          setMyGroups(prev => prev.filter(g => g.id !== activeGroup.id)); 
+          // Rely on sync
+          // setMyGroups(prev => prev.filter(g => g.id !== activeGroup.id)); 
           setActiveGroupId(null); 
           setShowSettingsModal(false); 
           setActiveTab('tasks'); 
@@ -312,7 +328,7 @@ const AuthenticatedApp: React.FC = () => {
   
   const updateGroupMemberState = (updatedGroup: Group) => {
       saveGlobalGroup(updatedGroup);
-      setMyGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+      // setMyGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
   };
   
   const handleSearchUsers = async () => { if (!memberSearchQuery.trim()) return; setIsSearching(true); setHasSearched(true); try { const results = await searchUsers(memberSearchQuery); const existingMemberIds = activeGroup?.members?.map(m => m.id) || []; setFoundUsers(results.filter((u: any) => !existingMemberIds.includes(u.uid))); } catch (error) { console.error(error); } finally { setIsSearching(false); } };
@@ -429,14 +445,18 @@ const AuthenticatedApp: React.FC = () => {
 
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
 
-      {/* TOP BAR (Visible when Tab is Tasks and on Mobile usually, or generally) */}
-      <div className="absolute top-4 left-4 z-30">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-white/60 backdrop-blur-md text-slate-800 rounded-2xl shadow-sm hover:bg-white hover:text-indigo-600 transition-all active:scale-95 border border-white/60 group">
-              <PanelLeft size={24} className="group-hover:scale-110 transition-transform"/>
-          </button>
-      </div>
+      {/* TOP BAR (Visible when Tab is NOT tasks on Mobile usually) */}
+      {/* Hide global buttons when in 'tasks' tab to avoid overlapping with TodoList's internal header */}
+      {activeTab !== 'tasks' && (
+          <div className="absolute top-4 left-4 z-30">
+              <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-white/60 backdrop-blur-md text-slate-800 rounded-2xl shadow-sm hover:bg-white hover:text-indigo-600 transition-all active:scale-95 border border-white/60 group">
+                  <PanelLeft size={24} className="group-hover:scale-110 transition-transform"/>
+              </button>
+          </div>
+      )}
 
-      {activeGroup && activeTab === 'tasks' && (
+      {/* Show settings button globally only if NOT in tasks tab (TodoList handles it internally) */}
+      {activeGroup && activeTab !== 'tasks' && (
           <div className="absolute top-4 right-4 z-30">
                <button onClick={() => setShowSettingsModal(true)} className="p-3 bg-white/60 backdrop-blur-md text-slate-600 rounded-2xl shadow-sm hover:bg-white hover:text-indigo-600 transition-all border border-white group">
                    <Settings size={24} className="group-hover:rotate-90 transition-transform duration-500"/>
@@ -452,6 +472,7 @@ const AuthenticatedApp: React.FC = () => {
                 activeGroup={activeGroup} 
                 onOpenSettings={() => setShowSettingsModal(true)}
                 onOpenProfile={() => setActiveTab('profile')}
+                onToggleSidebar={() => setIsSidebarOpen(true)}
             />
           )}
           {activeTab === 'studio' && <ImageEditor />}
@@ -509,7 +530,7 @@ const AuthenticatedApp: React.FC = () => {
                     value={joinCodeInput} 
                     onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())} 
                     placeholder="CODE..." 
-                    className="w-full p-5 bg-slate-100 border-2 border-slate-200 rounded-2xl text-center text-3xl font-black text-slate-800 tracking-[0.5em] focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:tracking-normal placeholder:font-medium placeholder:text-lg"
+                    className="w-full p-5 bg-slate-100 border-2 border-slate-200 rounded-2xl text-center text-3xl font-black text-slate-800 tracking-[0.5em] focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-medium placeholder:text-lg"
                  />
              </div>
 

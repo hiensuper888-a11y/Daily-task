@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
-  Check, Trash2, Plus, Calendar, User, CheckSquare, 
-  X, SortAsc, Archive, Sparkles
+  Check, Trash2, Plus, Calendar, User, Users, CheckSquare, 
+  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, ChevronDown, CalendarClock, PanelLeft, Send, Hash
 } from 'lucide-react';
-import { Task, Subtask, Group, Priority, SortOption, FilterType } from '../types';
+import { Task, Subtask, Group, Priority, SortOption, FilterType, UserProfile } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
@@ -13,9 +13,10 @@ interface TodoListProps {
   activeGroup: Group | null;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
+  onToggleSidebar: () => void;
 }
 
-export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings, onOpenProfile }) => {
+export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings, onOpenProfile, onToggleSidebar }) => {
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
   
@@ -24,18 +25,38 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const isGlobalStorage = !!activeGroup; 
   
   const [tasks, setTasks] = useRealtimeStorage<Task[]>(storageKey, [], isGlobalStorage);
+  const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
+      name: 'User', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
+  });
   
+  // --- Creation State ---
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
+  const [newDeadline, setNewDeadline] = useState('');
+  const [newPriority, setNewPriority] = useState<Priority>('medium');
+  const [newAssignee, setNewAssignee] = useState<string>(''); // For groups
+  const [showAssigneeList, setShowAssigneeList] = useState(false);
+
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortOption>('manual'); 
   
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset creation state when switching groups
+  useEffect(() => {
+      setNewAssignee('');
+      setNewPriority('medium');
+      setNewDeadline('');
+      setIsInputExpanded(false);
+      setShowAssigneeList(false);
+  }, [activeGroup?.id]);
 
   // --- Actions ---
 
-  const handleAddTask = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleAddTask = async () => {
     if (!newTaskText.trim()) return;
 
     const newTask: Task = {
@@ -44,16 +65,27 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       completed: false,
       progress: 0,
       createdAt: new Date().toISOString(),
-      priority: 'medium',
+      deadline: newDeadline || undefined,
+      priority: newPriority,
       subtasks: [],
       createdBy: currentUserId,
-      assignedTo: activeGroup ? currentUserId : undefined, 
+      assignedTo: activeGroup ? (newAssignee || currentUserId) : undefined, // Default to self in group if not selected
       groupId: activeGroup?.id
     };
 
     setTasks(prev => [newTask, ...prev]);
+    
+    // Reset Form
     setNewTaskText('');
+    setNewDeadline('');
+    setNewPriority('medium');
+    setNewAssignee('');
+    // Keep expanded for rapid entry, but close assignee list
+    setShowAssigneeList(false);
     playSuccessSound(); 
+    
+    // Focus back on input
+    inputRef.current?.focus();
   };
 
   const handleToggleTask = (taskId: number) => {
@@ -120,6 +152,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setEditingTask(null);
   };
 
+  const cyclePriority = () => {
+      if (newPriority === 'medium') setNewPriority('high');
+      else if (newPriority === 'high') setNewPriority('low');
+      else setNewPriority('medium');
+  };
+
   // --- Filtering & Sorting ---
 
   const filteredTasks = useMemo(() => {
@@ -155,126 +193,244 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   return (
     <div className="flex flex-col h-full bg-transparent relative">
       {/* Header Area */}
-      <div className="px-6 pt-6 pb-2 shrink-0 z-10">
-          <div className="flex justify-between items-start mb-4">
-              <div>
-                  <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                      {t.todoHeader}
-                      {activeGroup && <span className="px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold tracking-wider uppercase">Group</span>}
-                  </h1>
-                  <p className="text-slate-400 font-bold text-sm mt-1">{new Date().toLocaleDateString(language, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+      <div className="px-6 pt-6 pb-4 shrink-0 z-10">
+          
+          {/* Top Bar: Navigation & Identity */}
+          <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                  <button 
+                    onClick={onToggleSidebar}
+                    className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-500 hover:text-indigo-600 hover:bg-slate-50 transition-colors"
+                  >
+                      <PanelLeft size={20} />
+                  </button>
+
+                  <div 
+                    onClick={activeGroup ? onOpenSettings : onOpenProfile}
+                    className="flex items-center gap-3 cursor-pointer group"
+                  >
+                      <div className="relative">
+                           <div className="w-11 h-11 rounded-full border-2 border-white shadow-md overflow-hidden bg-white group-hover:shadow-lg transition-all">
+                               <img 
+                                 src={activeGroup ? (activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`) : (userProfile.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=default")} 
+                                 alt="Avatar" 
+                                 className="w-full h-full object-cover"
+                               />
+                           </div>
+                           <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full border-2 border-white shadow-sm ${activeGroup ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-white'}`}>
+                               {activeGroup ? <Users size={10}/> : <User size={10}/>}
+                           </div>
+                      </div>
+                      
+                      <div className="hidden sm:block">
+                           <h1 className="text-lg font-black text-slate-800 leading-tight truncate max-w-[150px]">
+                               {activeGroup ? activeGroup.name : t.todoHeader}
+                           </h1>
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                               {new Date().toLocaleDateString(language, { weekday: 'short', day: 'numeric' })}
+                           </span>
+                      </div>
+                  </div>
               </div>
-              <div className="flex items-center gap-2">
-                   <div className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-400 font-bold text-xs cursor-pointer hover:bg-slate-50 transition-colors" onClick={onOpenProfile}>
-                        <User size={18}/>
-                   </div>
+
+              <div className="flex gap-2">
+                 {activeGroup && (
+                     <button onClick={onOpenSettings} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-colors" title={t.groupName}>
+                        <Settings size={20}/>
+                     </button>
+                 )}
+                 <button onClick={handleArchiveCompleted} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-colors" title={t.clearCompleted}>
+                     <Archive size={20}/>
+                 </button>
+                 <button onClick={() => setSort(s => s === 'priority' ? 'date_new' : 'priority')} className={`p-3 border rounded-xl shadow-sm transition-all ${sort === 'priority' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-400 border-slate-100 hover:text-indigo-600'}`}>
+                     <SortAsc size={20}/>
+                 </button>
               </div>
           </div>
 
-          {/* Progress Card */}
-          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-[2rem] p-6 shadow-xl shadow-indigo-200 text-white relative overflow-hidden mb-6">
-               <div className="absolute top-0 right-0 p-12 bg-white opacity-10 rounded-full blur-2xl -translate-y-6 translate-x-6"></div>
-               <div className="relative z-10 flex justify-between items-end">
-                   <div>
-                       <p className="text-indigo-100 font-bold text-xs uppercase tracking-widest mb-1">{t.dailyProgress}</p>
-                       <h2 className="text-4xl font-black">{stats.percent}%</h2>
-                   </div>
-                   <div className="text-right">
-                       <p className="text-indigo-100 font-medium text-sm">{stats.completed}/{stats.total} {t.items}</p>
-                       <p className="text-white font-bold text-sm">{stats.percent === 100 ? t.greatJob : t.keepGoing}</p>
-                   </div>
+          {/* Progress Bar (Compact) */}
+          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white shadow-sm mb-4">
+               <div className="flex justify-between items-end mb-2">
+                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.dailyProgress}</span>
+                   <span className="text-xl font-black text-indigo-600">{stats.percent}%</span>
                </div>
-               <div className="mt-4 h-2 bg-black/20 rounded-full overflow-hidden backdrop-blur-sm">
-                   <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${stats.percent}%` }}></div>
+               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                   <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${stats.percent}%` }}></div>
                </div>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
-              <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100 shrink-0">
-                  {(['all', 'active', 'completed'] as FilterType[]).map(f => (
-                      <button 
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filter === f ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                      >
-                          {t[f]}
-                      </button>
-                  ))}
-                  {activeGroup && (
-                      <button 
-                        onClick={() => setFilter('assigned_to_me')} 
-                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filter === 'assigned_to_me' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                      >
-                          {t.assigned_to_me}
-                      </button>
-                  )}
-              </div>
-
-              <div className="ml-auto flex gap-2">
-                 <button onClick={handleArchiveCompleted} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-100 shadow-sm" title={t.clearCompleted}>
-                     <Archive size={18}/>
-                 </button>
-                 <button onClick={() => setSort(s => s === 'priority' ? 'date_new' : 'priority')} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 border border-slate-100 shadow-sm">
-                     <SortAsc size={18}/>
-                 </button>
-              </div>
+          {/* Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {(['all', 'active', 'completed'] as FilterType[]).map(f => (
+                  <button 
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'}`}
+                  >
+                      {t[f]}
+                  </button>
+              ))}
+              {activeGroup && (
+                  <button 
+                    onClick={() => setFilter('assigned_to_me')} 
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filter === 'assigned_to_me' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'}`}
+                  >
+                      {t.assigned_to_me}
+                  </button>
+              )}
           </div>
       </div>
 
       {/* Task List */}
-      <div className="flex-1 overflow-y-auto px-6 pb-32 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 pb-48 custom-scrollbar space-y-3">
           {filteredTasks.length === 0 ? (
-              <div className="h-40 flex flex-col items-center justify-center text-slate-400">
-                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
-                      <CheckSquare size={24} className="opacity-30"/>
+              <div className="h-40 flex flex-col items-center justify-center text-slate-400 mt-10">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                      <CheckSquare size={32} className="opacity-20"/>
                   </div>
-                  <p className="font-bold text-sm">{t.emptyTasks}</p>
+                  <p className="font-bold text-sm text-slate-300">{t.emptyTasks}</p>
               </div>
           ) : (
-              <div className="space-y-4">
-                  {filteredTasks.map((task, index) => (
-                      <TaskItem 
-                        key={task.id} 
-                        task={task} 
-                        index={index}
-                        onToggle={() => handleToggleTask(task.id)}
-                        onEdit={() => setEditingTask(task)}
-                        activeGroup={activeGroup}
-                      />
-                  ))}
-              </div>
+              filteredTasks.map((task, index) => (
+                  <TaskItem 
+                    key={task.id} 
+                    task={task} 
+                    index={index}
+                    onToggle={() => handleToggleTask(task.id)}
+                    onEdit={() => setEditingTask(task)}
+                    activeGroup={activeGroup}
+                  />
+              ))
           )}
       </div>
 
-      {/* Quick Add Input (Floating) */}
-      <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center pointer-events-none">
-          <div className="w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-[2rem] p-2 pl-3 shadow-premium ring-1 ring-white/60 animate-slide-up flex items-center gap-2 pointer-events-auto">
-                <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
-                    <Plus size={20} />
-                </div>
-                <input
-                    value={newTaskText}
-                    onChange={(e) => setNewTaskText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddTask(); }}
-                    placeholder={t.addTaskPlaceholder}
-                    className="flex-1 bg-transparent border-none px-2 py-3 text-[16px] font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
-                />
-                <button 
-                    onClick={() => handleAddTask()}
-                    disabled={!newTaskText.trim()}
-                    className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${
-                        !newTaskText.trim()
-                        ? 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed'
-                        : 'bg-slate-900 text-white hover:scale-110 active:scale-95'
-                    }`}
-                >
-                    <Plus size={24} />
-                </button>
+      {/* --- NEW TASK CREATION UI (Modern Bar) --- */}
+      
+      {/* Backdrop */}
+      <div 
+        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[90] transition-opacity duration-300 ${isInputExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => { setIsInputExpanded(false); setShowAssigneeList(false); }}
+      ></div>
+
+      <div 
+        className={`fixed bottom-0 left-0 right-0 z-[100] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isInputExpanded ? 'translate-y-0' : 'translate-y-0'}`}
+      >
+          <div className={`mx-auto transition-all duration-300 ${isInputExpanded ? 'max-w-2xl px-4 pb-6' : 'max-w-xl px-4 pb-6 lg:pb-10'}`}>
+              <div 
+                className={`bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 backdrop-blur-xl transition-all duration-300 overflow-hidden ${
+                    isInputExpanded ? 'rounded-[2rem] p-4' : 'rounded-[2rem] p-2 pr-3 flex items-center gap-3 cursor-text hover:shadow-xl'
+                }`}
+                onClick={() => !isInputExpanded && setIsInputExpanded(true)}
+              >
+                  {/* Plus Icon (Collapsed Only) */}
+                  {!isInputExpanded && (
+                      <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                          <Plus size={24} />
+                      </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                      <input
+                          ref={inputRef}
+                          value={newTaskText}
+                          onChange={(e) => setNewTaskText(e.target.value)}
+                          onFocus={() => setIsInputExpanded(true)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleAddTask(); }}
+                          placeholder={t.addTaskPlaceholder}
+                          className={`w-full bg-transparent outline-none text-slate-800 placeholder:text-slate-400 font-medium ${isInputExpanded ? 'text-lg px-2 pt-1 pb-3' : 'text-base'}`}
+                      />
+                      
+                      {/* Expanded Tools Row */}
+                      {isInputExpanded && (
+                          <div className="flex items-center gap-2 mt-2 px-1 overflow-x-auto scrollbar-none pb-1">
+                              {/* Date Picker Button */}
+                              <div className="relative">
+                                  <button className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${newDeadline ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}>
+                                      <CalendarClock size={14} />
+                                      {newDeadline ? new Date(newDeadline).toLocaleDateString(language, {day: 'numeric', month: 'short'}) : t.deadline}
+                                  </button>
+                                  <input 
+                                      type="datetime-local" 
+                                      value={newDeadline}
+                                      onChange={(e) => setNewDeadline(e.target.value)}
+                                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  />
+                              </div>
+
+                              {/* Priority Button */}
+                              <button 
+                                onClick={cyclePriority}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
+                                    newPriority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
+                                    newPriority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}
+                              >
+                                  <Flag size={14} fill="currentColor" className="opacity-50" />
+                                  {t[newPriority]}
+                              </button>
+
+                              {/* Assignee Button (Group Only) */}
+                              {activeGroup && (
+                                  <button 
+                                    onClick={() => setShowAssigneeList(!showAssigneeList)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${newAssignee ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}
+                                  >
+                                      {newAssignee ? (
+                                          <>
+                                            <img src={activeGroup.members.find(m => m.id === newAssignee)?.avatar} className="w-4 h-4 rounded-full" alt=""/>
+                                            <span className="max-w-[60px] truncate">{activeGroup.members.find(m => m.id === newAssignee)?.name}</span>
+                                          </>
+                                      ) : (
+                                          <>
+                                            <User size={14} /> {t.assignTask}
+                                          </>
+                                      )}
+                                  </button>
+                              )}
+                          </div>
+                      )}
+                  </div>
+
+                  {/* Send/Add Button */}
+                  {isInputExpanded && (
+                      <button 
+                          onClick={handleAddTask}
+                          disabled={!newTaskText.trim()}
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-md ${
+                              newTaskText.trim() 
+                              ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 hover:shadow-indigo-200' 
+                              : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                          }`}
+                      >
+                          <Send size={20} className={newTaskText.trim() ? "ml-0.5" : ""} />
+                      </button>
+                  )}
+              </div>
+
+              {/* Assignee Selection Drawer (Shows below input when active) */}
+              {isInputExpanded && showAssigneeList && activeGroup && (
+                  <div className="mt-3 bg-white/90 backdrop-blur-xl border border-white rounded-2xl p-3 shadow-xl animate-slide-up overflow-x-auto">
+                      <div className="flex gap-3">
+                          {activeGroup.members.map(member => (
+                              <button 
+                                  key={member.id}
+                                  onClick={() => { setNewAssignee(newAssignee === member.id ? '' : member.id); setShowAssigneeList(false); }}
+                                  className={`flex flex-col items-center gap-1 shrink-0 transition-all ${newAssignee === member.id ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-100'}`}
+                              >
+                                  <div className={`w-10 h-10 rounded-full p-0.5 border-2 ${newAssignee === member.id ? 'border-indigo-600' : 'border-transparent'}`}>
+                                      <img src={member.avatar} className="w-full h-full rounded-full object-cover bg-slate-100" alt={member.name} />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-600 max-w-[60px] truncate">{member.name}</span>
+                              </button>
+                          ))}
+                      </div>
+                  </div>
+              )}
           </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Modal (Existing code reused but simplified logic for brevity) */}
       {editingTask && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
             <div className="bg-white rounded-[2.5rem] w-full max-w-lg max-h-[85vh] shadow-2xl animate-scale-in flex flex-col overflow-hidden relative">
@@ -335,7 +491,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                     {/* Subtasks */}
                     <div className="space-y-3">
                          <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.subtasksHeader}</label>
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.subtasksHeader}</label>
+                                {/* Progress Indicator */}
+                                {(editingTask.subtasks?.length || 0) > 0 && (
+                                    <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg">
+                                        <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                                                style={{ width: `${Math.round((editingTask.subtasks!.filter(s => s.completed).length / editingTask.subtasks!.length) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-slate-500">
+                                            {Math.round((editingTask.subtasks!.filter(s => s.completed).length / editingTask.subtasks!.length) * 100)}%
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                             <button onClick={handleAiSubtasks} disabled={isAiProcessing} className="text-[10px] font-bold text-fuchsia-600 bg-fuchsia-50 px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-fuchsia-100 transition-colors">
                                 <Sparkles size={10}/> {t.breakdownAi}
                             </button>
@@ -408,10 +580,23 @@ const TaskItem: React.FC<{
         const d = new Date(task.deadline);
         const diff = d.getTime() - now.getTime();
         const isOverdue = diff < 0;
-        const hoursLeft = Math.floor(diff / (1000 * 60 * 60));
+        const hoursLeft = Math.floor(Math.abs(diff) / (1000 * 60 * 60));
+        const daysLeft = Math.floor(hoursLeft / 24);
         
-        return { isOverdue, hoursLeft };
+        let text = '';
+        if (isOverdue) text = `${hoursLeft}h overdue`;
+        else if (hoursLeft < 24) text = `${hoursLeft}h left`;
+        else text = `${daysLeft}d left`;
+
+        return { isOverdue, text, dateStr: d.toLocaleDateString() };
     }, [task.deadline]);
+
+    // Priority Styling
+    const priorityColor = task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500';
+    const priorityLight = task.priority === 'high' ? 'bg-rose-50 border-rose-100' : task.priority === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100';
+
+    // Assignee Info
+    const assignee = activeGroup && task.assignedTo ? activeGroup.members.find(m => m.id === task.assignedTo) : null;
 
     return (
         <div 
@@ -419,15 +604,18 @@ const TaskItem: React.FC<{
             className={`group relative p-5 rounded-[1.5rem] transition-all duration-300 cursor-pointer mb-3 border transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99]
                 ${task.completed 
                     ? 'bg-slate-50 border-slate-100 opacity-60 grayscale' 
-                    : `bg-white border-white shadow-sm hover:shadow-lg ${deadlineInfo?.isOverdue ? 'ring-2 ring-rose-100' : ''}`
+                    : `bg-white border-white shadow-sm hover:shadow-lg hover:border-slate-100 ${deadlineInfo?.isOverdue ? 'ring-1 ring-rose-200' : ''}`
                 }
             `}
             style={{ animationDelay: `${Math.min(index * 50, 600)}ms`, animationFillMode: 'both' }}
         >
-            <div className="flex items-start gap-4">
+            {/* Priority Indicator Stripe */}
+            <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full ${priorityColor} opacity-70`}></div>
+
+            <div className="flex items-start gap-4 pl-3">
                 <button 
                     onClick={(e) => { e.stopPropagation(); onToggle(); }}
-                    className={`w-6 h-6 mt-1 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0
+                    className={`w-6 h-6 mt-1 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10
                         ${task.completed 
                             ? 'bg-indigo-500 border-indigo-500 text-white scale-110' 
                             : 'bg-transparent border-slate-300 hover:border-indigo-400 hover:bg-indigo-50'
@@ -438,22 +626,28 @@ const TaskItem: React.FC<{
                 </button>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        {task.priority === 'high' && <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>}
-                        {task.priority === 'medium' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>}
-                        {task.priority === 'low' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
-                        
-                        {deadlineInfo && !task.completed && (
-                            <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md ${deadlineInfo.isOverdue ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>
-                                {deadlineInfo.isOverdue ? t.overdue : `${deadlineInfo.hoursLeft}h`}
-                            </span>
-                        )}
-                        
-                        {activeGroup && task.assignedTo && (
-                            <div className="ml-auto flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
-                                <span className="text-[10px] font-bold text-slate-500 truncate max-w-[80px]">
-                                    {activeGroup.members.find(m => m.id === task.assignedTo)?.name || 'Unknown'}
+                    <div className="flex items-center justify-between mb-1.5">
+                        {/* Tags Row */}
+                        <div className="flex items-center gap-2">
+                            {deadlineInfo && !task.completed && (
+                                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md flex items-center gap-1 border ${deadlineInfo.isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                    {deadlineInfo.isOverdue ? <AlertCircle size={10}/> : <Clock size={10}/>}
+                                    {deadlineInfo.text}
                                 </span>
+                            )}
+                            
+                            {!task.completed && task.priority && (
+                                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${priorityLight} text-slate-600`}>
+                                    {task.priority}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Assignee Avatar (Group Only) */}
+                        {assignee && (
+                            <div className="flex items-center gap-1.5 pl-2">
+                                <img src={assignee.avatar} className="w-5 h-5 rounded-full object-cover border border-white shadow-sm" alt={assignee.name}/>
+                                <span className="text-[10px] font-bold text-slate-400 truncate max-w-[60px]">{assignee.name}</span>
                             </div>
                         )}
                     </div>
@@ -484,9 +678,9 @@ const TaskItem: React.FC<{
 
 const getPriorityColor = (p: Priority) => {
     switch(p) {
-        case 'high': return 'bg-rose-100 text-rose-700';
-        case 'medium': return 'bg-amber-100 text-amber-700';
-        case 'low': return 'bg-emerald-100 text-emerald-700';
-        default: return 'bg-slate-100 text-slate-600';
+        case 'high': return 'bg-rose-100 text-rose-700 border-rose-200';
+        case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'low': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
 };
