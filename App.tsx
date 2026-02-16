@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, PanelLeft, LayoutGrid, MoreHorizontal, Sparkles, Clock } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, PanelLeft, LayoutGrid, MoreHorizontal, Sparkles, Clock, UserPlus } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
@@ -548,18 +548,28 @@ const AuthenticatedApp: React.FC = () => {
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">{t.joinCode}</label>
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">{t.joinCode} & {t.inviteMembers}</label>
                                 <div className="flex gap-2">
                                     <div className="flex-1 bg-slate-50 p-4 rounded-xl font-mono text-xl font-bold text-slate-800 tracking-widest text-center border border-slate-200 border-dashed">{activeGroup.joinCode}</div>
-                                    <button onClick={handleShareGroup} className="p-4 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-colors"><Share2 size={20}/></button>
+                                    <button onClick={handleShareGroup} className="p-4 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-colors" title={t.shareGroup}><Share2 size={20}/></button>
+                                    <button onClick={() => { setSettingsTab('members'); }} className="p-4 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-colors" title={t.inviteMembers}><UserPlus size={20}/></button>
                                 </div>
                             </div>
 
                             <div className="flex gap-4">
                                 <button onClick={handleLeaveGroup} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors">{t.leaveGroup}</button>
-                                {activeGroup.leaderId === currentUserId && (
-                                    <button onClick={handleDeleteGroup} className="flex-1 py-4 bg-red-50 text-red-600 font-bold rounded-2xl hover:bg-red-100 transition-colors">{t.deleteGroup}</button>
-                                )}
+                                <button 
+                                    onClick={activeGroup.leaderId === currentUserId ? handleDeleteGroup : undefined} 
+                                    disabled={activeGroup.leaderId !== currentUserId}
+                                    className={`flex-1 py-4 font-bold rounded-2xl transition-colors ${
+                                        activeGroup.leaderId === currentUserId 
+                                        ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'
+                                    }`}
+                                >
+                                    {t.deleteGroup}
+                                    {activeGroup.leaderId !== currentUserId && <span className="block text-[10px] font-normal opacity-70">{t.leader} Only</span>}
+                                </button>
                             </div>
                         </div>
                     )}
