@@ -8,9 +8,9 @@ import {
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
   Paperclip, FileText, Loader2,
   MoreVertical, Sparkles, Flag, GripVertical, MessageSquare, Star, Crown,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, Send, Save, Download, PlayCircle
 } from 'lucide-react';
-import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption } from '../types';
+import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption, Comment } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { playSuccessSound } from '../utils/sound';
@@ -20,6 +20,15 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 export interface TodoListProps {
   activeGroup: Group | null;
 }
+
+// --- HELPER: Format Date for Input (Local Time) ---
+const formatForInput = (isoString?: string) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+    const pad = (num: number) => String(num).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 
 // --- BEAUTIFIED TASK ITEM ---
 const TaskItem = React.memo(({ 
@@ -65,25 +74,57 @@ const TaskItem = React.memo(({
     const formatDeadline = (isoString: string) => {
         const target = new Date(isoString);
         if (isNaN(target.getTime())) return null;
+        
         const now = new Date();
         const diffMs = target.getTime() - now.getTime();
         const diffHrs = diffMs / (1000 * 60 * 60);
+        const diffMins = diffMs / (1000 * 60);
+        
+        // For Today/Tomorrow calculation based on local time
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const targetDay = new Date(target);
+        targetDay.setHours(0,0,0,0);
+        
         const isOverdue = diffMs < 0;
-        const isSoon = diffHrs > 0 && diffHrs < 24;
+        const isToday = targetDay.getTime() === today.getTime();
+        
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const isTomorrow = targetDay.getTime() === tomorrow.getTime();
 
-        let text = target.toLocaleDateString(language, { day: 'numeric', month: 'short' });
-        let colorClass = 'text-slate-500 bg-slate-100/80';
-        let icon = <CalendarClock size={12} />;
+        // Default formatting: use toLocaleString for date AND time support across browsers
+        let text = target.toLocaleString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        let colorClass = 'text-slate-500 bg-slate-100 border-slate-200';
+        let icon = <CalendarClock size={13} />;
 
         if (isOverdue) {
-            text = t.overdue;
-            colorClass = 'text-rose-600 bg-rose-50 font-bold';
-            icon = <AlertCircle size={12} />;
-        } else if (isSoon) {
-            text = `${Math.ceil(diffHrs)}${t.hoursLeft}`;
-            colorClass = 'text-amber-600 bg-amber-50 font-bold';
-            icon = <Timer size={12} />;
+            // If overdue within 24h, show hours ago. Else show date.
+            if (diffHrs > -24) {
+                 text = `${t.overdue} (${Math.abs(Math.ceil(diffHrs))}h)`;
+            } else {
+                 // For older overdue, just show date
+                 text = `${t.overdue} (${target.toLocaleDateString(language, {month: 'numeric', day: 'numeric'})})`;
+            }
+            colorClass = 'text-rose-600 bg-rose-50 border-rose-200 font-bold';
+            icon = <AlertCircle size={13} />;
+        } else if (isToday) {
+            // Urgency: < 1 hour shows mins left
+            if (diffMins < 60 && diffMins > 0) {
+                 text = `${Math.ceil(diffMins)} ${t.minsLeft}`;
+                 colorClass = 'text-amber-600 bg-amber-50 border-amber-200 font-bold';
+                 icon = <Timer size={13} />;
+            } else {
+                 text = `${t.today}, ${target.toLocaleTimeString(language, {hour: '2-digit', minute: '2-digit'})}`;
+                 colorClass = 'text-indigo-600 bg-indigo-50 border-indigo-200 font-bold';
+                 icon = <Clock size={13} />;
+            }
+        } else if (isTomorrow) {
+            text = `${t.tomorrow}, ${target.toLocaleTimeString(language, {hour: '2-digit', minute: '2-digit'})}`;
+            colorClass = 'text-blue-600 bg-blue-50 border-blue-200 font-medium';
+            icon = <CalendarIcon size={13} />;
         }
+        
         return { text, colorClass, icon, isOverdue };
     };
 
@@ -92,13 +133,14 @@ const TaskItem = React.memo(({
     const subtasksCompleted = task.subtasks?.filter(s => s.completed).length || 0;
     const assignedMember = activeGroup?.members?.find(m => m.id === task.assignedTo);
     const attachmentsCount = task.attachments?.length || 0;
+    const commentsCount = task.comments?.length || 0;
 
     // --- Priority Styling ---
     const getPriorityColor = (p: Priority = 'medium') => {
         switch(p) {
-            case 'high': return 'bg-rose-500';
-            case 'medium': return 'bg-amber-500';
-            case 'low': return 'bg-sky-500';
+            case 'high': return 'bg-rose-500 shadow-glow shadow-rose-500/40';
+            case 'medium': return 'bg-amber-500 shadow-glow shadow-amber-500/40';
+            case 'low': return 'bg-sky-500 shadow-glow shadow-sky-500/40';
             default: return 'bg-slate-300';
         }
     };
@@ -121,55 +163,63 @@ const TaskItem = React.memo(({
             }}
             onDrop={(e) => onDrop(e, task.id)}
             onClick={() => onEdit(task)}
-            className={`group relative pl-4 pr-4 py-4 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] cursor-pointer mb-3 backdrop-blur-xl border border-white/60 overflow-hidden transform-gpu animate-slide-up
+            className={`group relative pl-5 pr-5 py-5 rounded-[1.8rem] transition-all duration-500 cubic-bezier(0.23, 1, 0.32, 1) cursor-pointer mb-3 backdrop-blur-xl border border-white/60 overflow-hidden transform-gpu animate-slide-up
                 ${task.completed 
-                    ? 'opacity-60 bg-slate-50/50 shadow-none scale-[0.99] grayscale-[0.2]' 
-                    : 'bg-white/80 hover:bg-white shadow-subtle hover:shadow-float hover:-translate-y-1'
+                    ? 'opacity-60 bg-slate-50/40 shadow-none scale-[0.98] grayscale-[0.05]' 
+                    : 'bg-white/70 hover:bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.06)] hover:-translate-y-1 hover:border-white'
                 }
-                ${isDraggable ? 'active:cursor-grabbing cursor-grab' : ''} 
+                ${isDraggable ? 'active:cursor-grabbing cursor-grab active:scale-[0.98]' : ''} 
                 ${isDragging ? 'opacity-40 scale-[0.95] rotate-1 border-dashed border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200 shadow-none grayscale' : ''}
                 ${isDragOver && !isDragging ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-slate-100 scale-[1.02] z-20 shadow-2xl bg-white rotate-0' : ''}
+                ${deadlineInfo?.isOverdue && !task.completed ? 'ring-1 ring-rose-300 bg-rose-50/30' : ''}
             `}
             style={{ animationDelay: `${Math.min(index * 40, 600)}ms`, animationFillMode: 'both' }}
         >
              {/* Priority Indicator Dot */}
-             <div className={`absolute top-4 right-4 w-2 h-2 rounded-full ${priorityColor} ${task.completed ? 'opacity-30' : 'opacity-80'}`}></div>
+             <div className={`absolute top-5 right-5 w-2.5 h-2.5 rounded-full ${priorityColor} ${task.completed ? 'opacity-30' : 'opacity-100'}`}></div>
 
              <div className="flex items-start gap-4">
-                {/* Checkbox */}
+                {/* Checkbox - Fluid Animation */}
                 <button 
                   onClick={(e) => onToggle(task, e)} 
-                  className={`mt-0.5 w-6 h-6 rounded-[8px] flex items-center justify-center transition-all duration-300 relative shrink-0 ${
-                    task.completed 
-                      ? 'bg-gradient-to-tr from-emerald-400 to-teal-500 text-white shadow-glow ring-2 ring-emerald-100' 
-                      : `bg-slate-100 text-transparent hover:bg-slate-200`
-                  }`}
+                  className={`mt-0.5 w-6 h-6 rounded-[10px] flex items-center justify-center transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) relative shrink-0 border-2
+                    ${task.completed 
+                      ? 'bg-emerald-500 border-emerald-500 text-white scale-100 shadow-md shadow-emerald-200 rotate-0' 
+                      : 'bg-white border-slate-200 text-transparent hover:border-indigo-300 hover:scale-110 active:scale-90'
+                    }
+                  `}
                 >
-                    <Check size={14} strokeWidth={3} className={`transition-all duration-300 ${task.completed ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}/>
+                    <Check size={14} strokeWidth={4} className={`transition-all duration-500 ease-out ${task.completed ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`}/>
                 </button>
 
                 <div className="flex-1 min-w-0 pr-6">
                     {/* Title */}
-                    <p className={`text-[15px] font-bold leading-snug transition-all duration-500 line-clamp-2 mb-2 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
+                    <p className={`text-[16px] font-bold leading-snug transition-all duration-500 line-clamp-2 mb-2.5 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
                     
                     {/* Meta Row */}
-                    <div className="flex items-center flex-wrap gap-2.5">
+                    <div className="flex items-center flex-wrap gap-2">
                         {deadlineInfo && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-colors ${deadlineInfo.colorClass}`}>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border transition-colors ${deadlineInfo.colorClass}`}>
                                 {deadlineInfo.icon} {deadlineInfo.text}
                             </span>
                         )}
                         
                         {(subtasksCount > 0) && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100/80 text-[10px] font-bold text-slate-500">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/80 text-[11px] font-bold text-slate-500 border border-slate-200/50">
                                 <ListChecks size={12}/>
                                 <span>{subtasksCompleted}/{subtasksCount}</span>
                             </div>
                         )}
                         
                         {attachmentsCount > 0 && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100/80 text-[10px] font-bold text-slate-500">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/80 text-[11px] font-bold text-slate-500 border border-slate-200/50">
                                 <Paperclip size={12}/> <span>{attachmentsCount}</span>
+                            </div>
+                        )}
+
+                        {commentsCount > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/80 text-[11px] font-bold text-slate-500 border border-slate-200/50">
+                                <MessageSquare size={12}/> <span>{commentsCount}</span>
                             </div>
                         )}
 
@@ -185,13 +235,13 @@ const TaskItem = React.memo(({
              
              {/* Delete Action */}
              <button 
-                className="absolute bottom-3 right-3 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 z-20 opacity-0 group-hover:opacity-100"
+                className="absolute bottom-4 right-4 p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 z-20 opacity-0 group-hover:opacity-100"
                 onClick={(e) => {
                     e.stopPropagation(); 
                     onDelete(task.id, e);
                 }}
              >
-                <Trash2 size={16} />
+                <Trash2 size={18} />
              </button>
         </div>
     );
@@ -217,6 +267,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   // Editing State
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newSubtaskText, setNewSubtaskText] = useState('');
+  const [newCommentText, setNewCommentText] = useState('');
   
   // Drag and Drop State
   const [dragId, setDragId] = useState<number | null>(null);
@@ -230,7 +281,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
   const [completionNote, setCompletionNote] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterType>('all');
-  const [sortOption, setSortOption] = useState<SortOption>('priority');
+  const [sortOption, setSortOption] = useState<SortOption>('manual');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewDate, setViewDate] = useState<Date>(new Date());
@@ -238,8 +289,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
@@ -258,13 +311,22 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       setIsInputExpanded(false);
   }, [activeGroup]);
 
+  useEffect(() => {
+      if (editingTask && commentsEndRef.current) {
+          commentsEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+  }, [editingTask?.comments]);
+
   // Click outside to collapse input
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-          if (inputContainerRef.current && !inputContainerRef.current.contains(event.target as Node) && isInputExpanded && !inputValue.trim()) {
+          // Check if click is outside and NOT on a date picker or select (which might render in a portal)
+          if (inputContainerRef.current && !inputContainerRef.current.contains(event.target as Node)) {
               // Only collapse if empty to avoid accidental data loss
-              setIsInputExpanded(false);
-              setShowInputDetails(false);
+              if (isInputExpanded && !inputValue.trim()) {
+                  setIsInputExpanded(false);
+                  setShowInputDetails(false);
+              }
           }
       };
       document.addEventListener("mousedown", handleClickOutside);
@@ -487,6 +549,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       }); 
   };
 
+  const addComment = () => {
+      if (!editingTask || !newCommentText.trim()) return;
+      const newComment: Comment = {
+          id: Date.now().toString(),
+          userId: currentUserId,
+          userName: userProfile.name || 'User',
+          userAvatar: userProfile.avatar || '',
+          text: newCommentText.trim(),
+          timestamp: Date.now(),
+          role: activeGroup?.leaderId === currentUserId ? 'leader' : 'member'
+      };
+      
+      const updatedComments = [...(editingTask.comments || []), newComment];
+      setEditingTask({ ...editingTask, comments: updatedComments });
+      setNewCommentText('');
+  };
+
   const addTask = () => {
     if (inputValue.trim() === '') return;
     if (activeGroup && !isLeader) { alert(t.leaderOnly); return; }
@@ -611,6 +690,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const targetDateStr = getLocalDateString(viewDate);
     
     let result = tasks.filter(t => {
+        // Handle Archived
         if (filterStatus === 'archived') { 
           if (!t.archived) return false; 
           if (searchQuery) return t.text.toLowerCase().includes(searchQuery.toLowerCase()); 
@@ -618,14 +698,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         } 
         if (t.archived) return false;
 
+        // Search Filter
         if (searchQuery && !t.text.toLowerCase().includes(searchQuery.toLowerCase())) { return false; }
 
+        // Specific Group Filters
         if (filterStatus === 'assigned_to_me') { 
           return t.assignedTo === currentUserId && !t.completed; 
         }
         if (filterStatus === 'delegated') { 
           if (t.createdBy) {
-             return t.assignedTo && t.assignedTo !== currentUserId && t.createdBy === currentUserId && !t.completed;
+             return t.createdBy === currentUserId && t.assignedTo && t.assignedTo !== currentUserId && !t.completed;
           }
           return t.assignedTo && t.assignedTo !== currentUserId && !t.completed; 
         }
@@ -642,39 +724,35 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
     // ROBUST SORTING LOGIC
     return result.sort((a, b) => {
-        // 1. Completed tasks always go to the bottom unless we are looking at archived
-        if (filterStatus !== 'completed' && filterStatus !== 'archived') {
-            if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        }
+        // Priority Value Helper
+        const getPrioVal = (p?: Priority) => p === 'high' ? 3 : p === 'medium' ? 2 : 1;
 
         switch (sortOption) {
-            case 'manual':
-                return 0; // Maintain array order
-            case 'priority': {
-                const pMap = { high: 3, medium: 2, low: 1 };
-                const pA = pMap[a.priority || 'medium'];
-                const pB = pMap[b.priority || 'medium'];
-                if (pA !== pB) return pB - pA; // High to Low
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // Newest first for ties
-            }
+            case 'priority':
+                if (getPrioVal(a.priority) !== getPrioVal(b.priority)) {
+                    return getPrioVal(b.priority) - getPrioVal(a.priority);
+                }
+                break;
+            case 'deadline':
+                // Tasks with deadlines come first, sorted by nearest
+                if (a.deadline && b.deadline) return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+                if (a.deadline) return -1;
+                if (b.deadline) return 1;
+                break;
             case 'date_new':
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            
             case 'date_old':
                 return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            
-            case 'deadline': {
-                if (!a.deadline && !b.deadline) return 0;
-                if (!a.deadline) return 1; // No deadline -> bottom
-                if (!b.deadline) return -1;
-                const timeDiff = new Date(a.deadline).getTime() - new Date(b.deadline).getTime(); // Nearest first
-                if (timeDiff !== 0) return timeDiff;
-                const pMap2 = { high: 3, medium: 2, low: 1 };
-                return pMap2[b.priority || 'medium'] - pMap2[a.priority || 'medium'];
-            }   
+            case 'manual':
             default:
-                return 0;
+                if (filterStatus !== 'completed' && filterStatus !== 'archived') {
+                    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                }
+                return 0; // Keep array order
         }
+        
+        // Secondary sort for stability: Newest created first
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   }, [tasks, viewDate, filterStatus, searchQuery, currentUserId, sortOption]);
@@ -721,7 +799,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* PROFESSIONAL EDIT MODAL */}
       {editingTask && (
         <div onClick={() => setEditingTask(null)} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-fade-in">
-          {/* ... (Existing Edit Modal Code - No changes needed here, keeping logic) ... */}
           <div onClick={e => e.stopPropagation()} className="glass-modal rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl animate-scale-in flex flex-col border border-white/60">
               <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-10 p-8 flex items-center justify-between border-b border-slate-100 rounded-t-[2.5rem]">
                 <div className="flex items-center gap-4">
@@ -737,7 +814,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
             </div>
             <div className="p-8 space-y-8">
                 {/* Priority Selection in Edit Modal */}
-                <div className="flex gap-2 p-2 bg-slate-100 rounded-xl justify-between items-center">
+                <div className="flex gap-2 p-2 bg-slate-100 rounded-2xl justify-between items-center">
                     <span className="text-xs font-bold text-slate-500 uppercase ml-2 tracking-wider">{t.priority}</span>
                     <div className="flex gap-1">
                         {(['low', 'medium', 'high'] as Priority[]).map(p => {
@@ -747,7 +824,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                             if (p === 'medium') colors = active ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'text-slate-500 hover:bg-amber-100 hover:text-amber-600';
                             if (p === 'low') colors = active ? 'bg-sky-500 text-white shadow-lg shadow-sky-200' : 'text-slate-500 hover:bg-sky-100 hover:text-sky-600';
                             return (
-                                <button key={p} onClick={() => setEditingTask({...editingTask, priority: p})} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${colors}`}>
+                                <button key={p} onClick={() => setEditingTask({...editingTask, priority: p})} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${colors}`}>
                                     {t[p]}
                                 </button>
                             );
@@ -755,16 +832,44 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     </div>
                 </div>
 
+                {/* Date Inputs in Edit Modal - Improved Look */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{t.assignedDate || 'Start'}</label>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3.5 hover:border-indigo-200 transition-colors focus-within:ring-2 focus-within:ring-indigo-100">
+                            <CalendarIcon size={18} className="text-indigo-500" />
+                            <input 
+                                type="datetime-local" 
+                                value={formatForInput(editingTask.createdAt)} 
+                                onChange={e => setEditingTask({...editingTask, createdAt: new Date(e.target.value).toISOString()})}
+                                className="bg-transparent text-sm font-bold text-slate-700 outline-none w-full"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{t.deadline}</label>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-3.5 hover:border-indigo-200 transition-colors focus-within:ring-2 focus-within:ring-indigo-100">
+                            <CalendarClock size={18} className="text-indigo-500" />
+                            <input 
+                                type="datetime-local" 
+                                value={formatForInput(editingTask.deadline)}
+                                onChange={e => setEditingTask({...editingTask, deadline: new Date(e.target.value).toISOString()})}
+                                className="bg-transparent text-sm font-bold text-slate-700 outline-none w-full"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div className="group relative">
                     <div className="flex justify-between items-center mb-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.taskContent}</label>
                         {isOnline && (
-                             <button onClick={handleAiRefineText} disabled={isAiProcessing} className="text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
+                             <button onClick={handleAiRefineText} disabled={isAiProcessing} className="text-[10px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
                                  {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : t.optimizeAi}
                              </button>
                         )}
                     </div>
-                    <textarea rows={2} value={editingTask.text} onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} className="w-full p-4 bg-slate-50 rounded-2xl border border-transparent focus:border-indigo-200 focus:bg-white text-lg font-semibold text-slate-800 focus:ring-0 outline-none resize-none placeholder:text-slate-300 transition-all shadow-sm"/>
+                    <textarea rows={3} value={editingTask.text} onChange={e => setEditingTask({ ...editingTask, text: e.target.value })} className="w-full p-5 bg-slate-50 rounded-2xl border border-transparent focus:border-indigo-200 focus:bg-white text-lg font-semibold text-slate-800 focus:ring-4 focus:ring-indigo-50 outline-none resize-none placeholder:text-slate-300 transition-all shadow-inner-light"/>
                 </div>
 
                 <div className="group">
@@ -780,7 +885,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     <div className="flex justify-between items-end">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.subtasksHeader || 'Checklist'}</label>
                         {isOnline && (
-                            <button onClick={handleAiGenerateSubtasks} disabled={isAiProcessing} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
+                            <button onClick={handleAiGenerateSubtasks} disabled={isAiProcessing} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
                                 {isAiProcessing ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>} {t.breakdownAi || 'Auto-Breakdown'}
                             </button>
                         )}
@@ -788,16 +893,16 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     
                     <div className="space-y-2">
                         {editingTask.subtasks?.map(subtask => (
-                            <div key={subtask.id} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl group/sub transition-all hover:shadow-sm">
-                                <button onClick={() => toggleSubtask(subtask.id)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${subtask.completed ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 hover:border-indigo-400'}`}>
-                                    {subtask.completed && <Check size={12} className="text-white" />}
+                            <div key={subtask.id} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-2xl group/sub transition-all hover:shadow-sm hover:border-indigo-100">
+                                <button onClick={() => toggleSubtask(subtask.id)} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${subtask.completed ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 hover:border-indigo-400'}`}>
+                                    {subtask.completed && <Check size={14} className="text-white" />}
                                 </button>
                                 <span className={`flex-1 text-sm font-medium ${subtask.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{subtask.text}</span>
-                                <button onClick={() => deleteSubtask(subtask.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover/sub:opacity-100 transition-all p-1 rounded-lg hover:bg-red-50"><Trash2 size={16}/></button>
+                                <button onClick={() => deleteSubtask(subtask.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover/sub:opacity-100 transition-all p-2 rounded-xl hover:bg-red-50"><Trash2 size={16}/></button>
                             </div>
                         ))}
                         {(!editingTask.subtasks || editingTask.subtasks.length === 0) && (
-                            <div className="text-center py-4 text-slate-400 text-xs italic">{t.addSubtaskPlaceholder || 'No subtasks yet.'}</div>
+                            <div className="text-center py-4 text-slate-400 text-xs italic bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">{t.addSubtaskPlaceholder || 'No subtasks yet.'}</div>
                         )}
                     </div>
 
@@ -813,9 +918,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                 }
                             }}
                             placeholder={t.addSubtaskPlaceholder || 'Add a step...'} 
-                            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                            className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 outline-none transition-all placeholder:text-slate-400"
                         />
-                        <button onClick={addSubtask} className="p-3 bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white rounded-xl transition-all shadow-sm">
+                        <button onClick={addSubtask} className="p-3.5 bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white rounded-2xl transition-all shadow-sm">
                             <Plus size={20}/>
                         </button>
                     </div>
@@ -833,6 +938,53 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                 </button>
                             ))}
                          </div>
+                    </div>
+                 )}
+
+                 {/* Comments Section */}
+                 {activeGroup && (
+                    <div className="space-y-3 pt-4 border-t border-slate-100">
+                        <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><MessageSquare size={16} /> Comments</label>
+                        <div className="space-y-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                            <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                                {editingTask.comments?.map((comment) => (
+                                    <div key={comment.id} className={`flex gap-3 ${comment.userId === currentUserId ? 'flex-row-reverse' : ''}`}>
+                                        <img src={comment.userAvatar} className="w-8 h-8 rounded-full bg-white shadow-sm object-cover border border-slate-200" alt=""/>
+                                        <div className={`p-3 rounded-2xl max-w-[80%] ${comment.userId === currentUserId ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'}`}>
+                                            <p className="text-sm font-medium whitespace-pre-wrap">{comment.text}</p>
+                                            <p className={`text-[10px] mt-1 ${comment.userId === currentUserId ? 'text-indigo-200' : 'text-slate-400'}`}>{new Date(comment.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric' })}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!editingTask.comments || editingTask.comments.length === 0) && (
+                                    <p className="text-center text-xs text-slate-400 italic py-4">No comments yet.</p>
+                                )}
+                                <div ref={commentsEndRef} />
+                            </div>
+                            
+                            <div className="flex gap-2 relative">
+                                <input 
+                                    type="text" 
+                                    value={newCommentText} 
+                                    onChange={(e) => setNewCommentText(e.target.value)} 
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            addComment();
+                                        }
+                                    }}
+                                    placeholder="Write a comment..." 
+                                    className="flex-1 pl-4 pr-12 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none transition-all"
+                                />
+                                <button 
+                                    onClick={addComment} 
+                                    disabled={!newCommentText.trim()}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-indigo-50 disabled:hover:text-indigo-600"
+                                >
+                                    <Send size={16}/>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                  )}
 
@@ -887,8 +1039,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
             </div>
             <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl p-8 border-t border-slate-100 rounded-b-[2.5rem] flex gap-4">
-              <button onClick={(e) => deleteTask(editingTask.id, e)} className="p-4 rounded-xl text-rose-500 font-bold bg-rose-50 hover:bg-rose-100 transition-all"><Trash2 size={24}/></button>
-              <button onClick={updateTask} className="flex-1 py-4 rounded-xl text-white font-bold text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce">{t.saveChanges}</button>
+              <button onClick={(e) => deleteTask(editingTask.id, e)} className="p-4 rounded-2xl text-rose-500 font-bold bg-rose-50 hover:bg-rose-100 transition-all"><Trash2 size={24}/></button>
+              <button onClick={updateTask} className="flex-1 py-4 rounded-2xl text-white font-bold text-lg bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all btn-bounce">{t.saveChanges}</button>
             </div>
           </div>
         </div>
@@ -947,12 +1099,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                 <div className="relative">
                     <button 
                         onClick={() => setShowSortMenu(!showSortMenu)} 
-                        className={`p-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 shadow-sm ${currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white backdrop-blur-md' : 'bg-white border-white text-slate-500 shadow-slate-200'}`}
+                        className={`p-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 shadow-sm ${currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white backdrop-blur-md' : 'bg-white border-white text-slate-500 shadow-slate-200'} ${sortOption !== 'manual' ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
                     >
                         <ArrowUpDown size={20} />
                     </button>
                      {showSortMenu && (
-                        <div className="absolute top-12 right-0 bg-white/90 backdrop-blur-xl border border-white p-2 rounded-2xl shadow-xl z-50 min-w-[160px] animate-scale-in origin-top-right ring-1 ring-slate-900/5">
+                        <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)}></div>
+                        <div className="absolute top-14 right-0 bg-white/90 backdrop-blur-xl border border-white p-2 rounded-2xl shadow-xl z-50 min-w-[180px] animate-scale-in origin-top-right ring-1 ring-slate-900/5">
+                            <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.sortBy}</div>
                             {(Object.keys(sortOptionsConfig) as SortOption[]).map(key => { 
                                 const config = sortOptionsConfig[key]; 
                                 return (
@@ -964,6 +1119,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                 ) 
                             })}
                         </div>
+                        </>
                     )}
                 </div>
              </div>
@@ -987,7 +1143,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       </div>
 
       {/* Task List Container */}
-      <div className="flex-1 overflow-y-auto px-4 pb-40 custom-scrollbar space-y-1 relative z-0 pt-2 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto px-4 pb-44 custom-scrollbar space-y-1 relative z-0 pt-2 flex flex-col items-center">
         <div className="w-full max-w-3xl">
             {filteredTasks.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-300 animate-scale-in py-20">
@@ -1007,7 +1163,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     onDelete={deleteTask}
                     onEdit={handleEditClick}
                     onProgressChange={handleProgressChange}
-                    isDraggable={sortOption === 'manual' && !searchQuery}
+                    isDraggable={sortOption === 'manual' && !searchQuery && filterStatus !== 'completed' && filterStatus !== 'archived'}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDragEnter={handleDragEnter}
@@ -1025,7 +1181,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       <div className="fixed bottom-6 lg:bottom-8 left-0 right-0 z-[10000] pb-safe flex justify-center pointer-events-none px-4">
           <div 
             ref={inputContainerRef}
-            className={`pointer-events-auto bg-white/90 backdrop-blur-[30px] rounded-[2.5rem] shadow-float ring-1 ring-white/60 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center gap-3 relative overflow-hidden group ${isInputExpanded ? 'w-full max-w-2xl p-2 pl-3 bg-white/95' : 'w-14 h-14 p-0 hover:scale-110 active:scale-95 cursor-pointer bg-slate-900 border-none text-white'}`}
+            className={`pointer-events-auto bg-white/80 backdrop-blur-[40px] rounded-[2.5rem] shadow-float ring-1 ring-white/60 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center gap-3 relative group ${
+                isInputExpanded 
+                ? `w-full max-w-2xl p-2 pl-3 bg-white/95 ${showInputDetails ? 'overflow-visible' : 'overflow-hidden'}` 
+                : 'w-14 h-14 p-0 hover:scale-110 active:scale-95 cursor-pointer bg-slate-900 border-none text-white overflow-hidden'
+            }`}
             onClick={() => !isInputExpanded && setIsInputExpanded(true)}
           >
               {/* COMPACT STATE */}
@@ -1040,7 +1200,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                   <>
                     <button 
                         onClick={(e) => { e.stopPropagation(); setShowInputDetails(!showInputDetails); }} 
-                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-slate-900 text-white rotate-90' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 ${showInputDetails ? 'bg-slate-900 text-white rotate-90 shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     >
                         <SlidersHorizontal size={18} />
                     </button>
@@ -1048,7 +1208,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                     <div className="flex-1 min-w-0 relative">
                         {/* EXPANDED DETAILS PANEL */}
                         {showInputDetails && (
-                            <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-up origin-bottom">
+                            <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-up origin-bottom z-[10001]">
                                 <div className="flex flex-col gap-4">
                                     <div className="flex justify-between items-center">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
@@ -1068,31 +1228,68 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                         </div>
                                     )}
 
-                                    <div className="flex gap-2">
-                                        <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} className="bg-slate-50 rounded-xl text-xs px-3 py-2.5 border border-slate-100 outline-none focus:border-indigo-200 flex-1 font-medium text-slate-600" />
+                                    <div className="flex flex-col gap-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t.assignedDate || 'Start'}</label>
+                                                <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
+                                                     <CalendarIcon size={14} className="text-indigo-500"/>
+                                                     <input type="datetime-local" value={assignedDate} onChange={(e) => setAssignedDate(e.target.value)} className="bg-transparent text-xs font-bold text-slate-600 outline-none w-full"/>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t.deadline || 'Due'}</label>
+                                                <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
+                                                     <CalendarClock size={14} className="text-indigo-500"/>
+                                                     <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="bg-transparent text-xs font-bold text-slate-600 outline-none w-full"/>
+                                                </div>
+                                            </div>
+                                        </div>
                                         
-                                        <div className="flex bg-slate-100 rounded-xl p-1 shrink-0 border border-slate-200">
-                                            {(['low', 'medium', 'high'] as Priority[]).map(p => {
-                                                const isActive = newPriority === p;
-                                                let activeClass = "";
-                                                if (p === 'low') activeClass = "bg-sky-500 text-white shadow-md";
-                                                if (p === 'medium') activeClass = "bg-amber-500 text-white shadow-md";
-                                                if (p === 'high') activeClass = "bg-rose-500 text-white shadow-md";
+                                        <div className="flex items-center gap-2">
+                                            <Flag size={16} className="text-slate-400" />
+                                            <div className="flex bg-slate-100 rounded-xl p-1 shrink-0 border border-slate-200 flex-1">
+                                                {(['low', 'medium', 'high'] as Priority[]).map(p => {
+                                                    const isActive = newPriority === p;
+                                                    let activeClass = "";
+                                                    if (p === 'low') activeClass = "bg-sky-500 text-white shadow-md";
+                                                    if (p === 'medium') activeClass = "bg-amber-500 text-white shadow-md";
+                                                    if (p === 'high') activeClass = "bg-rose-500 text-white shadow-md";
 
-                                                return (
-                                                    <button 
-                                                        key={p} 
-                                                        onClick={() => setNewPriority(p)} 
-                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${isActive ? activeClass : 'text-slate-400 hover:text-slate-600'}`}
-                                                    >
-                                                        {p.substring(0,1)}
-                                                    </button>
-                                                )
-                                            })}
+                                                    return (
+                                                        <button 
+                                                            key={p} 
+                                                            onClick={() => setNewPriority(p)} 
+                                                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${isActive ? activeClass : 'text-slate-400 hover:text-slate-600'}`}
+                                                        >
+                                                            {t[p]}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* Quick Assign for Groups */}
+                                    {activeGroup && (
+                                        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Users size={12}/> {t.assignTask}</label>
+                                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                                {activeGroup.members?.map(member => (
+                                                    <button 
+                                                        key={member.id} 
+                                                        onClick={() => setAssignedTo(assignedTo === member.id ? '' : member.id)} 
+                                                        className={`relative flex-shrink-0 transition-all ${assignedTo === member.id ? 'scale-110' : 'opacity-70 hover:opacity-100'}`}
+                                                    >
+                                                        <img src={member.avatar} className={`w-8 h-8 rounded-full object-cover border-2 ${assignedTo === member.id ? 'border-indigo-500' : 'border-transparent'}`} alt={member.name}/>
+                                                        {assignedTo === member.id && <div className="absolute -bottom-1 -right-1 bg-indigo-500 text-white rounded-full p-0.5"><Check size={8}/></div>}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     
-                                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-2 border-t border-slate-100">
                                         <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shrink-0">
                                             <Paperclip size={14}/> {t.attachLabel}
                                         </button>
@@ -1112,7 +1309,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                 }
                             }}
                             placeholder={t.newTaskPlaceholder} 
-                            className="w-full bg-transparent border-none px-2 py-2 text-[16px] font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none" 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[16px] font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-sm transition-all" 
                             autoFocus
                         />
                     </div>
@@ -1134,6 +1331,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* GROUP COMPLETION MODAL */}
       {activeGroup && completingTaskId !== null && (
         <div onClick={() => setCompletingTaskId(null)} className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
+          {/* ... (Existing Completion Modal Code) ... */}
           <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white/60">
              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-sm ring-4 ring-emerald-50"><CheckSquare size={32}/></div>
              <h3 className="text-xl font-bold text-slate-800 mb-2 text-center tracking-tight">{t.completeTaskHeader}</h3>

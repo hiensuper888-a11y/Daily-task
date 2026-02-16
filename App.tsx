@@ -19,6 +19,7 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'zh', label: '中文', flag: '🇨🇳' },
   { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
 ];
 
 const LoadingFallback = () => (
@@ -382,7 +383,7 @@ const AppContent: React.FC = () => {
                     onClick={() => handleGroupSelect(null)}
                     className={`flex items-center gap-2 rounded-2xl border transition-all duration-300 ease-out snap-start shrink-0 group py-1.5 pl-1.5 pr-4 ${
                         activeGroupId === null 
-                        ? 'bg-slate-900 text-white border-transparent shadow-lg shadow-slate-900/10' 
+                        ? 'bg-slate-900 text-white border-transparent shadow-lg shadow-slate-900/10 scale-105' 
                         : 'bg-white/40 text-slate-500 border-white/40 hover:bg-white/80 hover:text-slate-700'
                     }`}
                 >
@@ -404,7 +405,7 @@ const AppContent: React.FC = () => {
                             onClick={() => handleGroupSelect(group.id)}
                             className={`flex items-center gap-2 rounded-2xl border transition-all duration-300 ease-out snap-start shrink-0 group py-1.5 pl-1.5 pr-4 ${
                                 isActive
-                                ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/20' 
+                                ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/20 scale-105' 
                                 : 'bg-white/40 text-slate-500 border-white/40 hover:bg-white/80 hover:text-slate-700'
                             }`}
                         >

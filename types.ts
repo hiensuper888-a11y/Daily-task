@@ -35,7 +35,7 @@ export interface Task {
   deadline?: string; // ISO String for Deadline
   estimatedTime?: number; // In minutes
   archived?: boolean;
-  subtasks?: Subtask[];
+  subtasks?: Subtask[]; // Added subtasks support
   priority?: Priority;
   
   // Group features
@@ -81,7 +81,7 @@ export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'de
 
 export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 
-export type Language = 'vi' | 'en' | 'zh' | 'ja';
+export type Language = 'vi' | 'en' | 'zh' | 'ja' | 'de';
 
 export type SortOption = 'manual' | 'priority' | 'date_new' | 'date_old' | 'deadline';
 

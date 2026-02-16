@@ -61,8 +61,17 @@ export const AiAssistant: React.FC = () => {
         if (!isOnline) return;
         const activeTasks = tasks.filter(t => !t.completed && !t.archived);
         if (activeTasks.length === 0) return handleSendMessage(t.aiNoTasksPrompt);
-        const taskListStr = activeTasks.map(t => `- [${t.priority?.toUpperCase() || 'M'}] ${t.text}`).join('\n');
-        handleSendMessage(`${t.aiAnalyzeIntro}${taskListStr}${t.aiAnalyzeOutro}`);
+        
+        // Format tasks with more details for better AI analysis
+        const taskListStr = activeTasks.map(t => {
+            const deadlineInfo = t.deadline ? ` (Due: ${new Date(t.deadline).toLocaleString()})` : '';
+            const subtasksInfo = t.subtasks && t.subtasks.length > 0 
+                ? ` (Checklist: ${t.subtasks.filter(s => s.completed).length}/${t.subtasks.length} done)` 
+                : '';
+            return `- [${t.priority?.toUpperCase() || 'MEDIUM'}] ${t.text}${deadlineInfo}${subtasksInfo}`;
+        }).join('\n');
+
+        handleSendMessage(`${t.aiAnalyzeIntro}\n${taskListStr}\n${t.aiAnalyzeOutro}`);
     };
 
     return (
@@ -110,7 +119,20 @@ export const AiAssistant: React.FC = () => {
             <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
                 <div className="w-full max-w-2xl bg-white/80 backdrop-blur-[30px] rounded-[2rem] p-2 pl-3 shadow-float ring-1 ring-white/60 animate-slide-up flex items-center gap-2 group transition-all hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.15)]">
                     <button onClick={() => setMessages([])} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={18}/></button>
-                    {tasks.length > 0 && <button onClick={handleAnalyzeTasks} className="p-2.5 text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors"><ListChecks size={18}/></button>}
+                    
+                    {/* Task Analysis Button */}
+                    {tasks.length > 0 && (
+                        <button 
+                            onClick={handleAnalyzeTasks} 
+                            className="p-2.5 text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors relative group/analyze"
+                            title={t.analyzeTasks}
+                        >
+                            <ListChecks size={18}/>
+                            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded-lg opacity-0 group-hover/analyze:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-md">
+                                {t.analyzeTasks}
+                            </span>
+                        </button>
+                    )}
                     
                     <input
                         value={inputValue}

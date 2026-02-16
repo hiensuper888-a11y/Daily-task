@@ -14,7 +14,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('app_language');
     // Allow all supported languages
-    return (saved === 'en' || saved === 'vi' || saved === 'zh' || saved === 'ja') ? (saved as Language) : 'vi';
+    return (saved === 'en' || saved === 'vi' || saved === 'zh' || saved === 'ja' || saved === 'de') ? (saved as Language) : 'vi';
   });
 
   useEffect(() => {
