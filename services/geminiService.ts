@@ -7,6 +7,7 @@ declare const process: { env: { API_KEY: string } };
 const getAiClient = () => {
     const apiKey = process.env.API_KEY;
     if (!apiKey || apiKey === 'undefined') {
+        console.warn("Gemini API Key is missing or undefined.");
         return null;
     }
     return new GoogleGenAI({ apiKey });
@@ -59,7 +60,7 @@ export const editImageWithGemini = async (
     
     return null;
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini API Error (Image):", error);
     throw error;
   }
 };
@@ -72,13 +73,13 @@ export const editImageWithGemini = async (
  */
 export const chatWithGemini = async (
   message: string,
-  history: { role: 'user' | 'model', parts: [{ text: string }] }[]
+  history: { role: 'user' | 'model', parts: { text: string }[] }[]
 ): Promise<string> => {
     if (!ai) return "Chức năng AI chưa được kích hoạt do thiếu API Key.";
 
     try {
         const chat: Chat = ai.chats.create({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             history: history,
             config: {
                 systemInstruction: "You are a helpful and friendly AI assistant inside a productivity app called 'Daily Task'. Keep answers concise and relevant."
@@ -89,7 +90,7 @@ export const chatWithGemini = async (
         return response.text || "";
     } catch (error) {
         console.error("Chat API Error:", error);
-        return "Xin lỗi, tôi không thể kết nối với dịch vụ AI ngay bây giờ.";
+        return "Xin lỗi, tôi không thể kết nối với dịch vụ AI ngay bây giờ. Vui lòng kiểm tra API Key hoặc kết nối mạng.";
     }
 };
 
