@@ -447,7 +447,13 @@ const AuthenticatedApp: React.FC = () => {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 overflow-hidden relative">
         <Suspense fallback={<LoadingFallback />}>
-          {activeTab === 'tasks' && <TodoList activeGroup={activeGroup} />}
+          {activeTab === 'tasks' && (
+            <TodoList 
+                activeGroup={activeGroup} 
+                onOpenSettings={() => setShowSettingsModal(true)}
+                onOpenProfile={() => setActiveTab('profile')}
+            />
+          )}
           {activeTab === 'studio' && <ImageEditor />}
           {activeTab === 'reports' && <Reports activeGroup={activeGroup} />}
           {activeTab === 'profile' && <Profile />}
