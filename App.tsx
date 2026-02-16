@@ -6,6 +6,7 @@ import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
 import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
 import { searchUsers } from './services/firebaseConfig';
+import { FloatingDock } from './components/FloatingDock';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
 const ImageEditor = React.lazy(() => import('./components/ImageEditor').then(module => ({ default: module.ImageEditor })));
@@ -472,35 +473,12 @@ const AppContent: React.FC = () => {
            </div>
       </main>
 
-      {/* FLOATING BOTTOM DOCK - ULTRA GLASS */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-[360px] px-2 pb-safe">
-          <nav className="glass-dock rounded-[2rem] p-1.5 flex justify-between items-center relative shadow-premium ring-1 ring-white/60">
-              {[
-                  { id: 'tasks', icon: CheckSquare, label: t.tasks },
-                  { id: 'ai', icon: MessageSquare, label: 'AI' },
-                  { id: 'studio', icon: Wand2, label: 'Studio' },
-                  { id: 'reports', icon: BarChart3, label: 'Stats' },
-                  { id: 'profile', icon: UserCircle2, label: t.profile },
-              ].map((item) => {
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button 
-                        key={item.id}
-                        onClick={() => { setActiveTab(item.id as AppTab); if(item.id !== 'tasks') setActiveGroupId(null); }}
-                        className="flex-1 relative h-14 flex flex-col items-center justify-center gap-1 group"
-                    >
-                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 ease-out z-10 ${isActive ? 'text-white -translate-y-4 scale-110' : 'text-slate-400 hover:text-indigo-600 hover:bg-white/50'}`}>
-                            {isActive && (
-                                <div className="absolute inset-0 bg-slate-900 rounded-2xl shadow-lg shadow-slate-900/30 -z-10 animate-scale-in"></div>
-                            )}
-                            <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                        </div>
-                        {isActive && <div className="absolute bottom-1.5 w-1 h-1 rounded-full bg-slate-900 animate-scale-in delay-75"></div>}
-                    </button>
-                  );
-              })}
-          </nav>
-      </div>
+      {/* REPLACED FIXED DOCK WITH FLOATING DOCK */}
+      <FloatingDock 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onTabChange={() => { if(activeTab !== 'tasks') setActiveGroupId(null); }}
+      />
 
 
       {/* --- MODALS --- */}
