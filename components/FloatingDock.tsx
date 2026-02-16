@@ -15,8 +15,12 @@ interface FloatingDockProps {
 export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActiveTab, onTabChange }) => {
   const { t } = useLanguage();
   
-  // Initialize position (Safe area for both Mobile and Desktop)
-  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 32, y: window.innerHeight - 100 });
+  // Initialize position (Bottom Right by default to avoid overlap with Center Add Button)
+  const [position, setPosition] = useState({ 
+      x: typeof window !== 'undefined' ? window.innerWidth - 90 : 0, 
+      y: typeof window !== 'undefined' ? window.innerHeight - 100 : 0 
+  });
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hasMoved, setHasMoved] = useState(false); // Track if user has ever moved it
@@ -55,7 +59,8 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
   useEffect(() => {
       const handleResize = () => {
           if (!hasMoved) {
-              setPosition({ x: window.innerWidth / 2 - 32, y: window.innerHeight - 100 });
+              // Keep sticking to bottom right if not moved by user
+              setPosition({ x: window.innerWidth - 90, y: window.innerHeight - 100 });
           } else {
               // Clamp to screen
               setPosition(prev => ({
