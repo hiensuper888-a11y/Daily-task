@@ -8,7 +8,7 @@ import {
   Layers, Zap, ArrowRightCircle, Check, ArrowUpDown, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock,
   Paperclip, FileText, Loader2,
   MoreVertical, Sparkles, Flag, GripVertical, MessageSquare, Star, Crown,
-  Maximize2, Minimize2, Send, Save, Download, PlayCircle
+  Maximize2, Minimize2, Send, Save, Download, PlayCircle, Filter, Coffee
 } from 'lucide-react';
 import { Task, FilterType, Priority, Group, UserProfile, Attachment, Subtask, SortOption, Comment } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -51,7 +51,7 @@ const TaskItem = React.memo(({
   isDragOver
 }: { 
   task: Task, 
-  index: number,
+  index: number, 
   language: string, 
   activeGroup: Group | null, 
   lastCheckedId: number | null, 
@@ -93,7 +93,7 @@ const TaskItem = React.memo(({
         tomorrow.setDate(tomorrow.getDate() + 1);
         const isTomorrow = targetDay.getTime() === tomorrow.getTime();
 
-        // Default formatting: use toLocaleString for date AND time support across browsers
+        // Default formatting
         let text = target.toLocaleString(language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         let colorClass = 'text-slate-500 bg-slate-100 border-slate-200';
         let icon = <CalendarClock size={13} />;
@@ -103,13 +103,11 @@ const TaskItem = React.memo(({
             if (diffHrs > -24) {
                  text = `${t.overdue} (${Math.abs(Math.ceil(diffHrs))}h)`;
             } else {
-                 // For older overdue, just show date
                  text = `${t.overdue} (${target.toLocaleDateString(language, {month: 'numeric', day: 'numeric'})})`;
             }
             colorClass = 'text-rose-600 bg-rose-50 border-rose-200 font-bold';
             icon = <AlertCircle size={13} />;
         } else if (isToday) {
-            // Urgency: < 1 hour shows mins left
             if (diffMins < 60 && diffMins > 0) {
                  text = `${Math.ceil(diffMins)} ${t.minsLeft}`;
                  colorClass = 'text-amber-600 bg-amber-50 border-amber-200 font-bold';
@@ -138,7 +136,7 @@ const TaskItem = React.memo(({
     // --- Priority Styling ---
     const getPriorityColor = (p: Priority = 'medium') => {
         switch(p) {
-            case 'high': return 'bg-rose-500 shadow-glow shadow-rose-500/40';
+            case 'high': return 'bg-rose-500 shadow-glow shadow-rose-500/40 animate-pulse';
             case 'medium': return 'bg-amber-500 shadow-glow shadow-amber-500/40';
             case 'low': return 'bg-sky-500 shadow-glow shadow-sky-500/40';
             default: return 'bg-slate-300';
@@ -163,38 +161,38 @@ const TaskItem = React.memo(({
             }}
             onDrop={(e) => onDrop(e, task.id)}
             onClick={() => onEdit(task)}
-            className={`group relative pl-5 pr-5 py-5 rounded-[1.8rem] transition-all duration-500 cubic-bezier(0.23, 1, 0.32, 1) cursor-pointer mb-3 backdrop-blur-xl border border-white/60 overflow-hidden transform-gpu animate-slide-up
+            className={`group relative pl-5 pr-5 py-5 rounded-[2.5rem] transition-all duration-300 cubic-bezier(0.2, 0.8, 0.2, 1) cursor-pointer mb-3 backdrop-blur-xl border border-white/60 overflow-hidden transform-gpu animate-slide-up
                 ${task.completed 
-                    ? 'opacity-60 bg-slate-50/40 shadow-none scale-[0.98] grayscale-[0.05]' 
-                    : 'bg-white/70 hover:bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.06)] hover:-translate-y-1 hover:border-white'
+                    ? 'opacity-70 bg-slate-50/50 shadow-none scale-[0.98] grayscale-[0.2]' 
+                    : 'bg-white/80 hover:bg-white hover:scale-[1.01] shadow-subtle hover:shadow-float hover:border-white/80'
                 }
                 ${isDraggable ? 'active:cursor-grabbing cursor-grab active:scale-[0.98]' : ''} 
                 ${isDragging ? 'opacity-40 scale-[0.95] rotate-1 border-dashed border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200 shadow-none grayscale' : ''}
                 ${isDragOver && !isDragging ? 'ring-2 ring-indigo-500 ring-offset-4 ring-offset-slate-100 scale-[1.02] z-20 shadow-2xl bg-white rotate-0' : ''}
                 ${deadlineInfo?.isOverdue && !task.completed ? 'ring-1 ring-rose-300 bg-rose-50/30' : ''}
             `}
-            style={{ animationDelay: `${Math.min(index * 40, 600)}ms`, animationFillMode: 'both' }}
+            style={{ animationDelay: `${Math.min(index * 50, 600)}ms`, animationFillMode: 'both' }}
         >
              {/* Priority Indicator Dot */}
-             <div className={`absolute top-5 right-5 w-2.5 h-2.5 rounded-full ${priorityColor} ${task.completed ? 'opacity-30' : 'opacity-100'}`}></div>
+             <div className={`absolute top-6 right-5 w-2.5 h-2.5 rounded-full ${priorityColor} ${task.completed ? 'opacity-30' : 'opacity-100 transition-opacity'}`}></div>
 
              <div className="flex items-start gap-4">
                 {/* Checkbox - Fluid Animation */}
                 <button 
                   onClick={(e) => onToggle(task, e)} 
-                  className={`mt-0.5 w-6 h-6 rounded-[10px] flex items-center justify-center transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) relative shrink-0 border-2
+                  className={`mt-0.5 w-6 h-6 rounded-xl flex items-center justify-center transition-all duration-300 relative shrink-0 border-2 active:scale-90
                     ${task.completed 
-                      ? 'bg-emerald-500 border-emerald-500 text-white scale-100 shadow-md shadow-emerald-200 rotate-0' 
-                      : 'bg-white border-slate-200 text-transparent hover:border-indigo-300 hover:scale-110 active:scale-90'
+                      ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200 ring-2 ring-emerald-100' 
+                      : 'bg-white border-slate-200 text-transparent hover:border-indigo-400 hover:shadow-md'
                     }
                   `}
                 >
-                    <Check size={14} strokeWidth={4} className={`transition-all duration-500 ease-out ${task.completed ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'}`}/>
+                    <Check size={14} strokeWidth={4} className={`transition-all duration-300 ease-out ${task.completed ? 'opacity-100 scale-100 animate-check-bounce' : 'opacity-0 scale-50'}`}/>
                 </button>
 
                 <div className="flex-1 min-w-0 pr-6">
                     {/* Title */}
-                    <p className={`text-[16px] font-bold leading-snug transition-all duration-500 line-clamp-2 mb-2.5 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
+                    <p className={`text-[16px] font-bold leading-snug transition-all duration-300 line-clamp-2 mb-2.5 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
                     
                     {/* Meta Row */}
                     <div className="flex items-center flex-wrap gap-2">
@@ -235,7 +233,7 @@ const TaskItem = React.memo(({
              
              {/* Delete Action */}
              <button 
-                className="absolute bottom-4 right-4 p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 z-20 opacity-0 group-hover:opacity-100"
+                className="absolute bottom-4 right-4 p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 z-20 opacity-0 translate-x-4 group-hover:translate-x-0 group-hover:opacity-100"
                 onClick={(e) => {
                     e.stopPropagation(); 
                     onDelete(task.id, e);
@@ -288,6 +286,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
+  
+  // REAL TIME CLOCK STATE
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   
@@ -310,6 +312,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       setShowInputDetails(false);
       setIsInputExpanded(false);
   }, [activeGroup]);
+
+  // Clock Timer
+  useEffect(() => {
+      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+      return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
       if (editingTask && commentsEndRef.current) {
@@ -341,7 +349,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const getGreeting = () => {
-    const hour = new Date().getHours();
+    const hour = currentTime.getHours(); // Use currentTime to update greeting in real-time
     if (hour < 12) return { text: t.today, icon: Sunrise };
     if (hour < 18) return { text: t.today, icon: Sun };
     return { text: t.today, icon: Moon };
@@ -476,8 +484,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
           setEditingTask(prev => prev ? { 
               ...prev, 
-              subtasks: updatedSubtasks,
-              progress: progress,
+              subtasks: updatedSubtasks, 
+              progress: progress, 
               completed: progress === 100
           } : null);
       } catch (e) {
@@ -767,20 +775,20 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   }, [currentMember]);
   
   const headerClasses = useMemo(() => {
-    if (currentMember?.headerBackground) return "pt-4 pb-4 px-6 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[2.5rem] lg:rounded-b-[3rem] mb-2 mx-0 lg:mx-4 mt-0 lg:mt-4";
-    return "pt-2 pb-2 px-6 relative z-10 shrink-0 transition-all duration-500 rounded-b-[2.5rem] lg:rounded-b-none mb-2 bg-transparent sticky top-0";
+    if (currentMember?.headerBackground) return "pt-24 pb-8 px-6 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[3rem] mb-4 mx-0 overflow-hidden";
+    return "pt-20 pb-4 px-6 relative z-30 shrink-0 transition-all duration-500 mb-4 bg-white/60 backdrop-blur-xl border-b border-white/40 sticky top-0";
   }, [currentMember]);
 
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
 
-  const filterConfig: Record<FilterType, { icon: any, label: string, colorClass: string, shadowClass: string }> = {
-    all: { icon: Layers, label: t.all, colorClass: 'bg-slate-800 text-white', shadowClass: 'shadow-slate-500/20' },
-    active: { icon: Zap, label: t.active, colorClass: 'bg-indigo-600 text-white', shadowClass: 'shadow-indigo-500/20' },
-    completed: { icon: CheckCircle2, label: t.completed, colorClass: 'bg-emerald-600 text-white', shadowClass: 'shadow-emerald-500/20' },
-    assigned_to_me: { icon: User, label: t.assigned_to_me, colorClass: 'bg-blue-600 text-white', shadowClass: 'shadow-blue-500/20' },
-    delegated: { icon: ArrowRightCircle, label: t.delegated, colorClass: 'bg-orange-600 text-white', shadowClass: 'shadow-orange-500/20' },
-    archived: { icon: Archive, label: t.archived, colorClass: 'bg-slate-500 text-white', shadowClass: 'shadow-slate-500/20' },
+  const filterConfig: Record<FilterType, { icon: any, label: string }> = {
+    all: { icon: Layers, label: t.all },
+    active: { icon: Zap, label: t.active },
+    completed: { icon: CheckCircle2, label: t.completed },
+    assigned_to_me: { icon: User, label: t.assigned_to_me },
+    delegated: { icon: ArrowRightCircle, label: t.delegated },
+    archived: { icon: Archive, label: t.archived },
   };
 
   const sortOptionsConfig: Record<SortOption, { label: string, icon: any }> = {
@@ -1049,7 +1057,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {/* CALENDAR MODAL */}
       {showCalendar && (
         <div onClick={() => setShowCalendar(false)} className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-          <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white/60">
+          <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-pop border border-white/60">
              <div className="flex items-center justify-between mb-8">
               <button onClick={() => changeMonth(-1)} className="p-3 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-2xl transition-colors"><ChevronLeft size={20}/></button>
               <div className="text-center">
@@ -1079,34 +1087,82 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
 
       {/* Header Area */}
       <div className={headerClasses} style={headerStyle}>
-        {currentMember?.headerBackground && <div className="absolute inset-0 bg-black/40 z-[-1] rounded-b-[2.5rem]"></div>}
+        {/* Background elements for standard header */}
+        {!currentMember?.headerBackground && (
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-xl z-[-1] border-b border-white/20 shadow-sm"></div>
+        )}
+        
+        {/* Overlay for custom image background */}
+        {currentMember?.headerBackground && (
+            <div className="absolute inset-0 bg-black/40 z-[-1] rounded-b-[2.5rem]"></div>
+        )}
+
         <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
-          <div className="flex justify-between items-end pt-2 px-2">
-             <div>
-                 <div className="flex items-center gap-2 mb-2 animate-fade-in">
-                     <span className={`text-xs font-bold uppercase tracking-wider ${currentMember?.headerBackground ? 'text-white/80' : 'text-slate-400'}`}>{greeting.text}, {userProfile.name}</span>
+          {/* Top Bar with Greeting and Date */}
+          <div className="flex justify-between items-start pt-2 px-2">
+             <div className="animate-fade-in flex items-center gap-4">
+                 {/* Avatar Badge for Header - ALWAYS VISIBLE */}
+                 <div className="relative group cursor-pointer shrink-0">
+                     <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl border-4 border-white shadow-lg overflow-hidden transition-transform transform group-hover:scale-105 bg-white">
+                         <img 
+                            src={activeGroup ? (activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`) : (userProfile.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=default")} 
+                            alt="Context Avatar" 
+                            className="w-full h-full object-cover"
+                         />
+                     </div>
+                     {activeGroup && <div className="absolute -bottom-1 -right-1 bg-indigo-500 text-white p-1 rounded-full shadow-md border-2 border-white"><Users size={12} /></div>}
                  </div>
-                 <h2 className={`text-3xl md:text-4xl font-black tracking-tight leading-none ${currentMember?.headerBackground ? 'text-white drop-shadow-sm' : 'text-slate-800'}`}>
-                    {filterStatus === 'archived' ? t.archived : (activeGroup ? activeGroup.name : (isToday(viewDate) ? t.today : t.custom))}
-                 </h2>
-                 {!activeGroup && !isToday(viewDate) && <p className={`text-lg font-bold mt-1 ${currentMember?.headerBackground ? 'text-white/80' : 'text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</p>}
+
+                 <div className="flex flex-col justify-center">
+                     <div className="flex items-center gap-2 mb-0.5 opacity-80">
+                         <span className={`text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 ${currentMember?.headerBackground ? 'text-white/90' : 'text-indigo-500'}`}>
+                            <GreetingIcon size={14} className={currentMember?.headerBackground ? "text-white" : "text-indigo-500"}/>
+                            {greeting.text}, {userProfile.name}
+                         </span>
+                     </div>
+                     <h2 className={`text-3xl md:text-5xl font-black tracking-tighter leading-none mb-1.5 ${currentMember?.headerBackground ? 'text-white drop-shadow-md' : 'bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent'}`}>
+                        {filterStatus === 'archived' ? t.archived : (activeGroup ? activeGroup.name : (isToday(viewDate) ? t.today : t.custom))}
+                     </h2>
+                     
+                     {/* Dynamic Date Display */}
+                     {!activeGroup && !isToday(viewDate) ? (
+                        <p className={`text-lg font-bold ${currentMember?.headerBackground ? 'text-white/80' : 'text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                     ) : (
+                        <div className="flex items-center gap-3">
+                            <span className={`text-sm font-bold opacity-80 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-500'}`}>
+                                {isToday(viewDate) 
+                                    ? currentTime.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' }) 
+                                    : viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })
+                                }
+                            </span>
+                            
+                            {/* Live Clock Pill */}
+                            {isToday(viewDate) && (
+                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full shadow-sm border ${currentMember?.headerBackground ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-indigo-50/80 text-indigo-600 border-indigo-100 backdrop-blur-sm'}`}>
+                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+                                    <span className="text-xs font-mono font-bold tracking-widest">{currentTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                </div>
+                            )}
+                        </div>
+                     )}
+                 </div>
              </div>
              
              <div className="flex gap-2">
-                <button onClick={() => setShowCalendar(true)} className={`group p-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 shadow-sm ${currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white backdrop-blur-md' : 'bg-white border-white text-slate-500 shadow-slate-200'}`}>
-                    <CalendarIcon size={20} className={currentMember?.headerBackground ? "" : "text-indigo-600"}/>
+                <button onClick={() => setShowCalendar(true)} className={`group p-3 md:p-3.5 rounded-2xl border transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-md ${currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white backdrop-blur-md' : 'bg-white border-white text-slate-400 hover:text-indigo-600 shadow-slate-200'}`}>
+                    <CalendarIcon size={20} />
                 </button>
                 <div className="relative">
                     <button 
                         onClick={() => setShowSortMenu(!showSortMenu)} 
-                        className={`p-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 shadow-sm ${currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white backdrop-blur-md' : 'bg-white border-white text-slate-500 shadow-slate-200'} ${sortOption !== 'manual' ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
+                        className={`p-3 md:p-3.5 rounded-2xl border transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-md ${currentMember?.headerBackground ? 'bg-white/20 border-white/30 text-white backdrop-blur-md' : 'bg-white border-white text-slate-400 hover:text-indigo-600 shadow-slate-200'} ${sortOption !== 'manual' ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
                     >
                         <ArrowUpDown size={20} />
                     </button>
                      {showSortMenu && (
                         <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)}></div>
-                        <div className="absolute top-14 right-0 bg-white/90 backdrop-blur-xl border border-white p-2 rounded-2xl shadow-xl z-50 min-w-[180px] animate-scale-in origin-top-right ring-1 ring-slate-900/5">
+                        <div className="absolute top-16 right-0 bg-white/90 backdrop-blur-xl border border-white p-2 rounded-2xl shadow-xl z-50 min-w-[180px] animate-scale-in origin-top-right ring-1 ring-slate-900/5">
                             <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.sortBy}</div>
                             {(Object.keys(sortOptionsConfig) as SortOption[]).map(key => { 
                                 const config = sortOptionsConfig[key]; 
@@ -1125,15 +1181,25 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
              </div>
           </div>
 
-          <div className="flex gap-3 relative z-20">
-             <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none flex-1 -mx-4 px-4 mask-gradient-x">
+          {/* Glass Pills Filter Bar - IMPROVED */}
+          <div className="flex gap-3 relative z-20 justify-center md:justify-start">
+             <div className="inline-flex bg-white/40 backdrop-blur-xl border border-white/40 p-1.5 rounded-2xl shadow-sm overflow-x-auto max-w-full scrollbar-none">
               {activeFilters.map(f => {
                 const isActive = filterStatus === f;
                 const config = filterConfig[f] || filterConfig.all;
                 const Icon = config.icon;
                 return (
-                  <button key={f} onClick={() => setFilterStatus(f)} className={`relative px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 group border ${isActive ? `${config.colorClass} shadow-lg ${config.shadowClass} scale-105 border-transparent` : 'bg-white/60 text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-md backdrop-blur-sm border-transparent'} active:scale-95`}>
-                    <Icon size={14} strokeWidth={2.5} /> <span>{config.label}</span>
+                  <button 
+                    key={f} 
+                    onClick={() => setFilterStatus(f)} 
+                    className={`relative px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-300 flex items-center gap-2 group
+                        ${isActive 
+                            ? 'bg-white text-indigo-600 shadow-sm' 
+                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'}
+                    `}
+                  >
+                    <Icon size={14} strokeWidth={2.5} className={isActive ? "opacity-100" : "opacity-60 group-hover:opacity-100"} /> 
+                    <span>{config.label}</span>
                   </button>
                 );
               })}
@@ -1143,12 +1209,28 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       </div>
 
       {/* Task List Container */}
-      <div className="flex-1 overflow-y-auto px-4 pb-44 custom-scrollbar space-y-1 relative z-0 pt-2 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto px-4 pb-32 custom-scrollbar space-y-1 relative z-0 pt-2 flex flex-col items-center scroll-smooth">
         <div className="w-full max-w-3xl">
             {filteredTasks.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-300 animate-scale-in py-20">
-                <div className="w-32 h-32 bg-slate-50/50 rounded-full flex items-center justify-center mb-6 shadow-inner ring-1 ring-slate-100"><Archive size={48} className="text-slate-300 opacity-50" /></div>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">{filterStatus === 'archived' ? t.emptyArchived : t.emptyChill}</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-300 animate-fade-in py-10 md:py-20 relative">
+                {/* Decorative Blob */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -z-10 animate-pulse-slow"></div>
+                
+                <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mb-6 shadow-float ring-4 ring-white animate-float relative z-10">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white to-transparent opacity-50"></div>
+                    
+                    {/* Glowing effect behind icon */}
+                    <div className="absolute inset-0 rounded-full bg-indigo-400/20 blur-xl"></div>
+
+                    <div className="absolute inset-0 rounded-full border border-indigo-50"></div>
+                    {/* Ripple Effect */}
+                    <div className="absolute inset-0 rounded-full border border-indigo-100 animate-ping opacity-20 delay-75"></div>
+                    <Coffee size={48} className="text-indigo-300/80 relative z-10" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-black text-slate-400 tracking-tight mb-2">{filterStatus === 'archived' ? t.emptyArchived : t.emptyChill}</h3>
+                <p className="text-xs font-bold text-indigo-300/70 uppercase tracking-widest bg-indigo-50/50 px-3 py-1.5 rounded-full">
+                    {filterStatus === 'active' ? "No active tasks" : "All clear for now"}
+                </p>
             </div>
             ) : (
             filteredTasks.map((task, index) => (
@@ -1181,17 +1263,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       <div className="fixed bottom-6 lg:bottom-8 left-0 right-0 z-[10000] pb-safe flex justify-center pointer-events-none px-4">
           <div 
             ref={inputContainerRef}
-            className={`pointer-events-auto bg-white/80 backdrop-blur-[40px] rounded-[2.5rem] shadow-float ring-1 ring-white/60 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center gap-3 relative group ${
+            className={`pointer-events-auto bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-float ring-1 ring-white/60 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center gap-3 relative group ${
                 isInputExpanded 
                 ? `w-full max-w-2xl p-2 pl-3 bg-white/95 ${showInputDetails ? 'overflow-visible' : 'overflow-hidden'}` 
-                : 'w-14 h-14 p-0 hover:scale-110 active:scale-95 cursor-pointer bg-slate-900 border-none text-white overflow-hidden'
+                : 'w-16 h-16 p-0 hover:scale-110 active:scale-95 cursor-pointer bg-slate-900 border-none text-white overflow-hidden shadow-glow shadow-indigo-500/30'
             }`}
             onClick={() => !isInputExpanded && setIsInputExpanded(true)}
           >
               {/* COMPACT STATE */}
               {!isInputExpanded && (
-                  <div className="w-full h-full flex items-center justify-center">
-                      <Plus size={28} strokeWidth={3} />
+                  <div className="w-full h-full flex items-center justify-center animate-pop bg-gradient-to-br from-indigo-600 to-violet-600">
+                      <Plus size={32} strokeWidth={2.5} />
                   </div>
               )}
 
@@ -1205,10 +1287,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         <SlidersHorizontal size={18} />
                     </button>
                     
-                    <div className="flex-1 min-w-0 relative">
+                    <div className="flex-1 min-w-0 relative animate-fade-in">
                         {/* EXPANDED DETAILS PANEL */}
                         {showInputDetails && (
-                            <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-up origin-bottom z-[10001]">
+                            <div className="absolute bottom-full left-0 right-0 mb-4 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 animate-slide-in-bottom origin-bottom z-[10001]">
                                 <div className="flex flex-col gap-4">
                                     <div className="flex justify-between items-center">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.taskDetailsCapsule}</label>
@@ -1332,8 +1414,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       {activeGroup && completingTaskId !== null && (
         <div onClick={() => setCompletingTaskId(null)} className="fixed inset-0 z-[160] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-md animate-fade-in">
           {/* ... (Existing Completion Modal Code) ... */}
-          <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-scale-in border border-white/60">
-             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-sm ring-4 ring-emerald-50"><CheckSquare size={32}/></div>
+          <div onClick={e => e.stopPropagation()} className="glass-modal bg-white/95 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-pop border border-white/60">
+             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-sm ring-4 ring-emerald-50 animate-pop"><CheckSquare size={32}/></div>
              <h3 className="text-xl font-bold text-slate-800 mb-2 text-center tracking-tight">{t.completeTaskHeader}</h3>
              <p className="text-sm font-medium text-slate-500 mb-6 text-center">{t.completionNotePrompt}</p>
              <textarea value={completionNote} onChange={(e) => setCompletionNote(e.target.value)} placeholder={t.enterNotePlaceholder} className="w-full p-4 bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-medium outline-none resize-none h-32 mb-6 transition-all shadow-inner" autoFocus />

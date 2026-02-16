@@ -13,8 +13,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('app_language');
-    // Allow all supported languages
-    return (saved === 'en' || saved === 'vi' || saved === 'zh' || saved === 'ja' || saved === 'de') ? (saved as Language) : 'vi';
+    // Allow all supported languages including French
+    return (saved === 'en' || saved === 'vi' || saved === 'zh' || saved === 'ja' || saved === 'de' || saved === 'fr') ? (saved as Language) : 'vi';
   });
 
   useEffect(() => {

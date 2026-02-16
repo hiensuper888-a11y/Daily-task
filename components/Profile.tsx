@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Cloud, RefreshCw, Mail, Save, AlertCircle, Calendar, MapPin, Home, Briefcase, Camera, Phone, Lock, LogIn, UserPlus, Eye, EyeOff, Fingerprint, LayoutDashboard, Sparkles, ShieldCheck, Building2, UserSquare } from 'lucide-react';
+import { User, LogOut, Mail, Save, Calendar, MapPin, Home, Briefcase, Camera, Phone, LayoutDashboard, Building2, UserSquare } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { UserProfile } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -8,10 +8,7 @@ import {
   auth, 
   isFirebaseConfigured,
   signOut, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  updateProfile, 
-  sendEmailVerification 
+  updateProfile 
 } from '../services/firebaseConfig';
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -35,18 +32,9 @@ export const Profile: React.FC = () => {
   
   // Hooks
   const [profile, setProfile] = useRealtimeStorage<UserProfile>('user_profile', DEFAULT_PROFILE);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const isOnline = useOnlineStatus();
   
-  // Auth State
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Update System State
-  const APP_VERSION = "2.0.0";
   const [editForm, setEditForm] = useState(profile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,118 +44,26 @@ export const Profile: React.FC = () => {
     }
   }, [profile, isEditing]);
 
-  const handleEmailAuth = async () => {
-    if (!isFirebaseConfigured()) { alert(t.firebaseError); return; }
-    if (!isOnline) { alert(t.networkError); return; }
-    if (!emailInput || !passwordInput) { alert(t.fillAllFields); return; }
-    
-    setIsSyncing(true);
-    const cleanEmail = emailInput.trim().toLowerCase();
-    try {
-        if (authMode === 'register') {
-            const credential = await createUserWithEmailAndPassword(auth, cleanEmail, passwordInput);
-            await sendEmailVerification(credential.user);
-            await signOut(auth);
-            alert(t.registerSuccess);
-            setAuthMode('login');
-        } else {
-            const credential = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
-            if (!credential.user.emailVerified) {
-                await signOut(auth);
-                alert(t.accountNotActive); setIsSyncing(false); return;
-            }
-            loginSuccess(credential.user, 'email');
-        }
-    } catch (error: any) { alert(`${t.errorPrefix}${error.message}`); setIsSyncing(false); } finally { if (authMode === 'register') setIsSyncing(false); }
+  const logout = () => { 
+      if (isFirebaseConfigured() && auth) signOut(auth).catch(console.error); 
+      setProfile(DEFAULT_PROFILE); 
+      localStorage.removeItem(SESSION_KEY); 
+      localStorage.removeItem('user_profile'); // Clear current profile from storage
+      window.dispatchEvent(new Event('auth-change')); 
+      window.dispatchEvent(new Event('local-storage'));
+      // App.tsx will detect isLoggedIn is false (or profile missing) and switch to AuthScreen
   };
 
-  const loginSuccess = (user: any, provider: string) => {
-    const userId = user.uid;
-    localStorage.setItem(SESSION_KEY, userId);
-    window.dispatchEvent(new Event('auth-change'));
-    const newProfile: UserProfile = { uid: user.uid, name: user.displayName || user.email?.split('@')[0] || 'User', email: user.email || '', avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`, provider: provider as any, isLoggedIn: true, birthYear: '', hometown: '', address: '', company: '', phoneNumber: '', jobTitle: '', department: '' };
-    const existingProfileStr = localStorage.getItem(`${userId}_user_profile`);
-    let finalProfile = newProfile;
-    if (existingProfileStr) { try { finalProfile = { ...JSON.parse(existingProfileStr), ...newProfile, uid: user.uid }; } catch (e) {} }
-    localStorage.setItem(`${userId}_user_profile`, JSON.stringify(finalProfile));
-    setTimeout(() => { setProfile(finalProfile); setEditForm(finalProfile); setIsSyncing(false); setEmailInput(''); setPasswordInput(''); window.dispatchEvent(new Event('local-storage')); }, 50);
+  const handleSave = async () => { 
+      setProfile(editForm); 
+      setIsEditing(false); 
+      try { 
+          if (isFirebaseConfigured() && auth && auth.currentUser) await updateProfile(auth.currentUser, { displayName: editForm.name, photoURL: editForm.avatar }); 
+      } catch (error) {} 
   };
-
-  const logout = () => { setIsSyncing(true); if (isFirebaseConfigured() && auth) signOut(auth).catch(console.error); setProfile(DEFAULT_PROFILE); setTimeout(() => { localStorage.removeItem(SESSION_KEY); window.dispatchEvent(new Event('auth-change')); setIsEditing(false); setIsSyncing(false); setAuthMode('login'); }, 500); };
-  const handleSave = async () => { setProfile(editForm); setIsEditing(false); try { if (isFirebaseConfigured() && auth && auth.currentUser) await updateProfile(auth.currentUser, { displayName: editForm.name, photoURL: editForm.avatar }); } catch (error) {} };
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setEditForm(prev => ({ ...prev, [name]: value })); };
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { setEditForm(prev => ({ ...prev, avatar: reader.result as string })); }; reader.readAsDataURL(file); } e.target.value = ''; };
-
-  // --- NEW UI DESIGN ---
-
-  const renderLoginScreen = () => (
-    <div className="w-full h-full flex flex-col items-center justify-center p-4">
-        <div className="glass-modal rounded-[2.5rem] w-full max-w-sm p-8 shadow-premium animate-scale-in relative border border-white/60 overflow-hidden">
-             {/* Decorative Background Elements */}
-             <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-bl-[120px] -z-10 opacity-60"></div>
-             
-             <div className="relative z-10">
-                <div className="text-center mb-10">
-                     <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-500/30 transform hover:scale-110 transition-transform duration-500">
-                         <Sparkles className="text-white" size={32} />
-                     </div>
-                     <h2 className="text-3xl font-black text-slate-800 tracking-tight">{authMode === 'login' ? t.welcomeBack : t.createAccount}</h2>
-                     <p className="text-slate-500 text-sm mt-1 font-medium">{authMode === 'login' ? t.loginContinue : t.startJourney}</p>
-                </div>
-
-                <div className="space-y-5">
-                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">{t.emailLabel}</label>
-                        <div className="relative group/input">
-                            <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors"/>
-                            <input 
-                                type="email"
-                                value={emailInput}
-                                onChange={(e) => setEmailInput(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
-                                placeholder="name@example.com"
-                            />
-                        </div>
-                     </div>
-                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">{t.passwordLabel}</label>
-                        <div className="relative group/input">
-                            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors"/>
-                            <input 
-                                type={showPassword ? "text" : "password"}
-                                value={passwordInput}
-                                onChange={(e) => setPasswordInput(e.target.value)}
-                                className="w-full pl-11 pr-11 py-3.5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
-                                placeholder="••••••••"
-                            />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors">
-                                {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
-                            </button>
-                        </div>
-                     </div>
-                </div>
-
-                <button 
-                    onClick={handleEmailAuth}
-                    disabled={isSyncing}
-                    className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-indigo-700"
-                >
-                    {isSyncing ? <RefreshCw size={20} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={20}/> : <UserPlus size={20}/>)}
-                    {authMode === 'login' ? t.loginBtn : t.registerBtn}
-                </button>
-
-                <div className="mt-8 text-center">
-                    <button 
-                        onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-                        className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors"
-                    >
-                        {authMode === 'login' ? t.noAccountPrompt : t.hasAccountPrompt}
-                    </button>
-                </div>
-             </div>
-        </div>
-    </div>
-  );
 
   const renderProfileScreen = () => (
     <div className="w-full max-w-5xl mx-auto animate-fade-in pb-28 pt-4 px-4">
@@ -235,7 +131,7 @@ export const Profile: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-transparent overflow-y-auto custom-scrollbar">
-       {profile.isLoggedIn ? renderProfileScreen() : renderLoginScreen()}
+       {renderProfileScreen()}
     </div>
   );
 };

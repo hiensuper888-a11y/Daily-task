@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   CheckSquare, MessageSquare, Wand2, BarChart3, UserCircle2, 
-  Menu, X, GripHorizontal, GripVertical 
+  LayoutGrid, X, GripHorizontal, GripVertical 
 } from 'lucide-react';
 import { AppTab } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -157,11 +157,11 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-40 animate-pulse-slow"></div>
             
             {/* The Orb */}
-            <div className="relative w-full h-full rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 border border-white/20 shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-300 overflow-hidden">
+            <div className="relative w-full h-full rounded-2xl bg-slate-900 border border-white/10 shadow-float flex items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-300 overflow-hidden ring-1 ring-white/20">
                 {/* Shine Effect */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-50"></div>
                 <div className="relative z-10 text-white drop-shadow-md">
-                    <Menu size={28} strokeWidth={2.5} />
+                    <LayoutGrid size={28} strokeWidth={2.5} />
                 </div>
             </div>
         </div>
@@ -170,16 +170,13 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
       {/* EXPANDED STATE (The "Vibrant Dock") */}
       <div 
         className={`
-            relative rounded-[2.5rem] flex items-center shadow-[0_30px_60px_-10px_rgba(0,0,0,0.3)] ring-1 ring-white/40 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-2xl bg-white/80 dark:bg-slate-900/80
+            relative rounded-[2.5rem] flex items-center shadow-float ring-1 ring-white/60 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-xl bg-white/90
             ${isExpanded ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-10 pointer-events-none w-0 h-0 p-0 overflow-hidden'}
             ${isVertical ? 'flex-col w-[4.5rem] py-3 gap-2' : 'flex-row h-[4.5rem] px-3 gap-2'}
         `}
       >
-        {/* Background Mesh Gradient for Dock */}
-        <div className="absolute inset-0 rounded-[2.5rem] opacity-20 bg-gradient-to-br from-indigo-100 via-white to-pink-100 pointer-events-none"></div>
-
         {/* Drag Handle */}
-        <div className={`text-slate-400/70 cursor-move flex items-center justify-center hover:text-slate-600 transition-colors z-10 ${isVertical ? 'h-4 w-full mb-1' : 'w-4 h-full mr-1'}`}>
+        <div className={`text-slate-400/50 cursor-move flex items-center justify-center hover:text-slate-600 transition-colors z-10 ${isVertical ? 'h-4 w-full mb-1' : 'w-4 h-full mr-1'}`}>
             {isVertical ? <GripHorizontal size={16} /> : <GripVertical size={16} />}
         </div>
 
@@ -193,10 +190,10 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
                 style={{ transitionDelay: `${isExpanded ? index * 40 : 0}ms` }}
             >
                 {/* Active Indicator & Hover Gradient */}
-                <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ease-out ${isActive ? `bg-gradient-to-br ${item.color} ${item.shadow} scale-100 rotate-0` : 'scale-75 opacity-0 hover:opacity-10 hover:scale-95 bg-slate-800'}`}></div>
+                <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ease-out ${isActive ? `bg-gradient-to-br ${item.color} ${item.shadow} scale-100 rotate-0 opacity-100` : 'scale-75 opacity-0 hover:opacity-10 hover:scale-95 bg-slate-100'}`}></div>
                 
                 {/* Icon */}
-                <div className={`relative z-10 transition-all duration-300 transform ${isActive ? 'text-white scale-110' : `text-slate-500 group-hover:${item.text} group-hover:scale-110`}`}>
+                <div className={`relative z-10 transition-all duration-300 transform ${isActive ? 'text-white scale-110' : `text-slate-400 group-hover:${item.text} group-hover:scale-110`}`}>
                     <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
 
@@ -214,7 +211,7 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
         {/* Close Button */}
         <button 
             onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl text-slate-400 hover:bg-rose-100 hover:text-rose-500 transition-colors z-10 active:scale-90"
+            className="w-10 h-10 flex items-center justify-center rounded-2xl text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-colors z-10 active:scale-90"
         >
             <X size={20} strokeWidth={2.5} />
         </button>
