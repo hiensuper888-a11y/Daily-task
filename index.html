@@ -48,7 +48,7 @@
             },
             animation: {
               'float': 'float 8s ease-in-out infinite',
-              'blob': 'blob 20s infinite',
+              'blob': 'blob 25s infinite',
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'slide-up': 'slide-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
               'scale-in': 'scale-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
@@ -56,6 +56,7 @@
               'fade-in': 'fade-in 0.3s ease-out forwards',
               'pop': 'pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
               'check-bounce': 'check-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              'slide-in-bottom': 'slide-in-bottom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
             },
             keyframes: {
               float: {
@@ -73,7 +74,7 @@
                 '100%': { transform: 'translateY(0)', opacity: '1' }
               },
               'scale-in': {
-                '0%': { transform: 'scale(0.9)', opacity: '0' },
+                '0%': { transform: 'scale(0.95)', opacity: '0' },
                 '100%': { transform: 'scale(1)', opacity: '1' }
               },
               'slide-in-right': {
@@ -93,6 +94,10 @@
                 '0%': { transform: 'scale(0.8)' },
                 '50%': { transform: 'scale(1.2)' },
                 '100%': { transform: 'scale(1)' }
+              },
+              'slide-in-bottom': {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' }
               }
             }
           }
@@ -115,54 +120,73 @@
         -webkit-font-smoothing: antialiased;
       }
 
-      /* Premium Background */
+      /* Optimized Mesh Background (GPU Accelerated) */
       .mesh-bg {
         position: fixed;
         inset: 0;
         z-index: -1;
         background: #f8fafc;
         overflow: hidden;
+        /* Force hardware acceleration */
+        transform: translate3d(0, 0, 0); 
+        backface-visibility: hidden;
+        perspective: 1000px;
       }
       
       .mesh-blob {
         position: absolute;
-        filter: blur(80px);
-        opacity: 0.6;
-        animation: blob 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        /* Reduced blur for better mobile performance (was 60px) */
+        filter: blur(40px); 
+        opacity: 0.5;
         border-radius: 50%;
         mix-blend-mode: multiply;
+        will-change: transform; /* Hint to browser to optimize */
+        animation: blob 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
       }
       
       .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #e0e7ff; animation-delay: 0s; }
-      .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #fce7f3; animation-delay: -5s; }
-      .blob-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: #ccfbf1; animation-delay: -10s; }
+      .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #f3e8ff; animation-delay: -5s; }
+      .blob-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: #dcfce7; animation-delay: -10s; }
 
       /* Custom Scrollbar */
       .custom-scrollbar {
         scrollbar-width: thin;
-        scrollbar-color: rgba(99, 102, 241, 0.1) transparent;
+        scrollbar-color: rgba(99, 102, 241, 0.2) transparent;
       }
       .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { 
-        background-color: rgba(148, 163, 184, 0.3); 
+        background-color: rgba(148, 163, 184, 0.4); 
         border-radius: 20px; 
       }
+      
+      /* Darker scrollbar for sidebar */
+      .custom-scrollbar-dark {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+      }
+      .custom-scrollbar-dark::-webkit-scrollbar { width: 4px; height: 4px; }
+      .custom-scrollbar-dark::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar-dark::-webkit-scrollbar-thumb { 
+        background-color: rgba(255, 255, 255, 0.1); 
+        border-radius: 20px; 
+      }
+
       .scrollbar-none::-webkit-scrollbar { display: none; }
       
-      /* Glass Components */
+      /* Optimized Glass Components */
       .glass-modal {
-        background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(25px) saturate(180%);
-        -webkit-backdrop-filter: blur(25px) saturate(180%);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
       }
       
       .glass-panel {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
       }
 
       /* Utilities */
@@ -183,7 +207,11 @@
       
       /* Mobile Inputs Optimization */
       input, textarea, select {
-        font-size: 16px !important; /* Prevents auto-zoom on iOS */
+        font-size: 16px !important;
+      }
+      
+      button, input {
+        touch-action: manipulation;
       }
     </style>
 <script type="importmap">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
 import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, PanelLeft, LayoutGrid, MoreHorizontal, Sparkles, Clock } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -80,6 +80,27 @@ const copyToClipboard = (text: string) => {
     }
 };
 
+// --- OPTIMIZED SIDEBAR CLOCK ---
+const SidebarClock = React.memo(({ language }: { language: string }) => {
+    const [currentTime, setCurrentTime] = useState(new Date());
+    
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="flex flex-col mt-1.5 gap-0.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-80">
+                {currentTime.toLocaleDateString(language, { month: 'short', day: 'numeric' })}
+            </span>
+            <span className="text-[11px] font-mono text-indigo-300 font-bold tracking-wide">
+                {currentTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+        </div>
+    );
+});
+
 const AuthenticatedApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('tasks');
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -108,8 +129,6 @@ const AuthenticatedApp: React.FC = () => {
   const [editMemberTitle, setEditMemberTitle] = useState('');
   const [editMemberNote, setEditMemberNote] = useState('');
   
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   const personalBgInputRef = useRef<HTMLInputElement>(null);
 
   const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
@@ -123,12 +142,6 @@ const AuthenticatedApp: React.FC = () => {
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   const [storageVersion, setStorageVersion] = useState(0);
 
-  // CLOCK EFFECT
-  useEffect(() => {
-      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-      return () => clearInterval(timer);
-  }, []);
-
   useEffect(() => {
     const handleStorageChange = () => {
       setStorageVersion(prev => prev + 1);
@@ -141,29 +154,42 @@ const AuthenticatedApp: React.FC = () => {
     };
   }, []);
 
-  const syncGroups = () => {
-      const globalGroups = getGlobalGroups();
-      const relevantGroups = globalGroups.filter(g => 
-          g.members.some(m => m.id === currentUserId)
-      );
+  const lastGroupsRaw = useRef<string>('');
+
+  const syncGroups = useCallback(() => {
+      const raw = localStorage.getItem(GLOBAL_GROUPS_KEY) || '[]';
+      // Optimization: Cheap string comparison to avoid parsing
+      if (raw === lastGroupsRaw.current) return;
       
-      setMyGroups(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(relevantGroups)) {
-              return relevantGroups;
-          }
-          return prev;
-      });
-  };
+      lastGroupsRaw.current = raw;
+      
+      try {
+          const globalGroups = JSON.parse(raw);
+          const relevantGroups = globalGroups.filter((g: Group) => 
+              g.members.some(m => m.id === currentUserId)
+          );
+          
+          setMyGroups(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(relevantGroups)) {
+                  return relevantGroups;
+              }
+              return prev;
+          });
+      } catch (e) {
+          console.error("Error parsing groups", e);
+      }
+  }, [currentUserId]);
 
   useEffect(() => {
       syncGroups();
-      const interval = setInterval(syncGroups, 2000);
+      // Increase interval to 3s to save battery, since we have storage listener
+      const interval = setInterval(syncGroups, 3000); 
       window.addEventListener('storage', syncGroups);
       return () => {
           clearInterval(interval);
           window.removeEventListener('storage', syncGroups);
       }
-  }, [currentUserId]);
+  }, [syncGroups]);
 
   useEffect(() => {
       if (activeGroupId && !myGroups.find(g => g.id === activeGroupId)) {
@@ -340,14 +366,8 @@ const AuthenticatedApp: React.FC = () => {
                           <h2 className="text-base font-bold truncate leading-tight text-white/90">
                               {activeGroup ? activeGroup.name : t.personal}
                           </h2>
-                          <div className="flex flex-col mt-1.5 gap-0.5">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-80">
-                                  {currentTime.toLocaleDateString(language, { month: 'short', day: 'numeric' })}
-                              </span>
-                              <span className="text-[11px] font-mono text-indigo-300 font-bold tracking-wide">
-                                  {currentTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                              </span>
-                          </div>
+                          {/* OPTIMIZED: CLOCK ISOLATED HERE */}
+                          <SidebarClock language={language} />
                       </div>
                   </div>
               </div>

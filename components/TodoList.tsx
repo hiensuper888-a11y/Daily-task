@@ -30,6 +30,56 @@ const formatForInput = (isoString?: string) => {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
+// --- OPTIMIZED CLOCK COMPONENT ---
+// Isolates time updates to this small component to prevent re-rendering the parent List
+const HeaderClock = React.memo(({ language, isCustomBg, viewDate, isTodayView }: { language: string, isCustomBg: boolean, viewDate: Date, isTodayView: boolean }) => {
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const { t } = useLanguage();
+
+    useEffect(() => {
+        // Only run timer if we are viewing "Today"
+        if (!isTodayView) return;
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, [isTodayView]);
+
+    const hour = currentTime.getHours();
+    let GreetingIcon = Sun;
+    let greetingText = t.today;
+    
+    if (hour < 12) { GreetingIcon = Sunrise; }
+    else if (hour < 18) { GreetingIcon = Sun; }
+    else { GreetingIcon = Moon; }
+
+    return (
+        <div className="flex flex-col justify-center">
+             <div className="flex items-center gap-2 mb-0.5 opacity-80">
+                 <span className={`text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 ${isCustomBg ? 'text-white/90' : 'text-indigo-500'}`}>
+                    <GreetingIcon size={14} className={isCustomBg ? "text-white" : "text-indigo-500"}/>
+                    {greetingText}
+                 </span>
+             </div>
+             
+             {/* Date/Time Display */}
+             {!isTodayView ? (
+                <p className={`text-lg font-bold ${isCustomBg ? 'text-white/80' : 'text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+             ) : (
+                <div className="flex items-center gap-3">
+                    <span className={`text-sm font-bold opacity-80 ${isCustomBg ? 'text-white' : 'text-slate-500'}`}>
+                        {currentTime.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                    
+                    {/* Live Clock Pill */}
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full shadow-sm border ${isCustomBg ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-indigo-50/80 text-indigo-600 border-indigo-100 backdrop-blur-sm'}`}>
+                        <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+                        <span className="text-xs font-mono font-bold tracking-widest">{currentTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    </div>
+                </div>
+             )}
+        </div>
+    );
+});
+
 // --- BEAUTIFIED TASK ITEM ---
 const TaskItem = React.memo(({ 
   task, 
@@ -99,7 +149,6 @@ const TaskItem = React.memo(({
         let icon = <CalendarClock size={13} />;
 
         if (isOverdue) {
-            // If overdue within 24h, show hours ago. Else show date.
             if (diffHrs > -24) {
                  text = `${t.overdue} (${Math.abs(Math.ceil(diffHrs))}h)`;
             } else {
@@ -133,7 +182,6 @@ const TaskItem = React.memo(({
     const attachmentsCount = task.attachments?.length || 0;
     const commentsCount = task.comments?.length || 0;
 
-    // --- Priority Styling ---
     const getPriorityColor = (p: Priority = 'medium') => {
         switch(p) {
             case 'high': return 'bg-rose-500 shadow-glow shadow-rose-500/40 animate-pulse';
@@ -161,10 +209,10 @@ const TaskItem = React.memo(({
             }}
             onDrop={(e) => onDrop(e, task.id)}
             onClick={() => onEdit(task)}
-            className={`group relative pl-5 pr-5 py-5 rounded-[2.5rem] transition-all duration-300 cubic-bezier(0.2, 0.8, 0.2, 1) cursor-pointer mb-3 backdrop-blur-xl border border-white/60 overflow-hidden transform-gpu animate-slide-up
+            className={`group relative pl-5 pr-5 py-5 rounded-[2rem] transition-all duration-300 cubic-bezier(0.2, 0.8, 0.2, 1) cursor-pointer mb-3 backdrop-blur-xl border border-white/60 overflow-hidden transform-gpu animate-slide-up
                 ${task.completed 
                     ? 'opacity-70 bg-slate-50/50 shadow-none scale-[0.98] grayscale-[0.2]' 
-                    : 'bg-white/80 hover:bg-white hover:scale-[1.01] shadow-subtle hover:shadow-float hover:border-white/80'
+                    : 'bg-white/90 hover:bg-white hover:scale-[1.01] shadow-subtle hover:shadow-float hover:border-white/80 active:scale-[0.99]'
                 }
                 ${isDraggable ? 'active:cursor-grabbing cursor-grab active:scale-[0.98]' : ''} 
                 ${isDragging ? 'opacity-40 scale-[0.95] rotate-1 border-dashed border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200 shadow-none grayscale' : ''}
@@ -173,11 +221,9 @@ const TaskItem = React.memo(({
             `}
             style={{ animationDelay: `${Math.min(index * 50, 600)}ms`, animationFillMode: 'both' }}
         >
-             {/* Priority Indicator Dot */}
              <div className={`absolute top-6 right-5 w-2.5 h-2.5 rounded-full ${priorityColor} ${task.completed ? 'opacity-30' : 'opacity-100 transition-opacity'}`}></div>
 
              <div className="flex items-start gap-4">
-                {/* Checkbox - Fluid Animation */}
                 <button 
                   onClick={(e) => onToggle(task, e)} 
                   className={`mt-0.5 w-6 h-6 rounded-xl flex items-center justify-center transition-all duration-300 relative shrink-0 border-2 active:scale-90
@@ -191,10 +237,8 @@ const TaskItem = React.memo(({
                 </button>
 
                 <div className="flex-1 min-w-0 pr-6">
-                    {/* Title */}
                     <p className={`text-[16px] font-bold leading-snug transition-all duration-300 line-clamp-2 mb-2.5 ${task.completed ? 'line-through text-slate-400 decoration-slate-300' : 'text-slate-800'}`}>{task.text}</p>
                     
-                    {/* Meta Row */}
                     <div className="flex items-center flex-wrap gap-2">
                         {deadlineInfo && (
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border transition-colors ${deadlineInfo.colorClass}`}>
@@ -231,7 +275,6 @@ const TaskItem = React.memo(({
                 </div>
              </div>
              
-             {/* Delete Action */}
              <button 
                 className="absolute bottom-4 right-4 p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-300 z-20 opacity-0 translate-x-4 group-hover:translate-x-0 group-hover:opacity-100"
                 onClick={(e) => {
@@ -287,14 +330,10 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
   const [lastCheckedId, setLastCheckedId] = useState<number | null>(null);
   
-  // REAL TIME CLOCK STATE
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) || 'guest' : 'guest';
@@ -313,12 +352,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
       setIsInputExpanded(false);
   }, [activeGroup]);
 
-  // Clock Timer
-  useEffect(() => {
-      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-      return () => clearInterval(timer);
-  }, []);
-
   useEffect(() => {
       if (editingTask && commentsEndRef.current) {
           commentsEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -328,9 +361,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   // Click outside to collapse input
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-          // Check if click is outside and NOT on a date picker or select (which might render in a portal)
           if (inputContainerRef.current && !inputContainerRef.current.contains(event.target as Node)) {
-              // Only collapse if empty to avoid accidental data loss
               if (isInputExpanded && !inputValue.trim()) {
                   setIsInputExpanded(false);
                   setShowInputDetails(false);
@@ -346,13 +377,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
-
-  const getGreeting = () => {
-    const hour = currentTime.getHours(); // Use currentTime to update greeting in real-time
-    if (hour < 12) return { text: t.today, icon: Sunrise };
-    if (hour < 18) return { text: t.today, icon: Sun };
-    return { text: t.today, icon: Moon };
   };
 
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
@@ -419,7 +443,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-      e.preventDefault(); // Necessary to allow dropping
+      e.preventDefault(); 
       e.dataTransfer.dropEffect = "move";
   };
 
@@ -610,7 +634,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     setNewPriority('medium'); // Reset priority
     setNewAttachments([]);
     setShowInputDetails(false);
-    setIsInputExpanded(false); // Collapse after adding
+    setIsInputExpanded(false); 
   };
 
   const updateTask = () => {
@@ -778,9 +802,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
     if (currentMember?.headerBackground) return "pt-24 pb-8 px-6 relative z-10 shrink-0 text-white transition-all duration-500 bg-slate-900 shadow-xl rounded-b-[3rem] mb-4 mx-0 overflow-hidden";
     return "pt-20 pb-4 px-6 relative z-30 shrink-0 transition-all duration-500 mb-4 bg-white/60 backdrop-blur-xl border-b border-white/40 sticky top-0";
   }, [currentMember]);
-
-  const greeting = getGreeting();
-  const GreetingIcon = greeting.icon;
 
   const filterConfig: Record<FilterType, { icon: any, label: string }> = {
     all: { icon: Layers, label: t.all },
@@ -1114,37 +1135,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                  </div>
 
                  <div className="flex flex-col justify-center">
-                     <div className="flex items-center gap-2 mb-0.5 opacity-80">
-                         <span className={`text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 ${currentMember?.headerBackground ? 'text-white/90' : 'text-indigo-500'}`}>
-                            <GreetingIcon size={14} className={currentMember?.headerBackground ? "text-white" : "text-indigo-500"}/>
-                            {greeting.text}, {userProfile.name}
-                         </span>
-                     </div>
-                     <h2 className={`text-3xl md:text-5xl font-black tracking-tighter leading-none mb-1.5 ${currentMember?.headerBackground ? 'text-white drop-shadow-md' : 'bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent'}`}>
+                     {/* OPTIMIZED: CLOCK ISOLATED HERE */}
+                     <HeaderClock language={language} isCustomBg={!!currentMember?.headerBackground} viewDate={viewDate} isTodayView={isToday(viewDate)} />
+
+                     <h2 className={`text-3xl md:text-5xl font-black tracking-tighter leading-none mb-1.5 mt-1 ${currentMember?.headerBackground ? 'text-white drop-shadow-md' : 'bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent'}`}>
                         {filterStatus === 'archived' ? t.archived : (activeGroup ? activeGroup.name : (isToday(viewDate) ? t.today : t.custom))}
                      </h2>
-                     
-                     {/* Dynamic Date Display */}
-                     {!activeGroup && !isToday(viewDate) ? (
-                        <p className={`text-lg font-bold ${currentMember?.headerBackground ? 'text-white/80' : 'text-indigo-500'}`}>{viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                     ) : (
-                        <div className="flex items-center gap-3">
-                            <span className={`text-sm font-bold opacity-80 ${currentMember?.headerBackground ? 'text-white' : 'text-slate-500'}`}>
-                                {isToday(viewDate) 
-                                    ? currentTime.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' }) 
-                                    : viewDate.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })
-                                }
-                            </span>
-                            
-                            {/* Live Clock Pill */}
-                            {isToday(viewDate) && (
-                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full shadow-sm border ${currentMember?.headerBackground ? 'bg-white/20 text-white border-white/30 backdrop-blur-md' : 'bg-indigo-50/80 text-indigo-600 border-indigo-100 backdrop-blur-sm'}`}>
-                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
-                                    <span className="text-xs font-mono font-bold tracking-widest">{currentTime.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                                </div>
-                            )}
-                        </div>
-                     )}
                  </div>
              </div>
              
@@ -1259,7 +1255,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
         </div>
       </div>
 
-      {/* EXPANDABLE COMPACT INPUT */}
+      {/* EXPANDABLE COMPACT INPUT - Kept same, efficient */}
       <div className="fixed bottom-6 lg:bottom-8 left-0 right-0 z-[10000] pb-safe flex justify-center pointer-events-none px-4">
           <div 
             ref={inputContainerRef}
@@ -1391,7 +1387,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                                 }
                             }}
                             placeholder={t.newTaskPlaceholder} 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[16px] font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-sm transition-all" 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[16px] font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-inner transition-all" 
                             autoFocus
                         />
                     </div>
@@ -1400,7 +1396,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup }) => {
                         <button 
                             onClick={addTask} 
                             disabled={!inputValue.trim()} 
-                            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${inputValue.trim() ? 'bg-indigo-600 text-white hover:scale-110' : 'bg-slate-100 text-slate-300'}`}
+                            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${inputValue.trim() ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:scale-110 active:scale-95' : 'bg-slate-100 text-slate-300'}`}
                         >
                             <Plus size={22} strokeWidth={3} />
                         </button>

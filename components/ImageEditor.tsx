@@ -199,15 +199,15 @@ export const ImageEditor: React.FC = () => {
 
       {/* Controls */}
       {originalImage && (
-        <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
-             <div className="w-full max-w-2xl bg-white/80 backdrop-blur-[30px] rounded-[2rem] p-2 pl-3 shadow-premium ring-1 ring-white/40 animate-slide-up flex items-center gap-2">
+        <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center pointer-events-none">
+             <div className="w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-[2rem] p-2 pl-3 shadow-premium ring-1 ring-white/60 animate-slide-up flex items-center gap-2 pointer-events-auto">
                  <div className="flex-1 relative">
                     <input
                         type="text"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder={isOnline ? t.promptPlaceholder : "Offline mode"}
-                        className="w-full bg-transparent border-none px-2 py-2 text-[15px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
+                        className="w-full bg-transparent border-none px-2 py-3 text-[16px] font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
                         disabled={isLoading || !isOnline}
                         onKeyDown={(e) => { if(e.key === 'Enter') handleGenerate() }}
                     />
@@ -215,13 +215,13 @@ export const ImageEditor: React.FC = () => {
                  <button
                     onClick={handleGenerate}
                     disabled={isLoading || !prompt.trim() || !isOnline}
-                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-md ${
+                    className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 shrink-0 shadow-lg ${
                         isLoading || !prompt.trim() || !isOnline
                         ? 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed'
-                        : 'bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white hover:scale-110'
+                        : 'bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white hover:scale-110 active:scale-95'
                     }`}
                 >
-                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
+                    {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Wand2 size={20} strokeWidth={2.5}/>}
                 </button>
              </div>
         </div>

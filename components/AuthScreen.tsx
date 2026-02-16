@@ -106,12 +106,12 @@ export const AuthScreen: React.FC = () => {
                      <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">{t.emailLabel}</label>
                         <div className="relative group/input">
-                            <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors"/>
+                            <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-600 transition-colors"/>
                             <input 
                                 type="email"
                                 value={emailInput}
                                 onChange={(e) => setEmailInput(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-100"
                                 placeholder="name@example.com"
                             />
                         </div>
@@ -119,16 +119,16 @@ export const AuthScreen: React.FC = () => {
                      <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">{t.passwordLabel}</label>
                         <div className="relative group/input">
-                            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors"/>
+                            <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-indigo-600 transition-colors"/>
                             <input 
                                 type={showPassword ? "text" : "password"}
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
-                                className="w-full pl-11 pr-11 py-3.5 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-100"
                                 placeholder="••••••••"
                             />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors">
-                                {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-1">
+                                {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
                             </button>
                         </div>
                      </div>
@@ -137,9 +137,9 @@ export const AuthScreen: React.FC = () => {
                 <button 
                     onClick={handleEmailAuth}
                     disabled={isSyncing}
-                    className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-indigo-700"
+                    className="w-full mt-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                    {isSyncing ? <RefreshCw size={20} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={20}/> : <UserPlus size={20}/>)}
+                    {isSyncing ? <RefreshCw size={22} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={22}/> : <UserPlus size={22}/>)}
                     {authMode === 'login' ? t.loginBtn : t.registerBtn}
                 </button>
 

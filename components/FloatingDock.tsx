@@ -15,15 +15,15 @@ interface FloatingDockProps {
 export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActiveTab, onTabChange }) => {
   const { t } = useLanguage();
   
-  // Initialize position (Bottom Right by default to avoid overlap with Center Add Button)
+  // FIX: Move default Y position up (minus 150px) to clear the bottom Add button area
   const [position, setPosition] = useState({ 
-      x: typeof window !== 'undefined' ? window.innerWidth - 90 : 0, 
-      y: typeof window !== 'undefined' ? window.innerHeight - 100 : 0 
+      x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0, 
+      y: typeof window !== 'undefined' ? window.innerHeight - 160 : 0 
   });
   
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [hasMoved, setHasMoved] = useState(false); // Track if user has ever moved it
+  const [hasMoved, setHasMoved] = useState(false); 
   
   // Drag logic refs
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -31,14 +31,11 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
   const isDragGesture = useRef(false);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Constants
   const COLLAPSE_TIMEOUT = 5000;
   const EDGE_THRESHOLD = 80; 
 
-  // Determine orientation based on X position relative to screen width
   const isVertical = position.x < EDGE_THRESHOLD || position.x > window.innerWidth - EDGE_THRESHOLD - 80;
 
-  // Auto-collapse logic
   const resetIdleTimer = () => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     if (isExpanded) {
@@ -55,12 +52,12 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     };
   }, [isExpanded]);
 
-  // Handle Resize to keep dock on screen
+  // Handle Resize
   useEffect(() => {
       const handleResize = () => {
           if (!hasMoved) {
-              // Keep sticking to bottom right if not moved by user
-              setPosition({ x: window.innerWidth - 90, y: window.innerHeight - 100 });
+              // Keep relative position on resize
+              setPosition({ x: window.innerWidth - 80, y: window.innerHeight - 160 });
           } else {
               // Clamp to screen
               setPosition(prev => ({
@@ -107,14 +104,12 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     setIsDragging(false);
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
 
-    // Bounce back bounds logic
     const padding = 16;
     let newX = position.x;
     let newY = position.y;
-    const dockSize = isVertical ? 80 : 320; // Approximate sizes
 
     if (newX < padding) newX = padding;
-    if (newX > window.innerWidth - 80) newX = window.innerWidth - 80; // Width of collapsed icon approx
+    if (newX > window.innerWidth - 80) newX = window.innerWidth - 80;
     if (newY < padding) newY = padding;
     if (newY > window.innerHeight - 80) newY = window.innerHeight - 80;
 
@@ -133,7 +128,6 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     resetIdleTimer();
   };
 
-  // Configuration for colorful tabs
   const menuItems = [
     { id: 'tasks', icon: CheckSquare, label: t.tasks, color: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/40', text: 'text-blue-600' },
     { id: 'ai', icon: MessageSquare, label: 'AI', color: 'from-violet-500 to-purple-600', shadow: 'shadow-purple-500/40', text: 'text-purple-600' },
@@ -157,32 +151,24 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     >
       {/* COLLAPSED STATE (The "Magic Orb") */}
       <div className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isExpanded ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'}`}>
-        <div className="group relative w-16 h-16 cursor-pointer">
-            {/* Ambient Glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-40 animate-pulse-slow"></div>
-            
-            {/* The Orb */}
-            <div className="relative w-full h-full rounded-2xl bg-slate-900 border border-white/10 shadow-float flex items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-300 overflow-hidden ring-1 ring-white/20">
-                {/* Shine Effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-50"></div>
-                <div className="relative z-10 text-white drop-shadow-md">
-                    <LayoutGrid size={28} strokeWidth={2.5} />
-                </div>
+        <div className="group relative w-14 h-14 cursor-pointer">
+            <div className="absolute inset-0 bg-slate-900 rounded-2xl shadow-lg transform rotate-3 transition-transform group-hover:rotate-6 opacity-30"></div>
+            <div className="relative w-full h-full rounded-2xl bg-[#0f172a] border border-white/10 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-300 overflow-hidden ring-1 ring-white/10">
+                <LayoutGrid size={24} className="text-white relative z-10" strokeWidth={2} />
             </div>
         </div>
       </div>
 
-      {/* EXPANDED STATE (The "Vibrant Dock") */}
+      {/* EXPANDED STATE */}
       <div 
         className={`
-            relative rounded-[2.5rem] flex items-center shadow-float ring-1 ring-white/60 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-xl bg-white/90
+            relative rounded-[2rem] flex items-center shadow-2xl ring-1 ring-black/5 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-xl bg-white/95
             ${isExpanded ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-10 pointer-events-none w-0 h-0 p-0 overflow-hidden'}
-            ${isVertical ? 'flex-col w-[4.5rem] py-3 gap-2' : 'flex-row h-[4.5rem] px-3 gap-2'}
+            ${isVertical ? 'flex-col w-[4rem] py-2 gap-1' : 'flex-row h-[4rem] px-2 gap-1'}
         `}
       >
-        {/* Drag Handle */}
-        <div className={`text-slate-400/50 cursor-move flex items-center justify-center hover:text-slate-600 transition-colors z-10 ${isVertical ? 'h-4 w-full mb-1' : 'w-4 h-full mr-1'}`}>
-            {isVertical ? <GripHorizontal size={16} /> : <GripVertical size={16} />}
+        <div className={`text-slate-300 cursor-move flex items-center justify-center z-10 ${isVertical ? 'h-4 w-full mb-1' : 'w-4 h-full mr-1'}`}>
+            {isVertical ? <GripHorizontal size={14} /> : <GripVertical size={14} />}
         </div>
 
         {menuItems.map((item, index) => {
@@ -191,34 +177,24 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
             <button 
                 key={item.id}
                 onClick={(e) => { e.stopPropagation(); handleTabClick(item.id as AppTab); }}
-                className="relative w-12 h-12 flex flex-col items-center justify-center group z-10"
-                style={{ transitionDelay: `${isExpanded ? index * 40 : 0}ms` }}
+                className="relative w-10 h-10 flex flex-col items-center justify-center group z-10"
+                style={{ transitionDelay: `${isExpanded ? index * 30 : 0}ms` }}
             >
-                {/* Active Indicator & Hover Gradient */}
-                <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ease-out ${isActive ? `bg-gradient-to-br ${item.color} ${item.shadow} scale-100 rotate-0 opacity-100` : 'scale-75 opacity-0 hover:opacity-10 hover:scale-95 bg-slate-100'}`}></div>
-                
-                {/* Icon */}
-                <div className={`relative z-10 transition-all duration-300 transform ${isActive ? 'text-white scale-110' : `text-slate-400 group-hover:${item.text} group-hover:scale-110`}`}>
-                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isActive ? `bg-gradient-to-br ${item.color} opacity-100 shadow-sm` : 'opacity-0 hover:bg-slate-100'}`}></div>
+                <div className={`relative z-10 transition-all duration-300 transform ${isActive ? 'text-white scale-100' : `text-slate-400 group-hover:${item.text}`}`}>
+                    <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
-
-                {/* Active Dot (only if horizontal space permits or nice touch) */}
-                {isActive && (
-                    <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-white/80 shadow-glow"></div>
-                )}
             </button>
           );
         })}
 
-        {/* Separator */}
-        <div className={`bg-slate-200/50 ${isVertical ? 'h-px w-8 my-1' : 'w-px h-8 mx-1'}`}></div>
+        <div className={`bg-slate-100 ${isVertical ? 'h-px w-6 my-1' : 'w-px h-6 mx-1'}`}></div>
 
-        {/* Close Button */}
         <button 
             onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-colors z-10 active:scale-90"
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-colors z-10 active:scale-90"
         >
-            <X size={20} strokeWidth={2.5} />
+            <X size={16} strokeWidth={2.5} />
         </button>
       </div>
     </div>
