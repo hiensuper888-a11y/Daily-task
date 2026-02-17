@@ -72,6 +72,7 @@ export interface Group {
   description?: string;
   leaderId: string;
   avatar?: string; // Group Avatar URL/Base64
+  background?: string; // Group Shared Cover URL/Base64 (CSS value: url(...))
   members: GroupMember[];
   joinCode: string; // Simple code for manual joining
   createdAt: number;
@@ -81,7 +82,7 @@ export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'de
 
 export type AppTab = 'tasks' | 'studio' | 'reports' | 'profile' | 'ai';
 
-export type Language = 'vi' | 'en' | 'zh' | 'ja' | 'de' | 'fr';
+export type Language = 'vi' | 'en' | 'zh' | 'ja' | 'de' | 'fr' | 'es';
 
 export type SortOption = 'manual' | 'priority' | 'date_new' | 'date_old' | 'deadline';
 

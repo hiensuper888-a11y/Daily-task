@@ -292,6 +292,7 @@ const enTranslations = {
 };
 
 const viTranslations = {
+  // ... (keep existing Vietnamese translations)
   appTitle: "Daily Task",
   tasks: "Công việc",
   studio: "Studio",
@@ -303,8 +304,6 @@ const viTranslations = {
   groupsHeader: "Nhóm",
   create: "Tạo mới",
   joinCodeBtn: "Nhập mã tham gia",
-  
-  // General
   cancel: "Hủy",
   save: "Lưu",
   delete: "Xóa",
@@ -321,8 +320,6 @@ const viTranslations = {
   today: "Hôm nay",
   dateTime: "Ngày giờ",
   status: "Trạng thái",
-
-  // Alerts & Errors
   firebaseError: "Lỗi cấu hình Firebase.",
   networkError: "Vui lòng kiểm tra kết nối mạng.",
   fillAllFields: "Vui lòng điền đầy đủ thông tin.",
@@ -340,8 +337,6 @@ const viTranslations = {
   alreadyMember: "Bạn đã là thành viên của nhóm này.",
   invalidCode: "Mã không hợp lệ hoặc đã hết hạn.",
   onlyLeader: "Chỉ trưởng nhóm mới có quyền này.",
-  
-  // Todo List & Task Item
   todoHeader: "Việc Cần Làm",
   dailyProgress: "Tiến độ ngày",
   done: "Đã xong",
@@ -381,14 +376,10 @@ const viTranslations = {
   leaderEvaluation: "Đánh giá của Trưởng nhóm",
   leaderFeedbackPlaceholder: "Nhận xét của trưởng nhóm...",
   rating: "Đánh giá",
-  
-  // Time & Deadlines
   overdue: "Quá hạn",
   hoursLeft: "h nữa",
   minsLeft: "p nữa",
   tomorrow: "Ngày mai",
-
-  // Sorting
   sortBy: "Sắp xếp",
   sortPriority: "Ưu tiên",
   sortDate: "Ngày",
@@ -403,8 +394,6 @@ const viTranslations = {
   setDeadline: "Chọn hạn chót",
   setAssignedDate: "Ngày giao việc",
   setEstimate: "Chọn thời gian",
-  
-  // Studio
   studioHeader: "Xưởng AI",
   studioSubHeader: "Chỉnh sửa ảnh AI",
   uploadPrompt: "Tải ảnh lên",
@@ -422,8 +411,6 @@ const viTranslations = {
   errorGen: "Tạo thất bại.",
   errorConnection: "Lỗi kết nối.",
   internetRequired: "Cần kết nối Internet.",
-  
-  // Reports
   reportHeader: "Thống Kê",
   reportSubHeader: "Hiệu suất",
   day: "Ngày",
@@ -453,8 +440,6 @@ const viTranslations = {
   memberStats: "Thống kê thành viên",
   completionRate: "Tỷ lệ",
   topPerformer: "Xuất sắc nhất",
-  
-  // Auth & Profile
   loginHeader: "Đồng Bộ Hóa",
   loginSubHeader: "Đăng nhập để lưu dữ liệu",
   loginGoogle: "Đăng nhập bằng Google",
@@ -484,8 +469,6 @@ const viTranslations = {
   phoneNumber: "Số điện thoại",
   jobTitle: "Chức vụ",
   department: "Bộ phận",
-  
-  // Reflection
   selfEval: "Tự đánh giá",
   improve: "Cần cải thiện",
   comparison: "So sánh",
@@ -494,8 +477,6 @@ const viTranslations = {
   reportToday: "Báo cáo hôm nay",
   writeReflection: "Viết đánh giá của bạn...",
   writeImprovement: "Điều gì cần cải thiện?",
-
-  // AI Assistant
   geminiIntegration: "Đã tích hợp Gemini AI",
   aiHeader: "Trợ lý AI",
   aiSubHeader: "Hỏi đáp thông minh",
@@ -515,8 +496,6 @@ const viTranslations = {
   aiAnalyzeOutro: "\n\nHãy giúp tôi: 1. Liệt kê các công việc theo thứ tự ưu tiên. 2. Đề xuất trình tự thực hiện hợp lý. 3. Đưa ra lời khuyên cụ thể để hoàn thành chúng hiệu quả nhất.",
   optimizeAi: "Tối ưu hóa (AI)",
   breakdownAi: "Tự động chia nhỏ (AI)",
-  
-  // App Info
   appInfo: "Thông tin ứng dụng",
   version: "Phiên bản",
   checkUpdate: "Kiểm tra cập nhật",
@@ -525,8 +504,6 @@ const viTranslations = {
   updateAvailable: "Có bản cập nhật mới!",
   downloadUpdate: "Tải bản cập nhật",
   offlineUpdate: "Kết nối mạng để kiểm tra.",
-
-  // Groups
   myGroups: "Nhóm của tôi",
   personal: "Cá nhân",
   createGroup: "Tạo nhóm mới",
@@ -550,8 +527,6 @@ const viTranslations = {
   groupJoined: "Đã tham gia nhóm!",
   groupJoinError: "Mã không đúng hoặc đã tham gia.",
   copySuccess: "Đã chép mã!",
-  
-  // Group Modal & Settings
   joinGroupHeader: "Tham gia nhóm",
   joinCodePrompt: "Nhập mã code được chia sẻ",
   joinNow: "Tham gia ngay",
@@ -574,7 +549,6 @@ const viTranslations = {
   uploadDevice: "Tải ảnh lên từ thiết bị",
   shareGroup: "Chia sẻ",
   promoteConfirm: "⚠️ Chuyển quyền Trưởng nhóm?\n\nBạn sẽ mất quyền quản trị cao nhất và trở thành thành viên thường.",
-  
   priority: "Ưu tiên",
   low: "Thấp",
   medium: "TB",
@@ -582,6 +556,7 @@ const viTranslations = {
 };
 
 const zhTranslations = {
+  // ... (keep existing Chinese translations)
   appTitle: "Daily Task",
   tasks: "任务",
   studio: "工作室",
@@ -593,8 +568,6 @@ const zhTranslations = {
   groupsHeader: "小组",
   create: "创建",
   joinCodeBtn: "输入邀请码",
-  
-  // General
   cancel: "取消",
   save: "保存",
   delete: "删除",
@@ -611,8 +584,6 @@ const zhTranslations = {
   today: "今天",
   dateTime: "日期和时间",
   status: "状态",
-  
-  // Alerts & Errors
   firebaseError: "Firebase 配置错误。",
   networkError: "请检查您的网络连接。",
   fillAllFields: "请填写所有必填字段。",
@@ -630,8 +601,6 @@ const zhTranslations = {
   alreadyMember: "您已经是该小组成员。",
   invalidCode: "邀请码无效或已过期。",
   onlyLeader: "只有组长可以执行此操作。",
-  
-  // Todo List & Task Item
   todoHeader: "我的任务",
   dailyProgress: "每日进度",
   done: "已完成",
@@ -671,14 +640,10 @@ const zhTranslations = {
   leaderEvaluation: "组长评价",
   leaderFeedbackPlaceholder: "组长评语...",
   rating: "评分",
-  
-  // Time & Deadlines
   overdue: "逾期",
   hoursLeft: "小时剩余",
   minsLeft: "分钟剩余",
   tomorrow: "明天",
-  
-  // Sorting
   sortBy: "排序",
   sortPriority: "优先级",
   sortDate: "日期",
@@ -693,8 +658,6 @@ const zhTranslations = {
   setDeadline: "设置截止日期",
   setAssignedDate: "设置开始日期",
   setEstimate: "设置预计时间",
-  
-  // Studio
   studioHeader: "AI 工作室",
   studioSubHeader: "AI 图像编辑",
   uploadPrompt: "上传图片",
@@ -712,8 +675,6 @@ const zhTranslations = {
   errorGen: "生成失败。",
   errorConnection: "连接错误。",
   internetRequired: "需要网络连接。",
-  
-  // Reports
   reportHeader: "分析",
   reportSubHeader: "绩效",
   day: "天",
@@ -743,8 +704,6 @@ const zhTranslations = {
   memberStats: "成员统计",
   completionRate: "完成率",
   topPerformer: "最佳表现",
-  
-  // Auth & Profile
   loginHeader: "云同步",
   loginSubHeader: "登录以同步数据",
   loginGoogle: "使用 Google 登录",
@@ -774,8 +733,6 @@ const zhTranslations = {
   phoneNumber: "电话号码",
   jobTitle: "职务",
   department: "部门",
-  
-  // Reflection
   selfEval: "自我评价",
   improve: "需改进",
   comparison: "对比",
@@ -784,8 +741,6 @@ const zhTranslations = {
   reportToday: "今日报告",
   writeReflection: "写下您的每日反思...",
   writeImprovement: "有什么可以改进的？",
-
-  // AI Assistant
   geminiIntegration: "集成 Gemini AI",
   aiHeader: "AI 助手",
   aiSubHeader: "智能对话",
@@ -805,8 +760,6 @@ const zhTranslations = {
   aiAnalyzeOutro: "\n\n请提供：1. 这些任务的优先级列表。 2. 建议的执行顺序。 3. 关于如何高效完成的具体建议。",
   optimizeAi: "优化 (AI)",
   breakdownAi: "分解 (AI)",
-  
-  // App Info
   appInfo: "应用信息",
   version: "版本",
   checkUpdate: "检查更新",
@@ -815,8 +768,6 @@ const zhTranslations = {
   updateAvailable: "有新版本可用！",
   downloadUpdate: "下载更新",
   offlineUpdate: "连接网络以检查更新。",
-
-  // Groups
   myGroups: "我的小组",
   personal: "个人",
   createGroup: "创建小组",
@@ -840,8 +791,6 @@ const zhTranslations = {
   groupJoined: "加入小组成功！",
   groupJoinError: "无效代码或已加入。",
   copySuccess: "代码已复制！",
-  
-  // Group Modal & Settings
   joinGroupHeader: "加入小组",
   joinCodePrompt: "输入分享给您的代码",
   joinNow: "立即加入",
@@ -864,7 +813,6 @@ const zhTranslations = {
   uploadDevice: "从设备上传",
   shareGroup: "分享",
   promoteConfirm: "⚠️ 提升为组长？\n\n您将失去管理员权限并成为普通成员。",
-  
   priority: "优先级",
   low: "低",
   medium: "中",
@@ -872,6 +820,7 @@ const zhTranslations = {
 };
 
 const jaTranslations = {
+  // ... (keep existing Japanese translations)
   appTitle: "Daily Task",
   tasks: "タスク",
   studio: "スタジオ",
@@ -883,8 +832,6 @@ const jaTranslations = {
   groupsHeader: "グループ",
   create: "作成",
   joinCodeBtn: "参加コード入力",
-  
-  // General
   cancel: "キャンセル",
   save: "保存",
   delete: "削除",
@@ -901,8 +848,6 @@ const jaTranslations = {
   today: "今日",
   dateTime: "日時",
   status: "ステータス",
-  
-  // Alerts & Errors
   firebaseError: "Firebase設定エラー。",
   networkError: "インターネット接続を確認してください。",
   fillAllFields: "すべての必須項目を入力してください。",
@@ -920,8 +865,6 @@ const jaTranslations = {
   alreadyMember: "すでにこのグループのメンバーです。",
   invalidCode: "コードが無効か、期限切れです。",
   onlyLeader: "この操作はグループリーダーのみ可能です。",
-  
-  // Todo List & Task Item
   todoHeader: "マイタスク",
   dailyProgress: "今日の進捗",
   done: "完了",
@@ -961,14 +904,10 @@ const jaTranslations = {
   leaderEvaluation: "リーダー評価",
   leaderFeedbackPlaceholder: "リーダーのコメント...",
   rating: "評価",
-  
-  // Time & Deadlines
   overdue: "期限切れ",
   hoursLeft: "時間残り",
   minsLeft: "分残り",
   tomorrow: "明日",
-  
-  // Sorting
   sortBy: "並べ替え",
   sortPriority: "優先度",
   sortDate: "日付",
@@ -983,8 +922,6 @@ const jaTranslations = {
   setDeadline: "期限を設定",
   setAssignedDate: "開始日を設定",
   setEstimate: "予定時間を設定",
-  
-  // Studio
   studioHeader: "AIスタジオ",
   studioSubHeader: "AI画像編集",
   uploadPrompt: "画像をアップロード",
@@ -1002,8 +939,6 @@ const jaTranslations = {
   errorGen: "生成に失敗しました。",
   errorConnection: "接続エラー。",
   internetRequired: "インターネット接続が必要です。",
-  
-  // Reports
   reportHeader: "分析",
   reportSubHeader: "パフォーマンス",
   day: "日",
@@ -1033,8 +968,6 @@ const jaTranslations = {
   memberStats: "メンバー統計",
   completionRate: "率",
   topPerformer: "トップパフォーマー",
-  
-  // Auth & Profile
   loginHeader: "クラウド同期",
   loginSubHeader: "ログインしてデータを同期",
   loginGoogle: "Googleでログイン",
@@ -1064,8 +997,6 @@ const jaTranslations = {
   phoneNumber: "電話番号",
   jobTitle: "役職",
   department: "部署",
-  
-  // Reflection
   selfEval: "自己評価",
   improve: "改善点",
   comparison: "比較",
@@ -1074,8 +1005,6 @@ const jaTranslations = {
   reportToday: "今日のレポート",
   writeReflection: "今日の日報を記入...",
   writeImprovement: "改善できることは？",
-
-  // AI Assistant
   geminiIntegration: "Gemini AI統合済み",
   aiHeader: "AIアシスタント",
   aiSubHeader: "スマートチャット",
@@ -1095,8 +1024,6 @@ const jaTranslations = {
   aiAnalyzeOutro: "\n\n1. 優先順位リスト。 2. 推奨される実行順序。 3. 効率的に取り組むための具体的なアドバイスをお願いします。",
   optimizeAi: "最適化 (AI)",
   breakdownAi: "分解 (AI)",
-  
-  // App Info
   appInfo: "アプリ情報",
   version: "バージョン",
   checkUpdate: "更新を確認",
@@ -1105,8 +1032,6 @@ const jaTranslations = {
   updateAvailable: "新しいバージョンがあります！",
   downloadUpdate: "更新をダウンロード",
   offlineUpdate: "更新を確認するにはネットに接続してください。",
-
-  // Groups
   myGroups: "マイグループ",
   personal: "個人",
   createGroup: "グループ作成",
@@ -1130,8 +1055,6 @@ const jaTranslations = {
   groupJoined: "グループに参加しました！",
   groupJoinError: "コードが無効か、既に参加済みです。",
   copySuccess: "コードをコピーしました！",
-  
-  // Group Modal & Settings
   joinGroupHeader: "グループに参加",
   joinCodePrompt: "共有されたコードを入力",
   joinNow: "今すぐ参加",
@@ -1154,7 +1077,6 @@ const jaTranslations = {
   uploadDevice: "デバイスからアップロード",
   shareGroup: "共有",
   promoteConfirm: "⚠️ リーダーに昇格させますか？\n\nあなたは管理者権限を失い、一般メンバーになります。",
-  
   priority: "優先度",
   low: "低",
   medium: "中",
@@ -1162,6 +1084,7 @@ const jaTranslations = {
 };
 
 const deTranslations = {
+  // ... (keep existing German translations)
   appTitle: "Daily Task",
   tasks: "Aufgaben",
   studio: "Studio",
@@ -1173,8 +1096,6 @@ const deTranslations = {
   groupsHeader: "Gruppen",
   create: "Erstellen",
   joinCodeBtn: "Code eingeben",
-  
-  // General
   cancel: "Abbrechen",
   save: "Speichern",
   delete: "Löschen",
@@ -1191,8 +1112,6 @@ const deTranslations = {
   today: "Heute",
   dateTime: "Datum & Zeit",
   status: "Status",
-  
-  // Alerts & Errors
   firebaseError: "Firebase Konfigurationsfehler.",
   networkError: "Bitte Internetverbindung prüfen.",
   fillAllFields: "Bitte alle Pflichtfelder ausfüllen.",
@@ -1210,8 +1129,6 @@ const deTranslations = {
   alreadyMember: "Du bist bereits Mitglied dieser Gruppe.",
   invalidCode: "Ungültiger oder abgelaufener Code.",
   onlyLeader: "Nur der Gruppenleiter kann diese Aktion ausführen.",
-  
-  // Todo List & Task Item
   todoHeader: "Meine Aufgaben",
   dailyProgress: "Tagesfortschritt",
   done: "Erledigt",
@@ -1251,14 +1168,10 @@ const deTranslations = {
   leaderEvaluation: "Leiterbewertung",
   leaderFeedbackPlaceholder: "Kommentar des Leiters...",
   rating: "Bewertung",
-  
-  // Time & Deadlines
   overdue: "Überfällig",
   hoursLeft: "Std übrig",
   minsLeft: "Min übrig",
   tomorrow: "Morgen",
-  
-  // Sorting
   sortBy: "Sortieren nach",
   sortPriority: "Priorität",
   sortDate: "Datum",
@@ -1273,8 +1186,6 @@ const deTranslations = {
   setDeadline: "Frist setzen",
   setAssignedDate: "Startdatum setzen",
   setEstimate: "Zeit schätzen",
-  
-  // Studio
   studioHeader: "KI Studio",
   studioSubHeader: "Bilder mit KI bearbeiten",
   uploadPrompt: "Bild hochladen",
@@ -1292,8 +1203,6 @@ const deTranslations = {
   errorGen: "Generierung fehlgeschlagen.",
   errorConnection: "Verbindungsfehler.",
   internetRequired: "Internetverbindung erforderlich.",
-  
-  // Reports
   reportHeader: "Analyse",
   reportSubHeader: "Leistung",
   day: "Tag",
@@ -1323,8 +1232,6 @@ const deTranslations = {
   memberStats: "Mitgliederstatistik",
   completionRate: "Rate",
   topPerformer: "Beste Leistung",
-  
-  // Auth & Profile
   loginHeader: "Cloud Sync",
   loginSubHeader: "Anmelden zum Synchronisieren",
   loginGoogle: "Mit Google anmelden",
@@ -1354,8 +1261,6 @@ const deTranslations = {
   phoneNumber: "Telefonnummer",
   jobTitle: "Berufsbezeichnung",
   department: "Abteilung",
-  
-  // Reflection
   selfEval: "Selbsteinschätzung",
   improve: "Verbesserungswürdig",
   comparison: "Vergleich",
@@ -1364,8 +1269,6 @@ const deTranslations = {
   reportToday: "Heutiger Bericht",
   writeReflection: "Schreibe deine tägliche Reflexion...",
   writeImprovement: "Was kann verbessert werden?",
-
-  // AI Assistant
   geminiIntegration: "Gemini KI Integriert",
   aiHeader: "KI Assistent",
   aiSubHeader: "Smart Chat",
@@ -1385,8 +1288,6 @@ const deTranslations = {
   aiAnalyzeOutro: "\n\nBitte geben Sie an: 1. Eine priorisierte Liste dieser Aufgaben. 2. Eine empfohlene Ausführungsreihenfolge. 3. Konkrete Ratschläge zur effizienten Bewältigung.",
   optimizeAi: "Optimieren (KI)",
   breakdownAi: "Aufschlüsseln (KI)",
-  
-  // App Info
   appInfo: "App Informationen",
   version: "Version",
   checkUpdate: "Nach Updates suchen",
@@ -1395,8 +1296,6 @@ const deTranslations = {
   updateAvailable: "Neue Version verfügbar!",
   downloadUpdate: "Update herunterladen",
   offlineUpdate: "Mit dem Internet verbinden, um Updates zu prüfen.",
-
-  // Groups
   myGroups: "Meine Gruppen",
   personal: "Persönlich",
   createGroup: "Gruppe erstellen",
@@ -1420,8 +1319,6 @@ const deTranslations = {
   groupJoined: "Erfolgreich beigetreten!",
   groupJoinError: "Ungültiger Code oder bereits beigetreten.",
   copySuccess: "Code kopiert!",
-  
-  // Group Modal & Settings
   joinGroupHeader: "Gruppe beitreten",
   joinCodePrompt: "Gib den geteilten Code ein",
   joinNow: "Jetzt beitreten",
@@ -1444,7 +1341,6 @@ const deTranslations = {
   uploadDevice: "Vom Gerät hochladen",
   shareGroup: "Teilen",
   promoteConfirm: "⚠️ Zum Leiter befördern?\n\nDu verlierst Administratorrechte und wirst reguläres Mitglied.",
-  
   priority: "Priorität",
   low: "Niedrig",
   medium: "Mittel",
@@ -1452,6 +1348,7 @@ const deTranslations = {
 };
 
 const frTranslations = {
+  // ... (keep existing French translations)
   appTitle: "Daily Task",
   tasks: "Tâches",
   studio: "Studio",
@@ -1463,8 +1360,6 @@ const frTranslations = {
   groupsHeader: "Groupes",
   create: "Créer",
   joinCodeBtn: "Saisir le code",
-  
-  // General
   cancel: "Annuler",
   save: "Enregistrer",
   delete: "Supprimer",
@@ -1481,8 +1376,6 @@ const frTranslations = {
   today: "Aujourd'hui",
   dateTime: "Date & Heure",
   status: "Statut",
-  
-  // Alerts & Errors
   firebaseError: "Erreur de configuration Firebase.",
   networkError: "Veuillez vérifier votre connexion Internet.",
   fillAllFields: "Veuillez remplir tous les champs obligatoires.",
@@ -1500,8 +1393,6 @@ const frTranslations = {
   alreadyMember: "Vous êtes déjà membre de ce groupe.",
   invalidCode: "Code invalide ou expiré.",
   onlyLeader: "Seul le chef de groupe peut effectuer cette action.",
-  
-  // Todo List & Task Item
   todoHeader: "Mes Tâches",
   dailyProgress: "Progrès du jour",
   done: "Fait",
@@ -1541,14 +1432,10 @@ const frTranslations = {
   leaderEvaluation: "Évaluation du chef",
   leaderFeedbackPlaceholder: "Commentaires du chef...",
   rating: "Note",
-  
-  // Time & Deadlines
   overdue: "En retard",
   hoursLeft: "h restantes",
   minsLeft: "m restantes",
   tomorrow: "Demain",
-  
-  // Sorting
   sortBy: "Trier par",
   sortPriority: "Priorité",
   sortDate: "Date",
@@ -1563,8 +1450,6 @@ const frTranslations = {
   setDeadline: "Définir l'échéance",
   setAssignedDate: "Définir la date de début",
   setEstimate: "Estimer le temps",
-  
-  // Studio
   studioHeader: "Studio IA",
   studioSubHeader: "Éditer des images avec l'IA",
   uploadPrompt: "Mettre en ligne une image",
@@ -1582,8 +1467,6 @@ const frTranslations = {
   errorGen: "Échec de la génération.",
   errorConnection: "Erreur de connexion.",
   internetRequired: "Connexion Internet requise.",
-  
-  // Reports
   reportHeader: "Analytique",
   reportSubHeader: "Performance",
   day: "Jour",
@@ -1613,8 +1496,6 @@ const frTranslations = {
   memberStats: "Stats des membres",
   completionRate: "Taux",
   topPerformer: "Meilleure performance",
-  
-  // Auth & Profile
   loginHeader: "Sync Cloud",
   loginSubHeader: "Connectez-vous pour synchroniser vos données",
   loginGoogle: "Se connecter avec Google",
@@ -1644,8 +1525,6 @@ const frTranslations = {
   phoneNumber: "Numéro de téléphone",
   jobTitle: "Intitulé du poste",
   department: "Département",
-  
-  // Reflection
   selfEval: "Auto-évaluation",
   improve: "À améliorer",
   comparison: "Comparaison",
@@ -1654,8 +1533,6 @@ const frTranslations = {
   reportToday: "Rapport du jour",
   writeReflection: "Écrivez votre réflexion quotidienne ici...",
   writeImprovement: "Que peut-on améliorer ?",
-
-  // AI Assistant
   geminiIntegration: "IA Gemini Intégrée",
   aiHeader: "Assistant IA",
   aiSubHeader: "Chat Intelligent",
@@ -1675,8 +1552,6 @@ const frTranslations = {
   aiAnalyzeOutro: "\n\nVeuillez fournir : 1. Une liste priorisée de ces tâches. 2. Un ordre d'exécution suggéré. 3. Des conseils spécifiques sur la façon de les aborder efficacement.",
   optimizeAi: "Affiner (IA)",
   breakdownAi: "Décomposer (IA)",
-  
-  // App Info
   appInfo: "Informations sur l'application",
   version: "Version",
   checkUpdate: "Vérifier les mises à jour",
@@ -1685,8 +1560,6 @@ const frTranslations = {
   updateAvailable: "Nouvelle version disponible !",
   downloadUpdate: "Télécharger la mise à jour",
   offlineUpdate: "Connectez-vous à Internet pour vérifier les mises à jour.",
-
-  // Groups
   myGroups: "Mes Groupes",
   personal: "Personnel",
   createGroup: "Créer un groupe",
@@ -1710,8 +1583,6 @@ const frTranslations = {
   groupJoined: "Groupe rejoint avec succès !",
   groupJoinError: "Code invalide ou déjà rejoint.",
   copySuccess: "Code copié !",
-  
-  // Group Modal & Settings
   joinGroupHeader: "Rejoindre un groupe",
   joinCodePrompt: "Entrez le code partagé avec vous",
   joinNow: "Rejoindre maintenant",
@@ -1734,11 +1605,300 @@ const frTranslations = {
   uploadDevice: "Mettre en ligne depuis l'appareil",
   shareGroup: "Partager",
   promoteConfirm: "⚠️ Promouvoir chef ?\n\nVous perdrez les droits d'administrateur et deviendrez un membre régulier.",
-  
   priority: "Priorité",
   low: "Basse",
   medium: "Moyenne",
   high: "Haute",
+};
+
+const esTranslations = {
+  appTitle: "Daily Task",
+  tasks: "Tareas",
+  studio: "Estudio",
+  reports: "Informes",
+  profile: "Perfil",
+  ai: "Chat IA",
+  overview: "Resumen",
+  workspace: "Espacio de trabajo",
+  groupsHeader: "Grupos",
+  create: "Crear",
+  joinCodeBtn: "Ingresar código",
+  
+  // General
+  cancel: "Cancelar",
+  save: "Guardar",
+  delete: "Eliminar",
+  edit: "Editar",
+  close: "Cerrar",
+  search: "Buscar...",
+  back: "Atrás",
+  next: "Siguiente",
+  confirm: "Confirmar",
+  skip: "Omitir",
+  reset: "Restablecer",
+  download: "Descargar",
+  upload: "Subir",
+  today: "Hoy",
+  dateTime: "Fecha y hora",
+  status: "Estado",
+  
+  // Alerts & Errors
+  firebaseError: "Error de configuración de Firebase.",
+  networkError: "Por favor, verifique su conexión a internet.",
+  fillAllFields: "Por favor, complete todos los campos obligatorios.",
+  registerSuccess: "¡Registro exitoso! Por favor, verifique su correo electrónico.",
+  loginSuccess: "Inicio de sesión exitoso.",
+  accountNotActive: "Cuenta no activada. Por favor, verifique su correo electrónico.",
+  errorPrefix: "Error: ",
+  taskDeleted: "Tarea eliminada permanentemente.",
+  groupDeleted: "Grupo eliminado.",
+  memberRemoved: "Miembro eliminado.",
+  copied: "¡Copiado al portapapeles!",
+  shareNotSupported: "Compartir no es compatible en este dispositivo.",
+  shareTitle: "Únete al grupo de Daily Task",
+  shareText: "¡Únete a mi grupo en Daily Task! Código:",
+  alreadyMember: "Ya eres miembro de este grupo.",
+  invalidCode: "Código inválido o caducado.",
+  onlyLeader: "Solo el líder del grupo puede realizar esta acción.",
+  
+  // Todo List & Task Item
+  todoHeader: "Mis Tareas",
+  dailyProgress: "Progreso diario",
+  done: "Hecho",
+  items: "elementos",
+  greatJob: "¡Buen trabajo!",
+  keepGoing: "¡Sigue así!",
+  addTaskPlaceholder: "¿Qué hay que hacer?",
+  newTaskPlaceholder: "Nueva tarea...",
+  all: "Todo",
+  active: "Activo",
+  completed: "Completado",
+  archived: "Archivado",
+  emptyTasks: "No se encontraron tareas.",
+  emptyArchived: "Vacío",
+  emptyChill: "¡Todo listo! Hora de relajarse.",
+  clearCompleted: "Archivar completados",
+  taskDetails: "Detalles",
+  editTask: "Editar tarea",
+  taskContent: "Contenido de la tarea",
+  progress: "Progreso",
+  assignTask: "Asignar tarea",
+  attachments: "Adjuntos",
+  comments: "Comentarios",
+  add: "Agregar",
+  noAttachments: "Sin adjuntos",
+  subtasksHeader: "Lista de verificación",
+  addSubtaskPlaceholder: "Agregar un paso...",
+  saveChanges: "Guardar cambios",
+  deleteTaskConfirm: "¿Eliminar esta tarea permanentemente?",
+  taskDetailsCapsule: "Agregar rápido",
+  assignLabel: "Asignar:",
+  attachLabel: "Adjuntar",
+  leaderOnly: "Solo el líder puede crear tareas.",
+  completeTaskHeader: "Completar tarea",
+  completionNotePrompt: "Agregar nota de finalización (opcional)",
+  enterNotePlaceholder: "Escribe tu nota aquí...",
+  leaderEvaluation: "Evaluación del líder",
+  leaderFeedbackPlaceholder: "Comentarios del líder...",
+  rating: "Calificación",
+  
+  // Time & Deadlines
+  overdue: "Vencido",
+  hoursLeft: "h restantes",
+  minsLeft: "m restantes",
+  tomorrow: "Mañana",
+  
+  // Sorting
+  sortBy: "Ordenar por",
+  sortPriority: "Prioridad",
+  sortDate: "Fecha",
+  sortManual: "Manual",
+  newest: "Más reciente",
+  oldest: "Más antiguo",
+  deadline: "Fecha límite",
+  assignedDate: "Asignado",
+  estimatedTime: "Tiempo est.",
+  minutes: "min",
+  hours: "h",
+  setDeadline: "Establecer fecha límite",
+  setAssignedDate: "Establecer fecha de inicio",
+  setEstimate: "Estimar tiempo",
+  
+  // Studio
+  studioHeader: "Estudio IA",
+  studioSubHeader: "Editar imágenes con IA",
+  uploadPrompt: "Subir imagen",
+  uploadSubPrompt: "Soporta JPG, PNG",
+  originalImage: "Original",
+  aiResult: "Resultado IA",
+  useAsInput: "Usar como entrada",
+  processing: "Procesando...",
+  resultPlaceholder: "Resultado aquí",
+  promptLabel: "Comando mágico",
+  promptPlaceholder: "Ej: Eliminar fondo, agregar luces de neón...",
+  generate: "Generar",
+  generating: "Generando",
+  errorImage: "Seleccione un archivo de imagen.",
+  errorGen: "Falló la generación.",
+  errorConnection: "Error de conexión.",
+  internetRequired: "Se requiere conexión a internet.",
+  
+  // Reports
+  reportHeader: "Analítica",
+  reportSubHeader: "Rendimiento",
+  day: "Día",
+  week: "Semana",
+  month: "Mes",
+  year: "Año",
+  custom: "Personalizado",
+  startDate: "Fecha de inicio",
+  endDate: "Fecha de fin",
+  totalTasks: "Total de tareas",
+  avgCompletion: "Tasa de finalización",
+  vsPrev: "Vs Anterior",
+  noData: "No hay datos disponibles",
+  productivityTrend: "Tendencia",
+  export: "Exportar / Compartir",
+  share: "Compartir",
+  shareSuccess: "¡Compartido!",
+  productivityScore: "Puntuación de productividad",
+  tasksCompleted: "Tareas completadas",
+  required: "Requerido",
+  start: "Inicio",
+  middle: "Medio",
+  end: "Fin",
+  groupView: "Grupo",
+  teamPerformance: "Rendimiento del equipo",
+  leaderboard: "Tabla de clasificación",
+  memberStats: "Estadísticas de miembros",
+  completionRate: "Tasa",
+  topPerformer: "Mejor rendimiento",
+  
+  // Auth & Profile
+  loginHeader: "Sincronización en la nube",
+  loginSubHeader: "Inicia sesión para sincronizar tus datos",
+  loginGoogle: "Iniciar sesión con Google",
+  loginFacebook: "Continuar con Facebook",
+  logout: "Cerrar sesión",
+  syncing: "Sincronizando...",
+  synced: "Todos los datos sincronizados",
+  userSince: "Miembro desde",
+  welcomeBack: "Bienvenido de nuevo",
+  createAccount: "Crear cuenta",
+  loginContinue: "Inicia sesión para continuar",
+  startJourney: "Comienza tu viaje de productividad",
+  emailLabel: "Correo electrónico",
+  passwordLabel: "Contraseña",
+  loginBtn: "Entrar",
+  registerBtn: "Registrarse",
+  noAccountPrompt: "¿No tienes cuenta? Regístrate",
+  hasAccountPrompt: "¿Ya tienes cuenta? Entrar",
+  personalInfo: "Información personal",
+  work: "Trabajo",
+  statusLabel: "Estado",
+  notUpdated: "No actualizado",
+  birthYear: "Año de nacimiento",
+  hometown: "Ciudad natal",
+  address: "Dirección",
+  company: "Empresa",
+  phoneNumber: "Número de teléfono",
+  jobTitle: "Título del trabajo",
+  department: "Departamento",
+  
+  // Reflection
+  selfEval: "Autoevaluación",
+  improve: "Necesita mejorar",
+  comparison: "Comparación",
+  periodCurrent: "Este período",
+  periodPrev: "Período anterior",
+  reportToday: "Informe de hoy",
+  writeReflection: "Escribe tu reflexión diaria aquí...",
+  writeImprovement: "¿Qué se puede mejorar?",
+
+  // AI Assistant
+  geminiIntegration: "IA Gemini Integrada",
+  aiHeader: "Asistente IA",
+  aiSubHeader: "Chat Inteligente",
+  typeMessage: "Escribe un mensaje...",
+  model: "Modelo",
+  clearChat: "Borrar chat",
+  welcomeAi: "¡Hola! Soy tu asistente de IA. ¿Cómo puedo ayudarte hoy?",
+  analyzeTasks: "Analizar tareas",
+  analyzing: "Analizando...",
+  aiAdvice: "He analizado tus tareas. Aquí está mi consejo sobre priorización y ejecución:",
+  aiChatTitle: "Chat IA",
+  online: "En línea",
+  startChat: "Comenzar chat con IA",
+  aiError: "Error de conexión de IA.",
+  aiNoTasksPrompt: "No tengo tareas, ¡felicítame por ser eficiente!",
+  aiAnalyzeIntro: "Analiza mi lista de tareas pendientes:\n",
+  aiAnalyzeOutro: "\n\nPor favor proporciona: 1. Una lista priorizada de estas tareas. 2. Un orden de ejecución sugerido. 3. Consejos específicos sobre cómo abordarlas de manera eficiente.",
+  optimizeAi: "Refinar (IA)",
+  breakdownAi: "Desglosar (IA)",
+  
+  // App Info
+  appInfo: "Información de la aplicación",
+  version: "Versión",
+  checkUpdate: "Buscar actualizaciones",
+  checkingUpdate: "Buscando...",
+  upToDate: "Estás usando la última versión.",
+  updateAvailable: "¡Nueva versión disponible!",
+  downloadUpdate: "Descargar actualización",
+  offlineUpdate: "Conéctate a internet para buscar actualizaciones.",
+
+  // Groups
+  myGroups: "Mis Grupos",
+  personal: "Personal",
+  createGroup: "Crear grupo",
+  joinGroup: "Unirse a grupo",
+  groupName: "Nombre del grupo",
+  joinCode: "Código de unión",
+  inviteMembers: "Invitar miembros",
+  scanQr: "Escanear código QR",
+  copyLink: "Copiar enlace",
+  assignedTo: "Asignado a",
+  assignTo: "Asignar a...",
+  completedBy: "Completado por",
+  completionNote: "Nota de finalización",
+  addNotePlaceholder: "Describe lo que hiciste...",
+  submitCompletion: "Enviar y completar",
+  assigned_to_me: "Asignado a mí",
+  delegated: "Delegado",
+  leader: "Líder",
+  member: "Miembro",
+  groupCreated: "¡Grupo creado con éxito!",
+  groupJoined: "¡Te has unido al grupo con éxito!",
+  groupJoinError: "Código inválido o ya te has unido.",
+  copySuccess: "¡Código copiado!",
+  
+  // Group Modal & Settings
+  joinGroupHeader: "Unirse a grupo",
+  joinCodePrompt: "Ingresa el código compartido contigo",
+  joinNow: "Unirse ahora",
+  createGroupHeader: "Crear nuevo grupo",
+  createGroupSub: "Espacio de trabajo compartido",
+  groupNamePlaceholder: "Nombre del grupo...",
+  groupDescPlaceholder: "Breve descripción (opcional)...",
+  createGroupBtn: "Crear grupo",
+  infoTab: "Info",
+  membersTab: "Miembros",
+  themeTab: "Tema",
+  groupDesc: "Descripción del grupo",
+  noDesc: "Sin descripción.",
+  deleteGroup: "Eliminar grupo permanentemente",
+  leaveGroup: "Salir del grupo",
+  memberList: "Lista",
+  roleTitle: "Título",
+  internalNote: "Nota interna",
+  themeHint: "Cambiar el fondo del encabezado hace que tu espacio de trabajo sea más animado. Esta configuración se aplica solo a tu cuenta.",
+  uploadDevice: "Subir desde dispositivo",
+  shareGroup: "Compartir",
+  promoteConfirm: "⚠️ ¿Promover a Líder?\n\nPerderás los derechos de administrador y te convertirás en un miembro regular.",
+  
+  priority: "Prioridad",
+  low: "Baja",
+  medium: "Media",
+  high: "Alta",
 };
 
 export const translations = {
@@ -1748,6 +1908,7 @@ export const translations = {
   ja: jaTranslations,
   de: deTranslations,
   fr: frTranslations,
+  es: esTranslations,
 };
 
 export const getTranslation = (lang: Language) => translations[lang];

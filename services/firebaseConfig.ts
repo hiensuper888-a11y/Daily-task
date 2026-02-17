@@ -1,7 +1,5 @@
-
 // SERVICES/FIREBASECONFIG.TS - MOCK IMPLEMENTATION
 // This file simulates a Firebase Auth backend using localStorage.
-// It allows the app to function with full registration flows as requested, without needing a live Google Cloud project.
 
 const USERS_KEY = 'daily_task_mock_users';
 const CURRENT_USER_KEY = 'daily_task_mock_current_user';
@@ -54,7 +52,6 @@ export const createUserWithEmailAndPassword = async (_auth: any, email: string, 
         throw err;
     }
 
-    // Replace deprecated substr with substring
     const uid = 'user_' + Math.random().toString(36).substring(2, 9);
     const newUser = {
         uid,
@@ -91,10 +88,6 @@ export const signInWithEmailAndPassword = async (_auth: any, email: string, pass
         throw err;
     }
 
-    // In a real app, firebase auth doesn't block login for unverified emails by default, 
-    // but our UI component checks `user.emailVerified`.
-    // We return the user object as stored.
-    
     return { user: { ...user } };
 };
 
@@ -107,15 +100,12 @@ export const sendEmailVerification = async (user: any) => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     console.log(`[Mock Email Service] Verification link sent to ${user.email}`);
     
-    // SIMULATION: Automatically verify the user after a short delay to simulate them clicking the link
-    // We will alert the user in the UI, but here we update the "backend" state.
     setTimeout(() => {
         const users = getUsers();
         const cleanEmail = user.email.toLowerCase().trim();
         if (users[cleanEmail]) {
             users[cleanEmail].emailVerified = true;
             saveUsers(users);
-            // We verify the user in the backend, but the user needs to login again to refresh the token in a real app.
             console.log(`[Mock Email Service] ${cleanEmail} has been verified.`);
             alert(`(Mô phỏng) Hệ thống đã gửi email tới ${cleanEmail}.\n\nVì đây là bản demo, chúng tôi giả lập bạn đã bấm vào link xác thực.\n\nTài khoản của bạn ĐÃ ĐƯỢC KÍCH HOẠT! Bạn có thể đăng nhập ngay.`);
         }
@@ -126,7 +116,6 @@ export const signInWithPopup = async (_auth: any, provider: any) => {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const users = getUsers();
-    // Generate a consistent dummy email for social login based on provider to allow re-login
     const providerName = provider.providerId === 'google.com' ? 'gmail' : 'facebook';
     const email = `demo_${providerName}_user@example.com`;
     const cleanEmail = email.toLowerCase().trim();
@@ -134,11 +123,10 @@ export const signInWithPopup = async (_auth: any, provider: any) => {
     let user = users[cleanEmail];
     if (!user) {
         user = {
-            // Replace deprecated substr with substring
             uid: `social_${providerName}_` + Math.random().toString(36).substring(2, 9),
             email: cleanEmail,
             password: 'social-login-no-pass',
-            emailVerified: true, // Social accounts are trusted
+            emailVerified: true, 
             displayName: provider.providerId === 'google.com' ? 'Google User' : 'Facebook User',
             photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanEmail}`,
             createdAt: Date.now()
@@ -162,17 +150,10 @@ export const updateProfile = async (user: any, updates: { displayName?: string; 
     }
 };
 
-/**
- * Searches for users by email, display name, or UID.
- * Simulates a backend search query.
- */
 export const searchUsers = async (query: string) => {
-    await new Promise(resolve => setTimeout(resolve, 400)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 400));
     const users = getUsers();
     const lowerQuery = query.toLowerCase().trim();
-
-    // STRICT: ONLY Return existing users, DO NOT create fake/seed users.
-    // Filter logic: Check if query matches email, displayName or uid
     
     return Object.values(users)
         .filter((user: any) => 

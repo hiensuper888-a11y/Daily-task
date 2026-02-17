@@ -22,6 +22,7 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'ja', label: '日本語', flag: '🇯🇵' },
   { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];
 
 const LoadingFallback = () => (
@@ -244,9 +245,6 @@ const AuthenticatedApp: React.FC = () => {
       };
       saveGlobalGroup(newGroup);
       
-      // FIX: Do not manually update state here, rely on syncGroups triggered by storage event
-      // setMyGroups(prev => [...prev, newGroup]); 
-      
       resetModalState(); 
       setShowGroupModal(false); 
       
@@ -283,9 +281,6 @@ const AuthenticatedApp: React.FC = () => {
           saveGlobalGroup(updatedGroup);
       }
       
-      // FIX: Rely on storage sync
-      // setMyGroups(prev => [...prev, updatedGroup]); 
-      
       setTimeout(() => {
           setActiveGroupId(updatedGroup.id); 
           setActiveTab('tasks'); 
@@ -306,8 +301,6 @@ const AuthenticatedApp: React.FC = () => {
           localStorage.removeItem(`group_${groupId}_tasks`); 
           localStorage.removeItem(`group_${groupId}_reflections`);
           deleteGlobalGroup(groupId);
-          // Rely on sync for state update
-          // setMyGroups(prev => prev.filter(g => g.id !== groupId)); 
           alert(t.groupDeleted);
       } 
   };
@@ -318,8 +311,6 @@ const AuthenticatedApp: React.FC = () => {
           const updatedMembers = (activeGroup.members || []).filter(m => m.id !== currentUserId); 
           const updatedGroup = { ...activeGroup, members: updatedMembers }; 
           saveGlobalGroup(updatedGroup); 
-          // Rely on sync
-          // setMyGroups(prev => prev.filter(g => g.id !== activeGroup.id)); 
           setActiveGroupId(null); 
           setShowSettingsModal(false); 
           setActiveTab('tasks'); 
@@ -328,7 +319,6 @@ const AuthenticatedApp: React.FC = () => {
   
   const updateGroupMemberState = (updatedGroup: Group) => {
       saveGlobalGroup(updatedGroup);
-      // setMyGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
   };
   
   const handleSearchUsers = async () => { if (!memberSearchQuery.trim()) return; setIsSearching(true); setHasSearched(true); try { const results = await searchUsers(memberSearchQuery); const existingMemberIds = activeGroup?.members?.map(m => m.id) || []; setFoundUsers(results.filter((u: any) => !existingMemberIds.includes(u.uid))); } catch (error) { console.error(error); } finally { setIsSearching(false); } };
@@ -425,12 +415,12 @@ const AuthenticatedApp: React.FC = () => {
               </div>
 
               {/* Language Switcher */}
-              <div className="mt-4 flex justify-between items-center bg-white/5 p-2 rounded-2xl border border-white/10">
+              <div className="mt-4 flex justify-between items-center bg-white/5 p-2 rounded-2xl border border-white/10 overflow-x-auto scrollbar-none gap-2">
                   {languages.map(lang => (
                       <button 
                         key={lang.code} 
                         onClick={() => setLanguage(lang.code)}
-                        className={`text-xl p-2 rounded-xl transition-all hover:scale-110 ${language === lang.code ? 'bg-white/20 shadow-sm scale-110' : 'opacity-60 hover:opacity-100'}`}
+                        className={`text-xl p-2 rounded-xl transition-all hover:scale-110 shrink-0 ${language === lang.code ? 'bg-white/20 shadow-sm scale-110 border border-white/20' : 'opacity-60 hover:opacity-100'}`}
                         title={lang.label}
                       >
                           {lang.flag}

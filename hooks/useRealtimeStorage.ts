@@ -5,20 +5,21 @@ export const SESSION_KEY = 'daily_task_active_session_user';
 
 /**
  * A hook that syncs with localStorage and updates in real-time across tabs.
- * PERFORMANCE OPTIMIZED: Reduces unnecessary JSON parsing and re-renders.
  */
 export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: boolean = false) {
   
+  // Helper to determine the actual storage key based on login session
   const getStorageKey = useCallback(() => {
     if (globalKey) return key;
     if (typeof window === 'undefined') return `guest_${key}`;
+    
+    // Get current user ID from session
     const currentUser = window.localStorage.getItem(SESSION_KEY);
     const prefix = currentUser ? currentUser.trim() : 'guest';
     return `${prefix}_${key}`;
   }, [key, globalKey]);
 
   // We store the RAW string value to compare against before parsing.
-  // This saves massive CPU on the polling interval.
   const lastRawValue = useRef<string | null>(null);
 
   // Function to read value safely
@@ -28,11 +29,12 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
       const finalKey = getStorageKey();
       const item = window.localStorage.getItem(finalKey);
       
-      // Optimization: Update our ref
+      // Update our ref for comparison later
       lastRawValue.current = item;
 
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
+      console.warn('Error reading from storage:', error);
       return initialValue;
     }
   }, [initialValue, getStorageKey]);
@@ -40,6 +42,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
   const [storedValue, setStoredValue] = useState<T>(readValue);
   const isTabVisible = useRef(true);
 
+  // Function to set value
   const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
       setStoredValue(prev => {
@@ -49,10 +52,11 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
           const finalKey = getStorageKey();
           const stringValue = JSON.stringify(valueToStore);
           
-          // Only write if changed (though localStorage usually handles this, React state update needs care)
+          // Only write to localStorage if string value actually changed
           if (stringValue !== lastRawValue.current) {
               window.localStorage.setItem(finalKey, stringValue);
               lastRawValue.current = stringValue;
+              // Dispatch event for other hooks
               window.dispatchEvent(new Event('local-storage'));
           }
         }
@@ -64,19 +68,27 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
   }, [key, getStorageKey]);
 
   useEffect(() => {
-    // Initial read
+    // 1. Initial read on mount/key change
     setStoredValue(readValue());
 
-    const handleSync = () => {
-        // Optimized Sync: Check raw string first
+    // 2. Event handler for sync
+    const handleSync = (e?: Event) => {
+        // Always re-read on auth-change because the KEY PREFIX has likely changed (guest -> user)
+        if (e?.type === 'auth-change') {
+            setStoredValue(readValue());
+            return;
+        }
+
         const finalKey = getStorageKey();
         const currentRaw = window.localStorage.getItem(finalKey);
         
+        // Update if the raw value in storage is different from what we last saw
         if (currentRaw !== lastRawValue.current) {
             setStoredValue(readValue());
         }
     };
 
+    // 3. Listeners
     window.addEventListener('storage', handleSync);
     window.addEventListener('local-storage', handleSync);
     window.addEventListener('auth-change', handleSync);
@@ -87,13 +99,14 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Adaptive Polling: Only checks strings, doesn't parse JSON unless changed
+    // 4. Polling fallback (checks every 3s if tab is visible)
     const intervalId = setInterval(() => {
       if (isTabVisible.current) {
           handleSync();
       }
-    }, 3000); // Increased to 3s for better performance
+    }, 3000); 
 
+    // 5. Cleanup
     return () => {
       window.removeEventListener('storage', handleSync);
       window.removeEventListener('local-storage', handleSync);

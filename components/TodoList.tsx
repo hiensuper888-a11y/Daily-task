@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Check, Trash2, Plus, Calendar, User, Users, CheckSquare, 
-  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, ChevronDown, CalendarClock, PanelLeft, Send, Hash
+  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight
 } from 'lucide-react';
 import { Task, Subtask, Group, Priority, SortOption, FilterType, UserProfile } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,7 +20,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const { t, language } = useLanguage();
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
   
-  // Storage key depends on whether we are in a group or personal mode
+  // Storage Logic
   const storageKey = activeGroup ? `group_${activeGroup.id}_tasks` : 'daily_tasks';
   const isGlobalStorage = !!activeGroup; 
   
@@ -29,23 +29,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       name: 'User', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
   });
   
-  // --- Creation State ---
+  // --- Local State ---
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [newDeadline, setNewDeadline] = useState('');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
-  const [newAssignee, setNewAssignee] = useState<string>(''); // For groups
+  const [newAssignee, setNewAssignee] = useState<string>(''); 
   const [showAssigneeList, setShowAssigneeList] = useState(false);
 
   const [filter, setFilter] = useState<FilterType>('all');
-  const [sort, setSort] = useState<SortOption>('manual'); 
+  const [sort, setSort] = useState<SortOption>('date_new'); 
   
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset creation state when switching groups
+  // Reset input state when switching groups
   useEffect(() => {
       setNewAssignee('');
       setNewPriority('medium');
@@ -54,7 +54,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setShowAssigneeList(false);
   }, [activeGroup?.id]);
 
-  // --- Actions ---
+  // --- Handlers ---
 
   const handleAddTask = async () => {
     if (!newTaskText.trim()) return;
@@ -69,22 +69,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       priority: newPriority,
       subtasks: [],
       createdBy: currentUserId,
-      assignedTo: activeGroup ? (newAssignee || currentUserId) : undefined, // Default to self in group if not selected
+      assignedTo: activeGroup ? (newAssignee || currentUserId) : undefined, 
       groupId: activeGroup?.id
     };
 
     setTasks(prev => [newTask, ...prev]);
     
-    // Reset Form
+    // Reset form
     setNewTaskText('');
     setNewDeadline('');
     setNewPriority('medium');
     setNewAssignee('');
-    // Keep expanded for rapid entry, but close assignee list
     setShowAssigneeList(false);
     playSuccessSound(); 
     
-    // Focus back on input
+    // Keep focus for rapid entry
     inputRef.current?.focus();
   };
 
@@ -117,7 +116,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setTasks(prev => prev.map(t => t.completed ? { ...t, archived: true } : t));
   };
 
-  // --- AI Features ---
+  // --- AI Handlers ---
 
   const handleAiRefine = async () => {
       if (!editingTask) return;
@@ -152,13 +151,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setEditingTask(null);
   };
 
+  // --- Sorting & Filtering Logic ---
+
   const cyclePriority = () => {
       if (newPriority === 'medium') setNewPriority('high');
       else if (newPriority === 'high') setNewPriority('low');
       else setNewPriority('medium');
   };
 
-  // --- Filtering & Sorting ---
+  const cycleSort = () => {
+      setSort(current => {
+          if (current === 'date_new') return 'priority';
+          if (current === 'priority') return 'deadline';
+          return 'date_new';
+      });
+  };
 
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => !t.archived); 
@@ -167,13 +174,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     else if (filter === 'completed') result = result.filter(t => t.completed);
     else if (filter === 'assigned_to_me' && activeGroup) result = result.filter(t => t.assignedTo === currentUserId);
 
-    // Sort
     if (sort === 'priority') {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
-        result.sort((a, b) => (priorityOrder[b.priority || 'medium'] - priorityOrder[a.priority || 'medium']));
+        result.sort((a, b) => {
+            const pA = priorityOrder[a.priority || 'medium'];
+            const pB = priorityOrder[b.priority || 'medium'];
+            if (pA !== pB) return pB - pA;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
     } else if (sort === 'deadline') {
         result.sort((a, b) => {
-            if (!a.deadline) return 1;
+            if (!a.deadline) return 1; 
             if (!b.deadline) return -1;
             return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         });
@@ -187,144 +198,154 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const stats = useMemo(() => {
       const total = tasks.filter(t => !t.archived).length;
       const completed = tasks.filter(t => !t.archived && t.completed).length;
-      return { total, completed, percent: total === 0 ? 0 : Math.round((completed / total) * 100) };
+      const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+      return { total, completed, percent };
   }, [tasks]);
+
+  // --- Theming ---
+  
+  const memberSettings = useMemo(() => {
+      if (!activeGroup) return null;
+      return activeGroup.members.find(m => m.id === currentUserId);
+  }, [activeGroup, currentUserId]);
+
+  const headerStyle = useMemo(() => {
+      let bg = '';
+      if (memberSettings?.headerBackground) bg = memberSettings.headerBackground;
+      else if (activeGroup?.background) bg = activeGroup.background;
+      return bg ? { background: bg, backgroundSize: 'cover', backgroundPosition: 'center' } : {};
+  }, [memberSettings, activeGroup]);
+  
+  const isCustomTheme = !!(memberSettings?.headerBackground || activeGroup?.background);
+
+  // --- Render ---
 
   return (
     <div className="flex flex-col h-full bg-transparent relative">
-      {/* Header Area */}
-      <div className="px-6 pt-6 pb-4 shrink-0 z-10">
-          
-          {/* Top Bar: Navigation & Identity */}
-          <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                  <button 
-                    onClick={onToggleSidebar}
-                    className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-500 hover:text-indigo-600 hover:bg-slate-50 transition-colors"
-                  >
-                      <PanelLeft size={20} />
-                  </button>
+      
+      {/* 1. Header Section */}
+      <div className="shrink-0 z-10 transition-all duration-500">
+          <div className={`pt-4 pb-6 px-6 transition-all duration-500 ${isCustomTheme ? 'bg-black/40 backdrop-blur-xl rounded-b-[2.5rem] shadow-2xl mx-2 mt-2 text-white border-b border-white/10' : 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50'}`} style={headerStyle}>
+            
+            {/* Top Row: Navigation & Actions */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <button onClick={onToggleSidebar} className={`p-2.5 rounded-2xl transition-all active:scale-95 ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-indigo-50 text-indigo-900 shadow-sm ring-1 ring-indigo-50'}`}>
+                        <PanelLeft size={20} />
+                    </button>
+                    
+                    <div onClick={activeGroup ? onOpenSettings : onOpenProfile} className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative">
+                            <div className={`w-11 h-11 rounded-2xl shadow-lg overflow-hidden ring-2 transition-all ${isCustomTheme ? 'ring-white/30' : 'ring-white'}`}>
+                                <img src={activeGroup ? (activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`) : (userProfile.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=default")} alt="Avatar" className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"/>
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-white shadow-sm"></div>
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className={`text-lg font-black leading-none truncate max-w-[150px] lg:max-w-xs ${isCustomTheme ? 'text-white' : 'text-slate-800'}`}>{activeGroup ? activeGroup.name : t.todoHeader}</h1>
+                            <span className={`text-[11px] font-bold uppercase tracking-widest mt-1 opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500'}`}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                        </div>
+                    </div>
+                </div>
 
-                  <div 
-                    onClick={activeGroup ? onOpenSettings : onOpenProfile}
-                    className="flex items-center gap-3 cursor-pointer group"
-                  >
-                      <div className="relative">
-                           <div className="w-11 h-11 rounded-full border-2 border-white shadow-md overflow-hidden bg-white group-hover:shadow-lg transition-all">
-                               <img 
-                                 src={activeGroup ? (activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`) : (userProfile.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=default")} 
-                                 alt="Avatar" 
-                                 className="w-full h-full object-cover"
-                               />
-                           </div>
-                           <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full border-2 border-white shadow-sm ${activeGroup ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-white'}`}>
-                               {activeGroup ? <Users size={10}/> : <User size={10}/>}
-                           </div>
-                      </div>
-                      
-                      <div className="hidden sm:block">
-                           <h1 className="text-lg font-black text-slate-800 leading-tight truncate max-w-[150px]">
-                               {activeGroup ? activeGroup.name : t.todoHeader}
-                           </h1>
-                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                               {new Date().toLocaleDateString(language, { weekday: 'short', day: 'numeric' })}
-                           </span>
-                      </div>
-                  </div>
-              </div>
+                <div className="flex gap-2">
+                    {activeGroup && (
+                        <button onClick={onOpenSettings} className={`p-2.5 rounded-2xl transition-all active:scale-95 ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-50 text-slate-500 shadow-sm ring-1 ring-slate-100'}`}>
+                            <Settings size={20}/>
+                        </button>
+                    )}
+                    <button onClick={handleArchiveCompleted} className={`p-2.5 rounded-2xl transition-all active:scale-95 group ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-50 text-slate-500 shadow-sm ring-1 ring-slate-100'}`} title={t.clearCompleted}>
+                        <Archive size={20} className="group-hover:text-indigo-500 transition-colors"/>
+                    </button>
+                </div>
+            </div>
 
-              <div className="flex gap-2">
-                 {activeGroup && (
-                     <button onClick={onOpenSettings} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-colors" title={t.groupName}>
-                        <Settings size={20}/>
-                     </button>
-                 )}
-                 <button onClick={handleArchiveCompleted} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-colors" title={t.clearCompleted}>
-                     <Archive size={20}/>
-                 </button>
-                 <button onClick={() => setSort(s => s === 'priority' ? 'date_new' : 'priority')} className={`p-3 border rounded-xl shadow-sm transition-all ${sort === 'priority' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-400 border-slate-100 hover:text-indigo-600'}`}>
-                     <SortAsc size={20}/>
-                 </button>
-              </div>
-          </div>
+            {/* Bottom Row: Progress & Filters */}
+            <div className="space-y-4">
+                 <div className="flex items-center gap-4">
+                     <div className="flex-1 relative h-3 bg-slate-200/30 rounded-full overflow-hidden backdrop-blur-sm shadow-inner">
+                         <div className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${isCustomTheme ? 'from-white/80 to-white' : 'from-indigo-500 to-fuchsia-500'}`} style={{ width: `${stats.percent}%` }}>
+                             <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                         </div>
+                     </div>
+                     <span className={`text-sm font-black min-w-[3rem] text-right ${isCustomTheme ? 'text-white' : 'text-indigo-600'}`}>{stats.percent}%</span>
+                 </div>
 
-          {/* Progress Bar (Compact) */}
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white shadow-sm mb-4">
-               <div className="flex justify-between items-end mb-2">
-                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.dailyProgress}</span>
-                   <span className="text-xl font-black text-indigo-600">{stats.percent}%</span>
-               </div>
-               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                   <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${stats.percent}%` }}></div>
-               </div>
-          </div>
-
-          {/* Filter Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {(['all', 'active', 'completed'] as FilterType[]).map(f => (
-                  <button 
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'}`}
-                  >
-                      {t[f]}
-                  </button>
-              ))}
-              {activeGroup && (
-                  <button 
-                    onClick={() => setFilter('assigned_to_me')} 
-                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filter === 'assigned_to_me' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'}`}
-                  >
-                      {t.assigned_to_me}
-                  </button>
-              )}
+                 <div className="flex justify-between items-center gap-2">
+                     <div className="flex gap-1.5 p-1 rounded-xl bg-slate-100/50 backdrop-blur-sm">
+                        {(['all', 'active', 'completed'] as FilterType[]).map(f => (
+                            <button 
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
+                                    filter === f 
+                                    ? 'bg-white text-indigo-600 shadow-sm scale-105' 
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                }`}
+                            >
+                                {t[f]}
+                            </button>
+                        ))}
+                     </div>
+                     <button 
+                        onClick={cycleSort} 
+                        className={`px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 ${
+                            isCustomTheme 
+                            ? 'bg-white/20 text-white hover:bg-white/30' 
+                            : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm ring-1 ring-slate-100'
+                        }`}
+                    >
+                        {sort === 'priority' ? <Flag size={14} className="text-amber-500"/> : sort === 'deadline' ? <Clock size={14} className="text-rose-500"/> : <SortAsc size={14}/>}
+                        <span className="hidden lg:inline">{sort === 'date_new' ? t.newest : sort === 'priority' ? t.priority : t.deadline}</span>
+                    </button>
+                 </div>
+            </div>
           </div>
       </div>
 
-      {/* Task List */}
-      <div className="flex-1 overflow-y-auto px-6 pb-48 custom-scrollbar space-y-3">
+      {/* 2. Task List */}
+      <div className="flex-1 overflow-y-auto px-3 pb-32 pt-4 custom-scrollbar space-y-3">
           {filteredTasks.length === 0 ? (
-              <div className="h-40 flex flex-col items-center justify-center text-slate-400 mt-10">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                      <CheckSquare size={32} className="opacity-20"/>
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400 animate-fade-in">
+                  <div className="w-24 h-24 bg-gradient-to-br from-indigo-50 to-white rounded-[2rem] flex items-center justify-center mb-4 shadow-sm ring-1 ring-indigo-50">
+                      <Sparkles size={40} className="text-indigo-200 animate-pulse"/>
                   </div>
-                  <p className="font-bold text-sm text-slate-300">{t.emptyTasks}</p>
+                  <p className="font-bold text-sm text-slate-400">{t.emptyTasks}</p>
+                  <p className="text-xs font-semibold text-slate-300 mt-1">{t.emptyChill}</p>
               </div>
           ) : (
-              filteredTasks.map((task, index) => (
-                  <TaskItem 
-                    key={task.id} 
-                    task={task} 
-                    index={index}
-                    onToggle={() => handleToggleTask(task.id)}
-                    onEdit={() => setEditingTask(task)}
-                    activeGroup={activeGroup}
-                  />
-              ))
+              <div className="space-y-3">
+                  {filteredTasks.map((task, index) => (
+                      <TaskItem 
+                        key={task.id} 
+                        task={task} 
+                        index={index}
+                        onToggle={() => handleToggleTask(task.id)}
+                        onEdit={() => setEditingTask(task)}
+                        activeGroup={activeGroup}
+                      />
+                  ))}
+              </div>
           )}
       </div>
 
-      {/* --- NEW TASK CREATION UI (Modern Bar) --- */}
-      
-      {/* Backdrop */}
+      {/* 3. Floating Input Bar */}
+      {/* Overlay to close expanded input */}
       <div 
         className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[90] transition-opacity duration-300 ${isInputExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => { setIsInputExpanded(false); setShowAssigneeList(false); }}
       ></div>
 
-      <div 
-        className={`fixed bottom-0 left-0 right-0 z-[100] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isInputExpanded ? 'translate-y-0' : 'translate-y-0'}`}
-      >
-          <div className={`mx-auto transition-all duration-300 ${isInputExpanded ? 'max-w-2xl px-4 pb-6' : 'max-w-xl px-4 pb-6 lg:pb-10'}`}>
+      <div className={`fixed bottom-0 left-0 right-0 z-[100] pb-safe transition-transform duration-500 cubic-bezier(0.32,0.72,0,1) ${isInputExpanded ? 'translate-y-0' : 'translate-y-0'}`}>
+          <div className={`mx-auto transition-all duration-300 ${isInputExpanded ? 'max-w-2xl px-4 pb-4' : 'max-w-xl px-4 pb-4 lg:pb-8'}`}>
               <div 
-                className={`bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 backdrop-blur-xl transition-all duration-300 overflow-hidden ${
-                    isInputExpanded ? 'rounded-[2rem] p-4' : 'rounded-[2rem] p-2 pr-3 flex items-center gap-3 cursor-text hover:shadow-xl'
+                className={`bg-white/90 backdrop-blur-xl shadow-float border border-white/50 transition-all duration-300 overflow-hidden relative group ${
+                    isInputExpanded ? 'rounded-[2.5rem] p-4 ring-1 ring-black/5' : 'rounded-full p-2 pr-3 flex items-center gap-3 cursor-text hover:scale-[1.01]'
                 }`}
                 onClick={() => !isInputExpanded && setIsInputExpanded(true)}
               >
-                  {/* Plus Icon (Collapsed Only) */}
                   {!isInputExpanded && (
-                      <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30 group-hover:rotate-90 transition-transform duration-500">
                           <Plus size={24} />
                       </div>
                   )}
@@ -337,89 +358,51 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                           onFocus={() => setIsInputExpanded(true)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddTask(); }}
                           placeholder={t.addTaskPlaceholder}
-                          className={`w-full bg-transparent outline-none text-slate-800 placeholder:text-slate-400 font-medium ${isInputExpanded ? 'text-lg px-2 pt-1 pb-3' : 'text-base'}`}
+                          className={`w-full bg-transparent outline-none text-slate-800 placeholder-slate-400 font-bold ${isInputExpanded ? 'text-xl px-2 pt-1 pb-3' : 'text-base'}`}
                       />
                       
-                      {/* Expanded Tools Row */}
                       {isInputExpanded && (
-                          <div className="flex items-center gap-2 mt-2 px-1 overflow-x-auto scrollbar-none pb-1">
+                          <div className="flex items-center gap-2 mt-4 px-1 overflow-x-auto scrollbar-none pb-1 animate-slide-up">
                               {/* Date Picker Button */}
-                              <div className="relative">
-                                  <button className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${newDeadline ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}>
-                                      <CalendarClock size={14} />
-                                      {newDeadline ? new Date(newDeadline).toLocaleDateString(language, {day: 'numeric', month: 'short'}) : t.deadline}
+                              <div className="relative shrink-0 group/date">
+                                  <button className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newDeadline ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}>
+                                      <CalendarClock size={16} className={newDeadline ? "text-indigo-500" : "text-slate-400"} />
+                                      {newDeadline ? new Date(newDeadline).toLocaleDateString(language, {day: 'numeric', month: 'short', hour: '2-digit'}) : t.deadline}
                                   </button>
-                                  <input 
-                                      type="datetime-local" 
-                                      value={newDeadline}
-                                      onChange={(e) => setNewDeadline(e.target.value)}
-                                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                  />
+                                  <input type="datetime-local" value={newDeadline} onChange={(e) => setNewDeadline(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"/>
                               </div>
 
-                              {/* Priority Button */}
-                              <button 
-                                onClick={cyclePriority}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
-                                    newPriority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                                    newPriority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                    'bg-amber-50 text-amber-600 border-amber-100'
-                                }`}
-                              >
-                                  <Flag size={14} fill="currentColor" className="opacity-50" />
-                                  {t[newPriority]}
+                              {/* Priority Pill Selector */}
+                              <button onClick={cyclePriority} className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newPriority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' : newPriority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                  <Flag size={16} fill="currentColor" className="opacity-50" /> {t[newPriority]}
                               </button>
 
-                              {/* Assignee Button (Group Only) */}
+                              {/* Assignee Selector */}
                               {activeGroup && (
-                                  <button 
-                                    onClick={() => setShowAssigneeList(!showAssigneeList)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${newAssignee ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}
-                                  >
-                                      {newAssignee ? (
-                                          <>
-                                            <img src={activeGroup.members.find(m => m.id === newAssignee)?.avatar} className="w-4 h-4 rounded-full" alt=""/>
-                                            <span className="max-w-[60px] truncate">{activeGroup.members.find(m => m.id === newAssignee)?.name}</span>
-                                          </>
-                                      ) : (
-                                          <>
-                                            <User size={14} /> {t.assignTask}
-                                          </>
-                                      )}
+                                  <button onClick={() => setShowAssigneeList(!showAssigneeList)} className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newAssignee ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}>
+                                      {newAssignee ? (<><img src={activeGroup.members.find(m => m.id === newAssignee)?.avatar} className="w-4 h-4 rounded-full" alt=""/><span className="max-w-[80px] truncate">{activeGroup.members.find(m => m.id === newAssignee)?.name}</span></>) : (<><User size={16} /> {t.assignTask}</>)}
                                   </button>
                               )}
                           </div>
                       )}
                   </div>
 
-                  {/* Send/Add Button */}
                   {isInputExpanded && (
-                      <button 
-                          onClick={handleAddTask}
-                          disabled={!newTaskText.trim()}
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-md ${
-                              newTaskText.trim() 
-                              ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 hover:shadow-indigo-200' 
-                              : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                          }`}
-                      >
-                          <Send size={20} className={newTaskText.trim() ? "ml-0.5" : ""} />
+                      <button onClick={handleAddTask} disabled={!newTaskText.trim()} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-xl ${newTaskText.trim() ? 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-105 hover:rotate-[-10deg]' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                          <Send size={24} className={newTaskText.trim() ? "ml-0.5" : ""} />
                       </button>
                   )}
               </div>
 
-              {/* Assignee Selection Drawer (Shows below input when active) */}
+              {/* Expanded Assignee List */}
               {isInputExpanded && showAssigneeList && activeGroup && (
-                  <div className="mt-3 bg-white/90 backdrop-blur-xl border border-white rounded-2xl p-3 shadow-xl animate-slide-up overflow-x-auto">
-                      <div className="flex gap-3">
+                  <div className="mt-4 bg-white/90 backdrop-blur-xl border border-white rounded-[2rem] p-4 shadow-2xl animate-slide-up overflow-x-auto">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">{t.memberList}</h4>
+                      <div className="flex gap-4">
                           {activeGroup.members.map(member => (
-                              <button 
-                                  key={member.id}
-                                  onClick={() => { setNewAssignee(newAssignee === member.id ? '' : member.id); setShowAssigneeList(false); }}
-                                  className={`flex flex-col items-center gap-1 shrink-0 transition-all ${newAssignee === member.id ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-100'}`}
-                              >
-                                  <div className={`w-10 h-10 rounded-full p-0.5 border-2 ${newAssignee === member.id ? 'border-indigo-600' : 'border-transparent'}`}>
-                                      <img src={member.avatar} className="w-full h-full rounded-full object-cover bg-slate-100" alt={member.name} />
+                              <button key={member.id} onClick={() => { setNewAssignee(newAssignee === member.id ? '' : member.id); setShowAssigneeList(false); }} className={`flex flex-col items-center gap-2 shrink-0 transition-all ${newAssignee === member.id ? 'opacity-100 scale-110' : 'opacity-60 hover:opacity-100'}`}>
+                                  <div className={`w-12 h-12 rounded-2xl p-0.5 border-2 shadow-sm ${newAssignee === member.id ? 'border-indigo-600' : 'border-transparent'}`}>
+                                      <img src={member.avatar} className="w-full h-full rounded-[0.9rem] object-cover bg-slate-100" alt={member.name} />
                                   </div>
                                   <span className="text-[10px] font-bold text-slate-600 max-w-[60px] truncate">{member.name}</span>
                               </button>
@@ -430,100 +413,97 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
           </div>
       </div>
 
-      {/* Edit Modal (Existing code reused but simplified logic for brevity) */}
+      {/* 4. Edit Modal */}
       {editingTask && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-lg max-h-[85vh] shadow-2xl animate-scale-in flex flex-col overflow-hidden relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-lg max-h-[85vh] shadow-2xl animate-scale-in flex flex-col overflow-hidden relative ring-1 ring-white/50">
+                
+                {/* Modal Header */}
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-10">
-                    <h2 className="text-xl font-black text-slate-800">{t.editTask}</h2>
+                    <h2 className="text-xl font-black text-slate-800 flex items-center gap-2"><Edit2 size={20} className="text-indigo-500"/> {t.editTask}</h2>
                     <div className="flex gap-2">
-                        <button onClick={() => handleDeleteTask(editingTask.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-full transition-colors"><Trash2 size={20}/></button>
-                        <button onClick={() => setEditingTask(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
+                        <button onClick={() => handleDeleteTask(editingTask.id)} className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"><Trash2 size={20}/></button>
+                        <button onClick={() => setEditingTask(null)} className="p-2.5 text-slate-400 hover:bg-slate-100 rounded-xl transition-colors"><X size={20}/></button>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
-                    {/* Task Text & AI Refine */}
+                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6 bg-slate-50/50">
+                    {/* Task Content Input */}
                     <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.taskContent}</label>
-                            <button onClick={handleAiRefine} disabled={isAiProcessing} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-indigo-100 transition-colors">
-                                <Sparkles size={10}/> {t.optimizeAi}
+                        <div className="flex justify-between items-center px-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.taskContent}</label>
+                            <button onClick={handleAiRefine} disabled={isAiProcessing} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-indigo-100 transition-colors border border-indigo-100 shadow-sm">
+                                <Sparkles size={12}/> {t.optimizeAi}
                             </button>
                         </div>
                         <textarea 
                             value={editingTask.text}
                             onChange={(e) => setEditingTask({ ...editingTask, text: e.target.value })}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 text-lg outline-none focus:ring-2 focus:ring-indigo-200 min-h-[100px] resize-none"
+                            className="w-full p-5 bg-white border border-slate-200 rounded-2xl font-bold text-slate-800 text-lg outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all min-h-[140px] resize-none shadow-sm"
                         />
                     </div>
 
-                    {/* Metadata Grid */}
+                    {/* Meta Data Grid */}
                     <div className="grid grid-cols-2 gap-4">
+                        {/* Deadline */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.deadline}</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{t.deadline}</label>
                             <div className="relative">
-                                <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
                                 <input 
                                     type="datetime-local"
                                     value={editingTask.deadline || ''}
                                     onChange={(e) => setEditingTask({ ...editingTask, deadline: e.target.value })}
-                                    className="w-full pl-10 pr-3 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100"
+                                    className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm transition-all"
                                 />
+                                <CalendarClock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
                             </div>
                         </div>
+
+                        {/* Priority Selection - PILL STYLE */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.priority}</label>
-                            <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200">
-                                {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                                    <button
-                                        key={p}
-                                        onClick={() => setEditingTask({ ...editingTask, priority: p })}
-                                        className={`flex-1 py-2 rounded-lg text-xs font-bold capitalize transition-all ${editingTask.priority === p ? getPriorityColor(p) + ' shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                    >
-                                        {t[p]}
-                                    </button>
-                                ))}
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{t.priority}</label>
+                            <div className="flex gap-2">
+                                {(['low', 'medium', 'high'] as Priority[]).map(p => {
+                                    const isActive = editingTask.priority === p;
+                                    let activeClass = '';
+                                    if (p === 'high') activeClass = 'bg-rose-500 text-white shadow-lg shadow-rose-200 ring-2 ring-rose-200 ring-offset-1';
+                                    else if (p === 'medium') activeClass = 'bg-amber-500 text-white shadow-lg shadow-amber-200 ring-2 ring-amber-200 ring-offset-1';
+                                    else activeClass = 'bg-emerald-500 text-white shadow-lg shadow-emerald-200 ring-2 ring-emerald-200 ring-offset-1';
+
+                                    return (
+                                        <button
+                                            key={p}
+                                            onClick={() => setEditingTask({ ...editingTask, priority: p })}
+                                            className={`flex-1 py-3 rounded-full text-xs font-bold capitalize transition-all duration-300 ${isActive ? activeClass : 'bg-white border border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50'}`}
+                                        >
+                                            {t[p]}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
 
                     {/* Subtasks */}
                     <div className="space-y-3">
-                         <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">{t.subtasksHeader}</label>
-                                {/* Progress Indicator */}
-                                {(editingTask.subtasks?.length || 0) > 0 && (
-                                    <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg">
-                                        <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-                                                style={{ width: `${Math.round((editingTask.subtasks!.filter(s => s.completed).length / editingTask.subtasks!.length) * 100)}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-500">
-                                            {Math.round((editingTask.subtasks!.filter(s => s.completed).length / editingTask.subtasks!.length) * 100)}%
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                            <button onClick={handleAiSubtasks} disabled={isAiProcessing} className="text-[10px] font-bold text-fuchsia-600 bg-fuchsia-50 px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-fuchsia-100 transition-colors">
-                                <Sparkles size={10}/> {t.breakdownAi}
+                         <div className="flex justify-between items-center px-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.subtasksHeader}</label>
+                            <button onClick={handleAiSubtasks} disabled={isAiProcessing} className="text-[10px] font-bold text-fuchsia-600 bg-fuchsia-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-fuchsia-100 transition-colors border border-fuchsia-100 shadow-sm">
+                                <Sparkles size={12}/> {t.breakdownAi}
                             </button>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-4 space-y-2 border border-slate-100">
+                        <div className="bg-white rounded-3xl p-2 space-y-1 border border-slate-200 shadow-sm">
                              {editingTask.subtasks?.map((st, i) => (
-                                 <div key={st.id} className="flex items-center gap-3 group">
+                                 <div key={st.id} className="flex items-center gap-3 group p-2 hover:bg-slate-50 rounded-2xl transition-colors">
                                      <button 
                                         onClick={() => {
                                             const newSt = [...(editingTask.subtasks || [])];
                                             newSt[i].completed = !newSt[i].completed;
                                             setEditingTask({ ...editingTask, subtasks: newSt });
                                         }}
-                                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${st.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300'}`}
+                                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${st.completed ? 'bg-emerald-500 border-emerald-500 text-white scale-110' : 'bg-transparent border-slate-300 text-transparent'}`}
                                      >
-                                         {st.completed && <Check size={12}/>}
+                                         <Check size={14} strokeWidth={3}/>
                                      </button>
                                      <input 
                                         value={st.text}
@@ -532,26 +512,24 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                                             newSt[i].text = e.target.value;
                                             setEditingTask({ ...editingTask, subtasks: newSt });
                                         }}
-                                        className={`flex-1 bg-transparent text-sm font-medium outline-none ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                                        className={`flex-1 bg-transparent text-sm font-semibold outline-none ${st.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}
                                      />
                                      <button onClick={() => {
                                          const newSt = editingTask.subtasks?.filter((_, idx) => idx !== i);
                                          setEditingTask({ ...editingTask, subtasks: newSt });
-                                     }} className="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><X size={14}/></button>
+                                     }} className="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1.5 hover:bg-rose-50 rounded-lg"><X size={14}/></button>
                                  </div>
                              ))}
-                             <button 
-                                onClick={() => setEditingTask({ ...editingTask, subtasks: [...(editingTask.subtasks || []), { id: Date.now(), text: '', completed: false }] })}
-                                className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mt-2"
-                             >
+                             <button onClick={() => setEditingTask({ ...editingTask, subtasks: [...(editingTask.subtasks || []), { id: Date.now(), text: '', completed: false }] })} className="w-full py-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all border border-dashed border-slate-200 hover:border-indigo-200">
                                  <Plus size={14}/> {t.add}
                              </button>
                         </div>
                     </div>
                 </div>
                 
-                <div className="p-6 border-t border-slate-100 bg-slate-50">
-                    <button onClick={handleSaveEdit} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg shadow-lg hover:bg-slate-800 transition-all active:scale-[0.98]">
+                {/* Save Button */}
+                <div className="p-6 border-t border-slate-100 bg-white z-10">
+                    <button onClick={handleSaveEdit} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-[0.98] hover:scale-[1.01]">
                         {t.saveChanges}
                     </button>
                 </div>
@@ -564,123 +542,107 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
 // --- Task Item Component ---
 
-const TaskItem: React.FC<{ 
-    task: Task; 
-    index: number; 
-    onToggle: () => void; 
-    onEdit: () => void;
-    activeGroup: Group | null;
-}> = ({ task, index, onToggle, onEdit, activeGroup }) => {
-    const { t } = useLanguage();
+const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEdit: () => void; activeGroup: Group | null; }> = ({ task, index, onToggle, onEdit, activeGroup }) => {
+    const { t, language } = useLanguage();
     
-    // Check deadline status
+    // Calculate deadline status
     const deadlineInfo = useMemo(() => {
         if (!task.deadline) return null;
         const now = new Date();
         const d = new Date(task.deadline);
         const diff = d.getTime() - now.getTime();
         const isOverdue = diff < 0;
-        const hoursLeft = Math.floor(Math.abs(diff) / (1000 * 60 * 60));
+        const minsLeft = Math.floor(Math.abs(diff) / (1000 * 60));
+        const hoursLeft = Math.floor(minsLeft / 60);
         const daysLeft = Math.floor(hoursLeft / 24);
         
         let text = '';
-        if (isOverdue) text = `${hoursLeft}h overdue`;
-        else if (hoursLeft < 24) text = `${hoursLeft}h left`;
-        else text = `${daysLeft}d left`;
+        if (isOverdue) text = hoursLeft < 24 ? `${hoursLeft}h overdue` : `${daysLeft}d overdue`;
+        else text = minsLeft < 60 ? `${minsLeft}m left` : hoursLeft < 24 ? `${hoursLeft}h left` : `${daysLeft}d left`;
 
-        return { isOverdue, text, dateStr: d.toLocaleDateString() };
-    }, [task.deadline]);
+        return { isOverdue, text, dateStr: d.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };
+    }, [task.deadline, language]);
 
     // Priority Styling
-    const priorityColor = task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500';
-    const priorityLight = task.priority === 'high' ? 'bg-rose-50 border-rose-100' : task.priority === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100';
-
-    // Assignee Info
+    const priorityColors = {
+        high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100' },
+        medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
+        low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' }
+    };
+    
+    const pStyle = priorityColors[task.priority || 'medium'];
     const assignee = activeGroup && task.assignedTo ? activeGroup.members.find(m => m.id === task.assignedTo) : null;
+
+    // Card Base Classes
+    const baseClasses = "group relative p-5 rounded-[2rem] transition-all duration-300 cursor-pointer mb-3 transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99] border-2";
+    const stateClasses = task.completed 
+        ? "bg-slate-50 border-slate-100 opacity-60 grayscale-[0.5]"
+        : `bg-white border-transparent shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] hover:shadow-xl hover:border-indigo-100 ${deadlineInfo?.isOverdue ? 'ring-2 ring-rose-100 bg-rose-50/20' : ''}`;
 
     return (
         <div 
             onClick={onEdit}
-            className={`group relative p-5 rounded-[1.5rem] transition-all duration-300 cursor-pointer mb-3 border transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99]
-                ${task.completed 
-                    ? 'bg-slate-50 border-slate-100 opacity-60 grayscale' 
-                    : `bg-white border-white shadow-sm hover:shadow-lg hover:border-slate-100 ${deadlineInfo?.isOverdue ? 'ring-1 ring-rose-200' : ''}`
-                }
-            `}
-            style={{ animationDelay: `${Math.min(index * 50, 600)}ms`, animationFillMode: 'both' }}
+            className={`${baseClasses} ${stateClasses}`}
         >
-            {/* Priority Indicator Stripe */}
-            <div className={`absolute left-0 top-6 bottom-6 w-1.5 rounded-r-full ${priorityColor} opacity-70`}></div>
-
-            <div className="flex items-start gap-4 pl-3">
+            <div className="flex items-start gap-4">
+                {/* Custom Animated Checkbox */}
                 <button 
                     onClick={(e) => { e.stopPropagation(); onToggle(); }}
-                    className={`w-6 h-6 mt-1 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10
-                        ${task.completed 
-                            ? 'bg-indigo-500 border-indigo-500 text-white scale-110' 
-                            : 'bg-transparent border-slate-300 hover:border-indigo-400 hover:bg-indigo-50'
-                        }
-                    `}
+                    className={`w-7 h-7 mt-0.5 rounded-xl border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10 hover:scale-110 shadow-sm ${
+                        task.completed 
+                        ? 'bg-slate-800 border-slate-800 text-white animate-check-bounce' 
+                        : 'bg-white border-slate-200 text-transparent hover:border-indigo-300'
+                    }`}
                 >
-                    {task.completed && <Check size={14} strokeWidth={3} />}
+                    <Check size={16} strokeWidth={4} />
                 </button>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                        {/* Tags Row */}
-                        <div className="flex items-center gap-2">
-                            {deadlineInfo && !task.completed && (
-                                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md flex items-center gap-1 border ${deadlineInfo.isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                    {deadlineInfo.isOverdue ? <AlertCircle size={10}/> : <Clock size={10}/>}
-                                    {deadlineInfo.text}
-                                </span>
-                            )}
-                            
-                            {!task.completed && task.priority && (
-                                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${priorityLight} text-slate-600`}>
-                                    {task.priority}
-                                </span>
-                            )}
-                        </div>
+                    <div className="flex items-start justify-between gap-2">
+                        <h3 className={`text-base font-bold leading-snug transition-all mb-2 break-words ${task.completed ? 'text-slate-400 line-through decoration-slate-300 decoration-2' : 'text-slate-800'}`}>
+                            {task.text}
+                        </h3>
+                    </div>
 
-                        {/* Assignee Avatar (Group Only) */}
+                    <div className="flex items-center flex-wrap gap-2">
+                         {/* Deadline Badge */}
+                         {deadlineInfo && !task.completed && (
+                            <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border ${deadlineInfo.isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                {deadlineInfo.isOverdue ? <AlertCircle size={10} strokeWidth={3}/> : <Clock size={10} strokeWidth={3}/>} {deadlineInfo.text}
+                            </span>
+                        )}
+                        
+                        {/* Priority Badge - COLOURED PILL */}
+                        {!task.completed && (
+                            <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg border flex items-center gap-1 ${pStyle.bg} ${pStyle.text} ${pStyle.border}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+                                {t[task.priority || 'medium']}
+                            </span>
+                        )}
+                        
+                        {/* Assignee Badge */}
                         {assignee && (
-                            <div className="flex items-center gap-1.5 pl-2">
-                                <img src={assignee.avatar} className="w-5 h-5 rounded-full object-cover border border-white shadow-sm" alt={assignee.name}/>
-                                <span className="text-[10px] font-bold text-slate-400 truncate max-w-[60px]">{assignee.name}</span>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-lg border border-indigo-100 pr-3">
+                                <img src={assignee.avatar} className="w-4 h-4 rounded-md object-cover" alt=""/>
+                                <span className="text-[10px] font-bold text-indigo-700 truncate max-w-[80px]">{assignee.name}</span>
+                            </div>
+                        )}
+                        
+                        {/* Subtasks Count */}
+                        {task.subtasks && task.subtasks.length > 0 && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 px-2 py-1 rounded-lg bg-slate-50 border border-slate-100">
+                                <Layout size={10} />
+                                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
                             </div>
                         )}
                     </div>
-
-                    <h3 className={`text-base font-bold leading-snug transition-all ${task.completed ? 'text-slate-400 line-through decoration-2 decoration-slate-300' : 'text-slate-800'}`}>
-                        {task.text}
-                    </h3>
-                    
-                    {/* Subtask Progress Bar */}
-                    {task.subtasks && task.subtasks.length > 0 && (
-                        <div className="mt-3 flex items-center gap-2">
-                             <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                 <div 
-                                    className={`h-full rounded-full ${task.completed ? 'bg-slate-400' : 'bg-indigo-500'}`} 
-                                    style={{ width: `${(task.subtasks.filter(s => s.completed).length / task.subtasks.length) * 100}%` }}
-                                 ></div>
-                             </div>
-                             <span className="text-[10px] font-bold text-slate-400">
-                                 {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
-                             </span>
-                        </div>
-                    )}
+                </div>
+                
+                {/* Arrow hint on hover */}
+                <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
+                    <ArrowRight size={16} className="text-slate-300"/>
                 </div>
             </div>
         </div>
     );
-};
-
-const getPriorityColor = (p: Priority) => {
-    switch(p) {
-        case 'high': return 'bg-rose-100 text-rose-700 border-rose-200';
-        case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'low': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        default: return 'bg-slate-100 text-slate-600 border-slate-200';
-    }
 };
