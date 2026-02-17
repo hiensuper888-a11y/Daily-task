@@ -9,7 +9,7 @@ interface NotificationManagerProps {
 
 export const NotificationManager: React.FC<NotificationManagerProps> = ({ notifications, onDismiss }) => {
   return (
-    <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4 md:px-0">
+    <div className="fixed top-6 right-6 z-[300] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4 md:px-0">
       {notifications.map((notif) => (
         <NotificationItem key={notif.id} notif={notif} onDismiss={onDismiss} />
       ))}

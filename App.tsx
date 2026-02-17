@@ -344,8 +344,8 @@ const AuthenticatedApp: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-surface-50 relative font-sans text-slate-900 overflow-hidden">
       
-      {/* SIDEBAR FOR GROUPS (Desktop / Toggle on Mobile) */}
-      <div className={`fixed inset-y-0 left-0 w-80 bg-[#0B1120] border-r border-white/5 z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl flex flex-col`}>
+      {/* SIDEBAR FOR GROUPS (Desktop / Toggle on Mobile) - Z-INDEX 200 */}
+      <div className={`fixed inset-y-0 left-0 w-80 bg-[#0B1120] border-r border-white/5 z-[200] transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl flex flex-col`}>
           {/* TOP SECTION: Header & Identity */}
           <div className="p-6 pb-2 text-white shrink-0">
               <button onClick={() => setIsSidebarOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white transition-colors hover:bg-white/5 rounded-full md:hidden"><X size={24}/></button>
@@ -430,8 +430,8 @@ const AuthenticatedApp: React.FC = () => {
           </div>
       </div>
 
-      {/* OVERLAY FOR SIDEBAR */}
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)}></div>}
+      {/* OVERLAY FOR SIDEBAR - Z-INDEX 190 */}
+      {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-[190] backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)}></div>}
 
       <NotificationManager notifications={notifications} onDismiss={dismissNotification} />
 
@@ -474,11 +474,11 @@ const AuthenticatedApp: React.FC = () => {
 
       <FloatingDock activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* --- MODALS --- */}
+      {/* --- MODALS - Z-INDEX 250 --- */}
 
       {/* CREATE GROUP MODAL */}
       {showGroupModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
           <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-scale-in relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10"></div>
              <button onClick={() => setShowGroupModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><X size={20}/></button>
@@ -506,7 +506,7 @@ const AuthenticatedApp: React.FC = () => {
 
       {/* JOIN GROUP MODAL */}
       {showJoinModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
           <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-scale-in text-center relative overflow-hidden">
              <div className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
              <button onClick={() => setShowJoinModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><X size={20}/></button>
@@ -531,7 +531,7 @@ const AuthenticatedApp: React.FC = () => {
 
       {/* SETTINGS MODAL */}
       {showSettingsModal && activeGroup && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fade-in">
             <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] shadow-2xl animate-scale-in flex flex-col relative overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-10">
                     <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">

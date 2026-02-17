@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Check, Trash2, Plus, Calendar, User, Users, CheckSquare, 
-  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight
+  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight, ChevronDown, AlignLeft
 } from 'lucide-react';
 import { Task, Subtask, Group, Priority, SortOption, FilterType, UserProfile } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -39,6 +39,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortOption>('date_new'); 
+  const [showSortMenu, setShowSortMenu] = useState(false);
   
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -159,14 +160,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       else setNewPriority('medium');
   };
 
-  const cycleSort = () => {
-      setSort(current => {
-          if (current === 'date_new') return 'priority';
-          if (current === 'priority') return 'deadline';
-          return 'date_new';
-      });
-  };
-
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => !t.archived); 
 
@@ -272,12 +265,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                  </div>
 
                  <div className="flex justify-between items-center gap-2">
-                     <div className="flex gap-1.5 p-1 rounded-xl bg-slate-100/50 backdrop-blur-sm">
+                     <div className="flex gap-1.5 p-1 rounded-xl bg-slate-100/50 backdrop-blur-sm overflow-x-auto scrollbar-none">
                         {(['all', 'active', 'completed'] as FilterType[]).map(f => (
                             <button 
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${
                                     filter === f 
                                     ? 'bg-white text-indigo-600 shadow-sm scale-105' 
                                     : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
@@ -287,17 +280,48 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                             </button>
                         ))}
                      </div>
-                     <button 
-                        onClick={cycleSort} 
-                        className={`px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 ${
-                            isCustomTheme 
-                            ? 'bg-white/20 text-white hover:bg-white/30' 
-                            : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm ring-1 ring-slate-100'
-                        }`}
-                    >
-                        {sort === 'priority' ? <Flag size={14} className="text-amber-500"/> : sort === 'deadline' ? <Clock size={14} className="text-rose-500"/> : <SortAsc size={14}/>}
-                        <span className="hidden lg:inline">{sort === 'date_new' ? t.newest : sort === 'priority' ? t.priority : t.deadline}</span>
-                    </button>
+                     
+                     {/* Sorting Dropdown */}
+                     <div className="relative">
+                        <button 
+                            onClick={() => setShowSortMenu(!showSortMenu)} 
+                            className={`px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 ${
+                                isCustomTheme 
+                                ? 'bg-white/20 text-white hover:bg-white/30' 
+                                : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm ring-1 ring-slate-100'
+                            }`}
+                        >
+                            {sort === 'priority' ? <Flag size={14} className="text-amber-500"/> : sort === 'deadline' ? <Clock size={14} className="text-rose-500"/> : <AlignLeft size={14}/>}
+                            <span className="hidden sm:inline">{sort === 'date_new' ? t.newest : sort === 'priority' ? t.priority : t.deadline}</span>
+                            <ChevronDown size={12} className={`transition-transform duration-300 ${showSortMenu ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {showSortMenu && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)}></div>
+                                <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-2xl shadow-xl border border-slate-100 p-1.5 z-50 animate-scale-in origin-top-right">
+                                    <button 
+                                        onClick={() => { setSort('date_new'); setShowSortMenu(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 ${sort === 'date_new' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        <AlignLeft size={14}/> {t.newest}
+                                    </button>
+                                    <button 
+                                        onClick={() => { setSort('priority'); setShowSortMenu(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 ${sort === 'priority' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        <Flag size={14}/> {t.priority}
+                                    </button>
+                                    <button 
+                                        onClick={() => { setSort('deadline'); setShowSortMenu(false); }}
+                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2 ${sort === 'deadline' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        <Clock size={14}/> {t.deadline}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                     </div>
                  </div>
             </div>
           </div>
@@ -330,13 +354,14 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       </div>
 
       {/* 3. Floating Input Bar */}
-      {/* Overlay to close expanded input */}
+      {/* Overlay to close expanded input - z-30 to be under bar but over content */}
       <div 
-        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[90] transition-opacity duration-300 ${isInputExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30 transition-opacity duration-300 ${isInputExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => { setIsInputExpanded(false); setShowAssigneeList(false); }}
       ></div>
 
-      <div className={`fixed bottom-0 left-0 right-0 z-[100] pb-safe transition-transform duration-500 cubic-bezier(0.32,0.72,0,1) ${isInputExpanded ? 'translate-y-0' : 'translate-y-0'}`}>
+      {/* Input Bar Container - z-40 to be below Sidebar (z-200) */}
+      <div className={`fixed bottom-0 left-0 right-0 z-40 pb-safe transition-transform duration-500 cubic-bezier(0.32,0.72,0,1) ${isInputExpanded ? 'translate-y-0' : 'translate-y-0'}`}>
           <div className={`mx-auto transition-all duration-300 ${isInputExpanded ? 'max-w-2xl px-4 pb-4' : 'max-w-xl px-4 pb-4 lg:pb-8'}`}>
               <div 
                 className={`bg-white/90 backdrop-blur-xl shadow-float border border-white/50 transition-all duration-300 overflow-hidden relative group ${
@@ -413,9 +438,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
           </div>
       </div>
 
-      {/* 4. Edit Modal */}
+      {/* 4. Edit Modal - z-[250] to be above sidebar */}
       {editingTask && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
             <div className="bg-white rounded-[2.5rem] w-full max-w-lg max-h-[85vh] shadow-2xl animate-scale-in flex flex-col overflow-hidden relative ring-1 ring-white/50">
                 
                 {/* Modal Header */}
@@ -564,19 +589,20 @@ const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEd
     }, [task.deadline, language]);
 
     // Priority Styling
+    const priority = task.priority || 'medium';
     const priorityColors = {
-        high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100' },
-        medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
-        low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' }
+        high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', leftBorder: 'border-l-rose-500', pillDot: 'bg-rose-500' },
+        medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', leftBorder: 'border-l-amber-500', pillDot: 'bg-amber-500' },
+        low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', leftBorder: 'border-l-emerald-500', pillDot: 'bg-emerald-500' }
     };
     
-    const pStyle = priorityColors[task.priority || 'medium'];
+    const pStyle = priorityColors[priority];
     const assignee = activeGroup && task.assignedTo ? activeGroup.members.find(m => m.id === task.assignedTo) : null;
 
     // Card Base Classes
-    const baseClasses = "group relative p-5 rounded-[2rem] transition-all duration-300 cursor-pointer mb-3 transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99] border-2";
+    const baseClasses = `group relative p-5 rounded-[2rem] transition-all duration-300 cursor-pointer mb-3 transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99] border-2 border-l-8 ${pStyle.leftBorder}`;
     const stateClasses = task.completed 
-        ? "bg-slate-50 border-slate-100 opacity-60 grayscale-[0.5]"
+        ? "bg-slate-50 border-slate-100 opacity-60 grayscale-[0.3]"
         : `bg-white border-transparent shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] hover:shadow-xl hover:border-indigo-100 ${deadlineInfo?.isOverdue ? 'ring-2 ring-rose-100 bg-rose-50/20' : ''}`;
 
     return (
@@ -612,13 +638,11 @@ const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEd
                             </span>
                         )}
                         
-                        {/* Priority Badge - COLOURED PILL */}
-                        {!task.completed && (
-                            <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg border flex items-center gap-1 ${pStyle.bg} ${pStyle.text} ${pStyle.border}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-                                {t[task.priority || 'medium']}
-                            </span>
-                        )}
+                        {/* Priority Badge - COLOURED PILL (Always Visible) */}
+                        <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg border flex items-center gap-1 ${pStyle.bg} ${pStyle.text} ${pStyle.border} ${task.completed ? 'opacity-70' : ''}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${pStyle.pillDot}`}></span>
+                            {t[priority]}
+                        </span>
                         
                         {/* Assignee Badge */}
                         {assignee && (
