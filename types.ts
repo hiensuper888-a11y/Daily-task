@@ -80,7 +80,7 @@ export interface Group {
 
 export type FilterType = 'all' | 'active' | 'completed' | 'assigned_to_me' | 'delegated' | 'archived';
 
-export type AppTab = 'tasks' | 'calendar' | 'studio' | 'reports' | 'profile' | 'ai';
+export type AppTab = 'tasks' | 'calendar' | 'studio' | 'reports' | 'profile' | 'ai' | 'admin';
 
 export type Language = 'vi' | 'en' | 'zh' | 'ja' | 'de' | 'fr' | 'es';
 

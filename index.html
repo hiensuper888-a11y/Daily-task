@@ -126,6 +126,11 @@
         -webkit-font-smoothing: antialiased;
       }
 
+      .dark body {
+        background-color: #0f172a;
+        color: #f8fafc;
+      }
+
       /* Optimized Mesh Background (GPU Accelerated) */
       .mesh-bg {
         position: fixed;
@@ -138,6 +143,10 @@
         backface-visibility: hidden;
         perspective: 1000px;
       }
+
+      .dark .mesh-bg {
+        background: #0f172a;
+      }
       
       .mesh-blob {
         position: absolute;
@@ -149,10 +158,19 @@
         will-change: transform; /* Hint to browser to optimize */
         animation: blob 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
       }
+
+      .dark .mesh-blob {
+        mix-blend-mode: screen;
+        opacity: 0.2;
+      }
       
       .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #e0e7ff; animation-delay: 0s; }
       .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #f3e8ff; animation-delay: -5s; }
       .blob-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: #dcfce7; animation-delay: -10s; }
+
+      .dark .blob-1 { background: #312e81; }
+      .dark .blob-2 { background: #4c1d95; }
+      .dark .blob-3 { background: #064e3b; }
 
       /* Custom Scrollbar - Improved Visibility */
       .custom-scrollbar {
@@ -194,12 +212,22 @@
         -webkit-backdrop-filter: blur(12px);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
       }
+
+      .dark .glass-modal {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
       
       .glass-panel {
         background: rgba(255, 255, 255, 0.8);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.7);
+      }
+
+      .dark .glass-panel {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.05);
       }
 
       /* Utilities */
@@ -228,21 +256,40 @@
       }
     </style>
     <script>
+      // Apply theme immediately to prevent flickering
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+    <script>
       // Polyfill process to prevent libraries from crashing
       window.process = { env: {} };
 
       // Fix for "Cannot set property fetch of #<Window> which has only a getter"
-      // Some libraries (like debug tools) try to overwrite fetch. We make it writable here.
-      try {
-        const originalFetch = window.fetch;
-        Object.defineProperty(window, 'fetch', {
-          value: originalFetch,
-          writable: true,
-          configurable: true
-        });
-      } catch (e) {
-        console.warn('Could not patch window.fetch:', e);
-      }
+      // Some libraries (like debug tools or polyfills) try to overwrite fetch. 
+      // We use a getter/setter pattern to allow this without throwing a TypeError.
+      (function() {
+        try {
+          let currentFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get() { return currentFetch; },
+            set(v) { 
+              console.log('window.fetch is being overwritten');
+              currentFetch = v; 
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          console.warn('Could not patch window.fetch:', e);
+        }
+      })();
     </script>
   </head>
   <body>

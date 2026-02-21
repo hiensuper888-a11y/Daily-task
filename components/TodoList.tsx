@@ -260,36 +260,36 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       
       {/* 1. Header Section */}
       <div className="shrink-0 z-10 transition-all duration-500">
-          <div className={`pt-4 pb-6 px-6 transition-all duration-500 ${isCustomTheme ? 'bg-black/40 backdrop-blur-xl rounded-b-[2.5rem] shadow-2xl mx-2 mt-2 text-white border-b border-white/10' : 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50'}`} style={headerStyle}>
+          <div className={`pt-4 pb-6 px-6 transition-all duration-500 ${isCustomTheme ? 'bg-black/40 backdrop-blur-xl rounded-b-[2.5rem] shadow-2xl mx-2 mt-2 text-white border-b border-white/10' : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50'}`} style={headerStyle}>
             
             {/* Top Row: Navigation & Actions */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <button onClick={onToggleSidebar} className={`p-2.5 rounded-2xl transition-all active:scale-95 ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-indigo-50 text-indigo-900 shadow-sm ring-1 ring-indigo-50'}`}>
+                    <button onClick={onToggleSidebar} className={`p-2.5 rounded-2xl transition-all active:scale-95 ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-indigo-900 dark:text-indigo-100 shadow-sm ring-1 ring-indigo-50 dark:ring-slate-700'}`}>
                         <PanelLeft size={20} />
                     </button>
                     
                     <div onClick={activeGroup ? onOpenSettings : onOpenProfile} className="flex items-center gap-3 cursor-pointer group">
                         <div className="relative">
-                            <div className={`w-11 h-11 rounded-2xl shadow-lg overflow-hidden ring-2 transition-all ${isCustomTheme ? 'ring-white/30' : 'ring-white'}`}>
+                            <div className={`w-11 h-11 rounded-2xl shadow-lg overflow-hidden ring-2 transition-all ${isCustomTheme ? 'ring-white/30' : 'ring-white dark:ring-slate-700'}`}>
                                 <img src={activeGroup ? (activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`) : (userProfile.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=default")} alt="Avatar" className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"/>
                             </div>
-                            <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-white shadow-sm"></div>
+                            <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"></div>
                         </div>
                         <div className="flex flex-col">
-                            <h1 className={`text-lg font-black leading-none truncate max-w-[150px] lg:max-w-xs ${isCustomTheme ? 'text-white' : 'text-slate-800'}`}>{activeGroup ? activeGroup.name : t.todoHeader}</h1>
-                            <span className={`text-[11px] font-bold uppercase tracking-widest mt-1 opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500'}`}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                            <h1 className={`text-lg font-black leading-none truncate max-w-[150px] lg:max-w-xs ${isCustomTheme ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{activeGroup ? activeGroup.name : t.todoHeader}</h1>
+                            <span className={`text-[11px] font-bold uppercase tracking-widest mt-1 opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex gap-2">
                     {activeGroup && (
-                        <button onClick={onOpenSettings} className={`p-2.5 rounded-2xl transition-all active:scale-95 ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-50 text-slate-500 shadow-sm ring-1 ring-slate-100'}`}>
+                        <button onClick={onOpenSettings} className={`p-2.5 rounded-2xl transition-all active:scale-95 ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700'}`}>
                             <Settings size={20}/>
                         </button>
                     )}
-                    <button onClick={handleArchiveCompleted} className={`p-2.5 rounded-2xl transition-all active:scale-95 group ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white hover:bg-slate-50 text-slate-500 shadow-sm ring-1 ring-slate-100'}`} title={t.clearCompleted}>
+                    <button onClick={handleArchiveCompleted} className={`p-2.5 rounded-2xl transition-all active:scale-95 group ${isCustomTheme ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700'}`} title={t.clearCompleted}>
                         <Archive size={20} className="group-hover:text-indigo-500 transition-colors"/>
                     </button>
                 </div>
@@ -297,7 +297,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
             {/* Search Bar */}
             <div className="mb-4 relative group">
-                <div className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isCustomTheme ? 'text-white/60 group-focus-within:text-white' : 'text-slate-400 group-focus-within:text-indigo-500'}`}>
+                <div className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isCustomTheme ? 'text-white/60 group-focus-within:text-white' : 'text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400'}`}>
                     <Search size={18} />
                 </div>
                 <input 
@@ -308,13 +308,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                     className={`w-full py-3 pl-10 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${
                         isCustomTheme 
                         ? 'bg-white/10 text-white placeholder-white/50 border border-white/20 focus:bg-white/20 focus:border-white/40' 
-                        : 'bg-slate-50 text-slate-700 placeholder-slate-400 border border-slate-200 focus:bg-white focus:border-indigo-200 focus:ring-4 focus:ring-indigo-50'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 border border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-700 focus:border-indigo-200 dark:focus:border-indigo-900 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-900/20'
                     }`}
                 />
                 {searchQuery && (
                     <button 
                         onClick={() => setSearchQuery('')}
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${isCustomTheme ? 'text-white/60 hover:bg-white/20 hover:text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${isCustomTheme ? 'text-white/60 hover:bg-white/20 hover:text-white' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'}`}
                     >
                         <X size={14} />
                     </button>
@@ -324,24 +324,24 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
             {/* Bottom Row: Progress & Filters */}
             <div className="space-y-4">
                  <div className="flex items-center gap-4">
-                     <div className="flex-1 relative h-3 bg-slate-200/30 rounded-full overflow-hidden backdrop-blur-sm shadow-inner">
+                     <div className="flex-1 relative h-3 bg-slate-200/30 dark:bg-slate-700/30 rounded-full overflow-hidden backdrop-blur-sm shadow-inner">
                          <div className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${isCustomTheme ? 'from-white/80 to-white' : 'from-indigo-500 to-fuchsia-500'}`} style={{ width: `${stats.percent}%` }}>
                              <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                          </div>
                      </div>
-                     <span className={`text-sm font-black min-w-[3rem] text-right ${isCustomTheme ? 'text-white' : 'text-indigo-600'}`}>{stats.percent}%</span>
+                     <span className={`text-sm font-black min-w-[3rem] text-right ${isCustomTheme ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`}>{stats.percent}%</span>
                  </div>
 
                  <div className="flex justify-between items-center gap-2">
-                     <div className="flex gap-1.5 p-1 rounded-xl bg-slate-100/50 backdrop-blur-sm overflow-x-auto scrollbar-none">
+                     <div className="flex gap-1.5 p-1 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-sm overflow-x-auto scrollbar-none">
                         {(['all', 'active', 'completed'] as FilterType[]).map(f => (
                             <button 
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${
                                     filter === f 
-                                    ? 'bg-white text-indigo-600 shadow-sm scale-105' 
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm scale-105' 
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'
                                 }`}
                             >
                                 {t[f]}
@@ -731,9 +731,30 @@ const TaskItem: React.FC<{
     // Priority Styling
     const priority = task.priority || 'medium';
     const priorityColors = {
-        high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', leftBorder: 'border-l-rose-500', pillDot: 'bg-rose-500', icon: 'text-rose-500' },
-        medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', leftBorder: 'border-l-amber-500', pillDot: 'bg-amber-500', icon: 'text-amber-500' },
-        low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', leftBorder: 'border-l-emerald-500', pillDot: 'bg-emerald-500', icon: 'text-emerald-500' }
+        high: { 
+            bg: 'bg-rose-50 dark:bg-rose-900/20', 
+            text: 'text-rose-600 dark:text-rose-400', 
+            border: 'border-rose-100 dark:border-rose-900/30', 
+            leftBorder: 'border-l-rose-500', 
+            pillDot: 'bg-rose-500', 
+            icon: 'text-rose-500' 
+        },
+        medium: { 
+            bg: 'bg-amber-50 dark:bg-amber-900/20', 
+            text: 'text-amber-600 dark:text-amber-400', 
+            border: 'border-amber-100 dark:border-amber-900/30', 
+            leftBorder: 'border-l-amber-500', 
+            pillDot: 'bg-amber-500', 
+            icon: 'text-amber-500' 
+        },
+        low: { 
+            bg: 'bg-emerald-50 dark:bg-emerald-900/20', 
+            text: 'text-emerald-600 dark:text-emerald-400', 
+            border: 'border-emerald-100 dark:border-emerald-900/30', 
+            leftBorder: 'border-l-emerald-500', 
+            pillDot: 'bg-emerald-500', 
+            icon: 'text-emerald-500' 
+        }
     };
     
     const pStyle = priorityColors[priority];
@@ -758,8 +779,8 @@ const TaskItem: React.FC<{
     // Card Base Classes
     const baseClasses = `group relative p-5 rounded-[2rem] transition-all duration-300 cursor-pointer mb-3 transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99] border-2 border-l-8 ${pStyle.leftBorder}`;
     const stateClasses = task.completed 
-        ? "bg-slate-50 border-slate-100 opacity-60 grayscale-[0.3]"
-        : `bg-white border-transparent shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] hover:shadow-xl hover:border-indigo-100 ${deadlineInfo?.isOverdue ? 'ring-2 ring-rose-100 bg-rose-50/20' : ''}`;
+        ? "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 opacity-60 grayscale-[0.3]"
+        : `bg-white dark:bg-slate-800 border-transparent dark:border-slate-700/50 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-900/50 ${deadlineInfo?.isOverdue ? 'ring-2 ring-rose-100 dark:ring-rose-900/30 bg-rose-50/20 dark:bg-rose-900/10' : ''}`;
 
     return (
         <div 
@@ -772,8 +793,8 @@ const TaskItem: React.FC<{
                     onClick={(e) => { e.stopPropagation(); onToggle(); }}
                     className={`w-7 h-7 mt-0.5 rounded-xl border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10 hover:scale-110 shadow-sm ${
                         task.completed 
-                        ? 'bg-slate-800 border-slate-800 text-white animate-check-bounce' 
-                        : 'bg-white border-slate-200 text-transparent hover:border-indigo-300'
+                        ? 'bg-slate-800 dark:bg-indigo-600 border-slate-800 dark:border-indigo-600 text-white animate-check-bounce' 
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-transparent hover:border-indigo-300 dark:hover:border-indigo-500'
                     }`}
                 >
                     <Check size={16} strokeWidth={4} />
@@ -786,7 +807,7 @@ const TaskItem: React.FC<{
                             <textarea
                                 value={task.text}
                                 onChange={(e) => onUpdate(task.id, { text: e.target.value })}
-                                className={`w-full bg-transparent resize-none outline-none text-base font-bold leading-snug transition-all ${task.completed ? 'text-slate-400 line-through decoration-slate-300 decoration-2' : 'text-slate-800 placeholder-slate-400'}`}
+                                className={`w-full bg-transparent resize-none outline-none text-base font-bold leading-snug transition-all ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through decoration-slate-300 dark:decoration-slate-600 decoration-2' : 'text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500'}`}
                                 rows={1}
                                 style={{ fieldSizing: 'content' } as any} // Modern CSS for auto-height
                                 placeholder={t.taskContent}
@@ -832,17 +853,17 @@ const TaskItem: React.FC<{
                         {activeGroup && (
                             <button 
                                 onClick={handleAssigneeClick}
-                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all hover:scale-105 active:scale-95 ${assignee ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
+                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all hover:scale-105 active:scale-95 ${assignee ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-900/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                             >
                                 {assignee ? (
                                     <>
                                         <img src={assignee.avatar} className="w-4 h-4 rounded-md object-cover" alt=""/>
-                                        <span className="text-[10px] font-bold text-indigo-700 truncate max-w-[80px]">{assignee.name}</span>
+                                        <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 truncate max-w-[80px]">{assignee.name}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <User size={10} className="text-slate-400"/>
-                                        <span className="text-[10px] font-bold text-slate-400">{t.assignTo}</span>
+                                        <User size={10} className="text-slate-400 dark:text-slate-500"/>
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{t.assignTo}</span>
                                     </>
                                 )}
                             </button>

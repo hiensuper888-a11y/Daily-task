@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } fr
 import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, PanelLeft, LayoutGrid, MoreHorizontal, Sparkles, Clock, UserPlus } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
 import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
@@ -15,6 +16,7 @@ const ImageEditor = React.lazy(() => import('./components/ImageEditor').then(mod
 const Reports = React.lazy(() => import('./components/Reports').then(module => ({ default: module.Reports })));
 const Profile = React.lazy(() => import('./components/Profile').then(module => ({ default: module.Profile })));
 const AiAssistant = React.lazy(() => import('./components/AiAssistant').then(module => ({ default: module.AiAssistant })));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 
 const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
@@ -343,7 +345,7 @@ const AuthenticatedApp: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-surface-50 relative font-sans text-slate-900 overflow-hidden">
+    <div className="h-full flex flex-col bg-surface-50 dark:bg-slate-900 relative font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300">
       
       {/* SIDEBAR FOR GROUPS (Desktop / Toggle on Mobile) - Z-INDEX 200 */}
       <div className={`fixed inset-y-0 left-0 w-80 bg-[#0B1120] border-r border-white/5 z-[200] transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl flex flex-col`}>
@@ -440,7 +442,7 @@ const AuthenticatedApp: React.FC = () => {
       {/* Hide global buttons when in 'tasks' tab to avoid overlapping with TodoList's internal header */}
       {activeTab !== 'tasks' && (
           <div className="absolute top-4 left-4 z-30">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-white/60 backdrop-blur-md text-slate-800 rounded-2xl shadow-sm hover:bg-white hover:text-indigo-600 transition-all active:scale-95 border border-white/60 group">
+              <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-slate-800 dark:text-slate-200 rounded-2xl shadow-sm hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition-all active:scale-95 border border-white/60 dark:border-slate-700/60 group">
                   <PanelLeft size={24} className="group-hover:scale-110 transition-transform"/>
               </button>
           </div>
@@ -449,7 +451,7 @@ const AuthenticatedApp: React.FC = () => {
       {/* Show settings button globally only if NOT in tasks tab (TodoList handles it internally) */}
       {activeGroup && activeTab !== 'tasks' && (
           <div className="absolute top-4 right-4 z-30">
-               <button onClick={() => setShowSettingsModal(true)} className="p-3 bg-white/60 backdrop-blur-md text-slate-600 rounded-2xl shadow-sm hover:bg-white hover:text-indigo-600 transition-all border border-white group">
+               <button onClick={() => setShowSettingsModal(true)} className="p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-slate-600 dark:text-slate-300 rounded-2xl shadow-sm hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-600 transition-all border border-white dark:border-slate-700 group">
                    <Settings size={24} className="group-hover:rotate-90 transition-transform duration-500"/>
                </button>
           </div>
@@ -471,6 +473,7 @@ const AuthenticatedApp: React.FC = () => {
           {activeTab === 'reports' && <Reports activeGroup={activeGroup} />}
           {activeTab === 'profile' && <Profile />}
           {activeTab === 'ai' && <AiAssistant />}
+          {activeTab === 'admin' && <AdminDashboard />}
         </Suspense>
       </div>
 
@@ -481,26 +484,26 @@ const AuthenticatedApp: React.FC = () => {
       {/* CREATE GROUP MODAL */}
       {showGroupModal && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-scale-in relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10"></div>
-             <button onClick={() => setShowGroupModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><X size={20}/></button>
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-scale-in relative overflow-hidden border border-white/10">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/10 rounded-bl-full -z-10"></div>
+             <button onClick={() => setShowGroupModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"><X size={20}/></button>
              
              <div className="mb-6">
-                 <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-200"><Users size={28}/></div>
-                 <h2 className="text-2xl font-black text-slate-800">{t.createGroupHeader}</h2>
-                 <p className="text-slate-500 font-medium">{t.createGroupSub}</p>
+                 <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20"><Users size={28}/></div>
+                 <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">{t.createGroupHeader}</h2>
+                 <p className="text-slate-500 dark:text-slate-400 font-medium">{t.createGroupSub}</p>
              </div>
 
              <div className="space-y-4">
                  <div>
                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">{t.groupName}</label>
-                     <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder={t.groupNamePlaceholder} className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all"/>
+                     <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder={t.groupNamePlaceholder} className="w-full mt-1 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 focus:border-indigo-500 outline-none transition-all"/>
                  </div>
                  <div>
                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">{t.groupDesc}</label>
-                     <textarea value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} placeholder={t.groupDescPlaceholder} className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all resize-none h-24"/>
+                     <textarea value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} placeholder={t.groupDescPlaceholder} className="w-full mt-1 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 focus:border-indigo-500 outline-none transition-all resize-none h-24"/>
                  </div>
-                 <button onClick={handleCreateGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">{t.createGroupBtn}</button>
+                 <button onClick={handleCreateGroup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-200 dark:shadow-indigo-900/20 hover:bg-indigo-700 active:scale-95 transition-all">{t.createGroupBtn}</button>
              </div>
           </div>
         </div>
@@ -509,24 +512,24 @@ const AuthenticatedApp: React.FC = () => {
       {/* JOIN GROUP MODAL */}
       {showJoinModal && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-scale-in text-center relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-scale-in text-center relative overflow-hidden border border-white/10">
              <div className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-             <button onClick={() => setShowJoinModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><X size={20}/></button>
+             <button onClick={() => setShowJoinModal(false)} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"><X size={20}/></button>
 
-             <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-xl"><ScanLine size={32}/></div>
-             <h2 className="text-2xl font-black text-slate-800 mb-2">{t.joinGroupHeader}</h2>
-             <p className="text-slate-500 font-medium mb-8">{t.joinCodePrompt}</p>
+             <div className="w-20 h-20 bg-slate-900 dark:bg-slate-800 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-xl border border-white/5"><ScanLine size={32}/></div>
+             <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-2">{t.joinGroupHeader}</h2>
+             <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">{t.joinCodePrompt}</p>
 
              <div className="relative mb-6">
                  <input 
                     value={joinCodeInput} 
                     onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())} 
                     placeholder="CODE..." 
-                    className="w-full p-5 bg-slate-100 border-2 border-slate-200 rounded-2xl text-center text-3xl font-black text-slate-800 tracking-[0.5em] focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder-slate-400"
+                    className="w-full p-5 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-center text-3xl font-black text-slate-800 dark:text-slate-100 tracking-[0.5em] focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-slate-400"
                  />
              </div>
 
-             <button onClick={handleJoinGroup} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg shadow-xl hover:bg-slate-800 active:scale-95 transition-all">{t.joinNow}</button>
+             <button onClick={handleJoinGroup} className="w-full py-4 bg-slate-900 dark:bg-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:bg-slate-800 dark:hover:bg-indigo-700 active:scale-95 transition-all">{t.joinNow}</button>
           </div>
         </div>
       )}
@@ -534,15 +537,15 @@ const AuthenticatedApp: React.FC = () => {
       {/* SETTINGS MODAL */}
       {showSettingsModal && activeGroup && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fade-in">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] shadow-2xl animate-scale-in flex flex-col relative overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-10">
-                    <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] shadow-2xl animate-scale-in flex flex-col relative overflow-hidden border border-white/10">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 z-10">
+                    <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         <Settings size={24} className="text-slate-400"/> {t.groupName}
                     </h2>
-                    <button onClick={() => setShowSettingsModal(false)} className="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><X size={20}/></button>
+                    <button onClick={() => setShowSettingsModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"><X size={20}/></button>
                 </div>
                 
-                <div className="flex border-b border-slate-100 px-6 gap-6">
+                <div className="flex border-b border-slate-100 dark:border-slate-800 px-6 gap-6 bg-white dark:bg-slate-900">
                     {(['info', 'members', 'personalize'] as const).map(tab => (
                         <button 
                             key={tab} 
@@ -556,34 +559,34 @@ const AuthenticatedApp: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50">
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
                     {/* INFO TAB */}
                     {settingsTab === 'info' && (
                         <div className="space-y-8 animate-fade-in">
                             <div className="flex flex-col items-center text-center">
-                                <img src={activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`} className="w-24 h-24 rounded-3xl bg-white shadow-lg object-cover mb-4" alt=""/>
-                                <h3 className="text-2xl font-black text-slate-800">{activeGroup.name}</h3>
-                                <p className="text-slate-500 font-medium mt-1 max-w-sm">{activeGroup.description || t.noDesc}</p>
+                                <img src={activeGroup.avatar || `https://ui-avatars.com/api/?name=${activeGroup.name}`} className="w-24 h-24 rounded-3xl bg-white dark:bg-slate-800 shadow-lg object-cover mb-4 border border-slate-100 dark:border-slate-700" alt=""/>
+                                <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">{activeGroup.name}</h3>
+                                <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 max-w-sm">{activeGroup.description || t.noDesc}</p>
                             </div>
 
-                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">{t.joinCode} & {t.inviteMembers}</label>
                                 <div className="flex gap-2">
-                                    <div className="flex-1 bg-slate-50 p-4 rounded-xl font-mono text-xl font-bold text-slate-800 tracking-widest text-center border border-slate-200 border-dashed">{activeGroup.joinCode}</div>
+                                    <div className="flex-1 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl font-mono text-xl font-bold text-slate-800 dark:text-slate-100 tracking-widest text-center border border-slate-200 dark:border-slate-700 border-dashed">{activeGroup.joinCode}</div>
                                     <button onClick={handleShareGroup} className="p-4 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-colors" title={t.shareGroup}><Share2 size={20}/></button>
-                                    <button onClick={() => { setSettingsTab('members'); }} className="p-4 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-colors" title={t.inviteMembers}><UserPlus size={20}/></button>
+                                    <button onClick={() => { setSettingsTab('members'); }} className="p-4 bg-slate-900 dark:bg-slate-700 text-white rounded-xl shadow-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors" title={t.inviteMembers}><UserPlus size={20}/></button>
                                 </div>
                             </div>
 
                             <div className="flex gap-4">
-                                <button onClick={handleLeaveGroup} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors">{t.leaveGroup}</button>
+                                <button onClick={handleLeaveGroup} className="flex-1 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t.leaveGroup}</button>
                                 <button 
                                     onClick={activeGroup.leaderId === currentUserId ? handleDeleteGroup : undefined} 
                                     disabled={activeGroup.leaderId !== currentUserId}
                                     className={`flex-1 py-4 font-bold rounded-2xl transition-colors ${
                                         activeGroup.leaderId === currentUserId 
-                                        ? 'bg-red-50 text-red-600 hover:bg-red-100' 
-                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'
+                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40' 
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-60'
                                     }`}
                                 >
                                     {t.deleteGroup}
@@ -602,13 +605,13 @@ const AuthenticatedApp: React.FC = () => {
                                     value={memberSearchQuery}
                                     onChange={(e) => setMemberSearchQuery(e.target.value)}
                                     placeholder={t.inviteMembers} 
-                                    className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-200 outline-none shadow-sm"
+                                    className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 outline-none shadow-sm"
                                 />
                                 <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
                                 <button 
                                     onClick={handleSearchUsers}
                                     disabled={!memberSearchQuery.trim() || isSearching}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-slate-800 dark:hover:bg-indigo-700 disabled:opacity-50"
                                 >
                                     {isSearching ? <Loader2 size={14} className="animate-spin"/> : 'Search'}
                                 </button>
@@ -616,15 +619,15 @@ const AuthenticatedApp: React.FC = () => {
 
                             {/* Search Results */}
                             {foundUsers.length > 0 && (
-                                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                                <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl p-4 space-y-3">
                                     <p className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Found Users</p>
                                     {foundUsers.map(u => (
-                                        <div key={u.uid} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm">
+                                        <div key={u.uid} className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm">
                                             <div className="flex items-center gap-3">
-                                                <img src={u.avatar} className="w-8 h-8 rounded-full bg-slate-200" alt=""/>
-                                                <span className="font-bold text-sm text-slate-700">{u.name}</span>
+                                                <img src={u.avatar} className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700" alt=""/>
+                                                <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{u.name}</span>
                                             </div>
-                                            <button onClick={() => handleAddMember(u)} className="p-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200"><Plus size={16}/></button>
+                                            <button onClick={() => handleAddMember(u)} className="p-2 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/60"><Plus size={16}/></button>
                                         </div>
                                     ))}
                                 </div>
@@ -634,22 +637,22 @@ const AuthenticatedApp: React.FC = () => {
                             <div className="space-y-3">
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2">{t.memberList} ({activeGroup.members.length})</p>
                                 {activeGroup.members.map(member => (
-                                    <div key={member.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group">
+                                    <div key={member.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between group">
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
-                                                <img src={member.avatar} className="w-12 h-12 rounded-xl bg-slate-100 object-cover" alt=""/>
+                                                <img src={member.avatar} className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 object-cover" alt=""/>
                                                 {member.role === 'leader' && <div className="absolute -top-2 -right-2 bg-amber-400 text-white p-1 rounded-full shadow-sm"><Crown size={10}/></div>}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-800">{member.name} {member.id === currentUserId && <span className="text-indigo-500">(You)</span>}</h4>
-                                                <p className="text-xs font-medium text-slate-400">{member.customTitle || member.role}</p>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100">{member.name} {member.id === currentUserId && <span className="text-indigo-500">(You)</span>}</h4>
+                                                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{member.customTitle || member.role}</p>
                                             </div>
                                         </div>
                                         
                                         {activeGroup.leaderId === currentUserId && member.id !== currentUserId && (
                                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => handlePromoteMember(member.id)} className="p-2 bg-amber-50 text-amber-500 rounded-lg hover:bg-amber-100" title="Promote"><Crown size={16}/></button>
-                                                <button onClick={() => handleRemoveMember(member.id)} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100" title="Remove"><UserMinus size={16}/></button>
+                                                <button onClick={() => handlePromoteMember(member.id)} className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40" title="Promote"><Crown size={16}/></button>
+                                                <button onClick={() => handleRemoveMember(member.id)} className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40" title="Remove"><UserMinus size={16}/></button>
                                             </div>
                                         )}
                                     </div>
@@ -661,16 +664,16 @@ const AuthenticatedApp: React.FC = () => {
                     {/* PERSONALIZE TAB */}
                     {settingsTab === 'personalize' && (
                         <div className="space-y-6 animate-fade-in">
-                            <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 flex items-start gap-4">
-                                <div className="p-3 bg-white rounded-xl text-indigo-600 shadow-sm"><Sparkles size={24}/></div>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 flex items-start gap-4">
+                                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl text-indigo-600 dark:text-indigo-400 shadow-sm"><Sparkles size={24}/></div>
                                 <div>
-                                    <h4 className="font-bold text-indigo-900 mb-1">Customize Your Header</h4>
-                                    <p className="text-sm text-indigo-700/80 leading-relaxed">{t.themeHint}</p>
+                                    <h4 className="font-bold text-indigo-900 dark:text-indigo-100 mb-1">Customize Your Header</h4>
+                                    <p className="text-sm text-indigo-700/80 dark:text-indigo-300/80 leading-relaxed">{t.themeHint}</p>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <button onClick={() => personalBgInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 hover:border-indigo-600 hover:bg-indigo-50 transition-all group">
+                                <button onClick={() => personalBgInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group">
                                     <ImageIcon size={32} className="mb-2 group-hover:scale-110 transition-transform"/>
                                     <span className="font-bold text-sm">{t.uploadDevice}</span>
                                 </button>
@@ -686,7 +689,7 @@ const AuthenticatedApp: React.FC = () => {
                                         ></button>
                                     ))}
                                 </div>
-                                <button onClick={() => handleUpdatePersonalGroupSettings('')} className="w-full py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">{t.reset}</button>
+                                <button onClick={() => handleUpdatePersonalGroupSettings('')} className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">{t.reset}</button>
                             </div>
                         </div>
                     )}
@@ -714,7 +717,9 @@ const AppContent: React.FC = () => {
 
 const App = () => (
     <LanguageProvider>
-        <AppContent />
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
     </LanguageProvider>
 );
 

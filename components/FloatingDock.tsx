@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   CheckSquare, MessageSquare, Wand2, BarChart3, UserCircle2, 
-  LayoutGrid, X, GripHorizontal, GripVertical, Calendar
+  LayoutGrid, X, GripHorizontal, GripVertical, Calendar, Shield
 } from 'lucide-react';
-import { AppTab } from '../types';
+import { AppTab, UserProfile } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
 
 interface FloatingDockProps {
   activeTab: AppTab;
@@ -14,6 +15,11 @@ interface FloatingDockProps {
 
 export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActiveTab, onTabChange }) => {
   const { t } = useLanguage();
+  const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
+      name: 'User', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
+  });
+  
+  const isAdmin = userProfile.email === 'admin@dailytask.com';
   
   // FIX: Move default Y position up (minus 150px) to clear the bottom Add button area
   const [position, setPosition] = useState({ 
@@ -136,6 +142,10 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     { id: 'reports', icon: BarChart3, label: 'Stats', color: 'from-amber-400 to-orange-500', shadow: 'shadow-orange-500/40', text: 'text-orange-600' },
     { id: 'profile', icon: UserCircle2, label: t.profile, color: 'from-slate-500 to-slate-700', shadow: 'shadow-slate-500/40', text: 'text-slate-600' },
   ];
+
+  if (isAdmin) {
+      menuItems.push({ id: 'admin', icon: Shield, label: 'Admin', color: 'from-slate-800 to-black', shadow: 'shadow-slate-900/40', text: 'text-slate-900' });
+  }
 
   return (
     <div 

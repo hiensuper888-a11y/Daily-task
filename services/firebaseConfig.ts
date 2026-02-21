@@ -7,7 +7,24 @@ const CURRENT_USER_KEY = 'daily_task_mock_current_user';
 // Helper: Get all users from storage
 const getUsers = (): Record<string, any> => {
     const s = typeof window !== 'undefined' ? localStorage.getItem(USERS_KEY) : null;
-    return s ? JSON.parse(s) : {};
+    let users = s ? JSON.parse(s) : {};
+    
+    // Ensure Admin User Exists
+    if (!users['admin@dailytask.com']) {
+        users['admin@dailytask.com'] = {
+            uid: 'admin_001',
+            email: 'admin@dailytask.com',
+            password: '123456', // Hardcoded admin password as requested
+            emailVerified: true,
+            displayName: 'Administrator',
+            photoURL: 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff',
+            role: 'admin',
+            createdAt: Date.now()
+        };
+        if (typeof window !== 'undefined') localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+    
+    return users;
 };
 
 // Helper: Save users to storage
@@ -88,6 +105,11 @@ export const signInWithEmailAndPassword = async (_auth: any, email: string, pass
         throw err;
     }
 
+    // Update last login
+    user.lastLoginAt = Date.now();
+    users[cleanEmail] = user;
+    saveUsers(users);
+
     return { user: { ...user } };
 };
 
@@ -135,6 +157,10 @@ export const signInWithPopup = async (_auth: any, provider: any) => {
         saveUsers(users);
     }
 
+    user.lastLoginAt = Date.now();
+    users[cleanEmail] = user;
+    saveUsers(users);
+
     auth.currentUser = user;
     return { user };
 };
@@ -167,4 +193,60 @@ export const searchUsers = async (query: string) => {
             email: user.email,
             avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`
         }));
+};
+
+// --- ADMIN & ACCOUNT MANAGEMENT FUNCTIONS ---
+
+export const getAllUsers = async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const users = getUsers();
+    return Object.values(users).map((u: any) => ({
+        ...u,
+        isOnline: (Date.now() - (u.lastLoginAt || 0)) < 5 * 60 * 1000 // Fake online status: active in last 5 mins
+    }));
+};
+
+export const deleteUser = async (uid: string) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const users = getUsers();
+    const emailToDelete = Object.keys(users).find(email => users[email].uid === uid);
+    
+    if (emailToDelete) {
+        if (users[emailToDelete].role === 'admin') {
+            throw new Error("Cannot delete admin account.");
+        }
+        delete users[emailToDelete];
+        saveUsers(users);
+        return true;
+    }
+    throw new Error("User not found.");
+};
+
+export const changePassword = async (uid: string, newPass: string) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const users = getUsers();
+    const emailToUpdate = Object.keys(users).find(email => users[email].uid === uid);
+    
+    if (emailToUpdate) {
+        users[emailToUpdate].password = newPass;
+        saveUsers(users);
+        return true;
+    }
+    throw new Error("User not found.");
+};
+
+export const deleteOwnAccount = async (uid: string) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const users = getUsers();
+    const emailToDelete = Object.keys(users).find(email => users[email].uid === uid);
+    
+    if (emailToDelete) {
+        if (users[emailToDelete].role === 'admin') {
+            throw new Error("Cannot delete admin account.");
+        }
+        delete users[emailToDelete];
+        saveUsers(users);
+        return true;
+    }
+    throw new Error("User not found.");
 };
