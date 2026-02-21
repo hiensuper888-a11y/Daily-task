@@ -10,6 +10,7 @@ import { FloatingDock } from './components/FloatingDock';
 import { AuthScreen } from './components/AuthScreen';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
+const CalendarView = React.lazy(() => import('./components/CalendarView').then(module => ({ default: module.CalendarView })));
 const ImageEditor = React.lazy(() => import('./components/ImageEditor').then(module => ({ default: module.ImageEditor })));
 const Reports = React.lazy(() => import('./components/Reports').then(module => ({ default: module.Reports })));
 const Profile = React.lazy(() => import('./components/Profile').then(module => ({ default: module.Profile })));
@@ -348,7 +349,7 @@ const AuthenticatedApp: React.FC = () => {
       <div className={`fixed inset-y-0 left-0 w-80 bg-[#0B1120] border-r border-white/5 z-[200] transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl flex flex-col`}>
           {/* TOP SECTION: Header & Identity */}
           <div className="p-6 pb-2 text-white shrink-0">
-              <button onClick={() => setIsSidebarOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white transition-colors hover:bg-white/5 rounded-full md:hidden"><X size={24}/></button>
+              <button onClick={() => setIsSidebarOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white transition-colors hover:bg-white/5 rounded-full"><X size={24}/></button>
               
               {/* Identity Card - Premium Look */}
               <div className="mb-4 mt-2 p-5 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-[1.5rem] border border-white/10 relative overflow-hidden group">
@@ -465,6 +466,7 @@ const AuthenticatedApp: React.FC = () => {
                 onToggleSidebar={() => setIsSidebarOpen(true)}
             />
           )}
+          {activeTab === 'calendar' && <CalendarView activeGroup={activeGroup} />}
           {activeTab === 'studio' && <ImageEditor />}
           {activeTab === 'reports' && <Reports activeGroup={activeGroup} />}
           {activeTab === 'profile' && <Profile />}
@@ -520,7 +522,7 @@ const AuthenticatedApp: React.FC = () => {
                     value={joinCodeInput} 
                     onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())} 
                     placeholder="CODE..." 
-                    className="w-full p-5 bg-slate-100 border-2 border-slate-200 rounded-2xl text-center text-3xl font-black text-slate-800 tracking-[0.5em] focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-medium placeholder:text-lg"
+                    className="w-full p-5 bg-slate-100 border-2 border-slate-200 rounded-2xl text-center text-3xl font-black text-slate-800 tracking-[0.5em] focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder-slate-400"
                  />
              </div>
 
@@ -668,7 +670,7 @@ const AuthenticatedApp: React.FC = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <button onClick={() => personalBgInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all group">
+                                <button onClick={() => personalBgInputRef.current?.click()} className="w-full py-6 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center text-slate-400 hover:text-indigo-400 hover:border-indigo-600 hover:bg-indigo-50 transition-all group">
                                     <ImageIcon size={32} className="mb-2 group-hover:scale-110 transition-transform"/>
                                     <span className="font-bold text-sm">{t.uploadDevice}</span>
                                 </button>

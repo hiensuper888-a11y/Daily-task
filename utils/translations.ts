@@ -4,6 +4,7 @@ import { Language } from "../types";
 const enTranslations = {
   appTitle: "Daily Task",
   tasks: "Tasks",
+  calendar: "Calendar",
   studio: "Studio",
   reports: "Reports",
   profile: "Profile",
@@ -295,6 +296,7 @@ const viTranslations = {
   // ... (keep existing Vietnamese translations)
   appTitle: "Daily Task",
   tasks: "Công việc",
+  calendar: "Lịch",
   studio: "Studio",
   reports: "Báo cáo",
   profile: "Hồ sơ",
@@ -559,6 +561,7 @@ const zhTranslations = {
   // ... (keep existing Chinese translations)
   appTitle: "Daily Task",
   tasks: "任务",
+  calendar: "日历",
   studio: "工作室",
   reports: "报表",
   profile: "个人资料",
@@ -823,6 +826,7 @@ const jaTranslations = {
   // ... (keep existing Japanese translations)
   appTitle: "Daily Task",
   tasks: "タスク",
+  calendar: "カレンダー",
   studio: "スタジオ",
   reports: "レポート",
   profile: "プロフィール",
@@ -1087,6 +1091,7 @@ const deTranslations = {
   // ... (keep existing German translations)
   appTitle: "Daily Task",
   tasks: "Aufgaben",
+  calendar: "Kalender",
   studio: "Studio",
   reports: "Berichte",
   profile: "Profil",
@@ -1351,6 +1356,7 @@ const frTranslations = {
   // ... (keep existing French translations)
   appTitle: "Daily Task",
   tasks: "Tâches",
+  calendar: "Calendrier",
   studio: "Studio",
   reports: "Rapports",
   profile: "Profil",
@@ -1614,6 +1620,7 @@ const frTranslations = {
 const esTranslations = {
   appTitle: "Daily Task",
   tasks: "Tareas",
+  calendar: "Calendario",
   studio: "Estudio",
   reports: "Informes",
   profile: "Perfil",

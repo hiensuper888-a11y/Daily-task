@@ -21,10 +21,13 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
 
   // We store the RAW string value to compare against before parsing.
   const lastRawValue = useRef<string | null>(null);
+  
+  // Use a ref to hold the initial value so it doesn't trigger effect re-runs
+  const initialValueRef = useRef(initialValue);
 
   // Function to read value safely
   const readValue = useCallback((): T => {
-    if (typeof window === 'undefined') return initialValue;
+    if (typeof window === 'undefined') return initialValueRef.current;
     try {
       const finalKey = getStorageKey();
       const item = window.localStorage.getItem(finalKey);
@@ -32,12 +35,12 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
       // Update our ref for comparison later
       lastRawValue.current = item;
 
-      return item ? JSON.parse(item) : initialValue;
+      return item ? JSON.parse(item) : initialValueRef.current;
     } catch (error) {
       console.warn('Error reading from storage:', error);
-      return initialValue;
+      return initialValueRef.current;
     }
-  }, [initialValue, getStorageKey]);
+  }, [getStorageKey]); // Removed initialValue from deps
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
   const isTabVisible = useRef(true);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   CheckSquare, MessageSquare, Wand2, BarChart3, UserCircle2, 
-  LayoutGrid, X, GripHorizontal, GripVertical 
+  LayoutGrid, X, GripHorizontal, GripVertical, Calendar
 } from 'lucide-react';
 import { AppTab } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -130,10 +130,11 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
 
   const menuItems = [
     { id: 'tasks', icon: CheckSquare, label: t.tasks, color: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/40', text: 'text-blue-600' },
+    { id: 'calendar', icon: Calendar, label: t.calendar, color: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/40', text: 'text-emerald-600' },
     { id: 'ai', icon: MessageSquare, label: 'AI', color: 'from-violet-500 to-purple-600', shadow: 'shadow-purple-500/40', text: 'text-purple-600' },
     { id: 'studio', icon: Wand2, label: 'Studio', color: 'from-fuchsia-500 to-pink-600', shadow: 'shadow-pink-500/40', text: 'text-pink-600' },
     { id: 'reports', icon: BarChart3, label: 'Stats', color: 'from-amber-400 to-orange-500', shadow: 'shadow-orange-500/40', text: 'text-orange-600' },
-    { id: 'profile', icon: UserCircle2, label: t.profile, color: 'from-emerald-400 to-teal-600', shadow: 'shadow-emerald-500/40', text: 'text-emerald-600' },
+    { id: 'profile', icon: UserCircle2, label: t.profile, color: 'from-slate-500 to-slate-700', shadow: 'shadow-slate-500/40', text: 'text-slate-600' },
   ];
 
   return (

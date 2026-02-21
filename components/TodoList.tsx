@@ -41,6 +41,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const [sort, setSort] = useState<SortOption>('date_new'); 
   const [showSortMenu, setShowSortMenu] = useState(false);
   
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'custom'>('all');
+  const [customDateStart, setCustomDateStart] = useState('');
+  const [customDateEnd, setCustomDateEnd] = useState('');
+  const [showDateMenu, setShowDateMenu] = useState(false);
+  
+  const [searchQuery, setSearchQuery] = useState(''); // New Search State
+  
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   
@@ -53,6 +60,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setNewDeadline('');
       setIsInputExpanded(false);
       setShowAssigneeList(false);
+      setSearchQuery(''); // Reset search on group switch
   }, [activeGroup?.id]);
 
   // --- Handlers ---
@@ -86,6 +94,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     
     // Keep focus for rapid entry
     inputRef.current?.focus();
+  };
+
+  const handleUpdateTask = (taskId: number, updates: Partial<Task>) => {
+      setTasks(prev => prev.map(task => {
+          if (task.id === taskId) {
+              return { ...task, ...updates };
+          }
+          return task;
+      }));
   };
 
   const handleToggleTask = (taskId: number) => {
@@ -166,6 +183,31 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     if (filter === 'active') result = result.filter(t => !t.completed);
     else if (filter === 'completed') result = result.filter(t => t.completed);
     else if (filter === 'assigned_to_me' && activeGroup) result = result.filter(t => t.assignedTo === currentUserId);
+
+    // Date Filtering
+    if (dateFilter === 'today') {
+        const today = new Date().toISOString().split('T')[0];
+        result = result.filter(t => t.createdAt.startsWith(today) || (t.deadline && t.deadline.startsWith(today)));
+    } else if (dateFilter === 'custom' && customDateStart && customDateEnd) {
+        const start = new Date(customDateStart);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(customDateEnd);
+        end.setHours(23, 59, 59, 999);
+        
+        result = result.filter(t => {
+            const d = new Date(t.createdAt);
+            return d >= start && d <= end;
+        });
+    }
+
+    // Search Filtering
+    if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        result = result.filter(t => 
+            t.text.toLowerCase().includes(query) || 
+            t.subtasks?.some(st => st.text.toLowerCase().includes(query))
+        );
+    }
 
     if (sort === 'priority') {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
@@ -253,6 +295,32 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                 </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="mb-4 relative group">
+                <div className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isCustomTheme ? 'text-white/60 group-focus-within:text-white' : 'text-slate-400 group-focus-within:text-indigo-500'}`}>
+                    <Search size={18} />
+                </div>
+                <input 
+                    type="text" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t.search}
+                    className={`w-full py-3 pl-10 pr-4 rounded-2xl text-sm font-bold outline-none transition-all ${
+                        isCustomTheme 
+                        ? 'bg-white/10 text-white placeholder-white/50 border border-white/20 focus:bg-white/20 focus:border-white/40' 
+                        : 'bg-slate-50 text-slate-700 placeholder-slate-400 border border-slate-200 focus:bg-white focus:border-indigo-200 focus:ring-4 focus:ring-indigo-50'
+                    }`}
+                />
+                {searchQuery && (
+                    <button 
+                        onClick={() => setSearchQuery('')}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${isCustomTheme ? 'text-white/60 hover:bg-white/20 hover:text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+                    >
+                        <X size={14} />
+                    </button>
+                )}
+            </div>
+
             {/* Bottom Row: Progress & Filters */}
             <div className="space-y-4">
                  <div className="flex items-center gap-4">
@@ -279,6 +347,55 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                                 {t[f]}
                             </button>
                         ))}
+                     </div>
+
+                     {/* Date Filter Dropdown */}
+                     <div className="relative">
+                        <button 
+                            onClick={() => setShowDateMenu(!showDateMenu)} 
+                            className={`px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 ${
+                                isCustomTheme 
+                                ? 'bg-white/20 text-white hover:bg-white/30' 
+                                : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm ring-1 ring-slate-100'
+                            }`}
+                        >
+                            <Calendar size={14}/>
+                            <span className="hidden sm:inline">{dateFilter === 'all' ? t.all : dateFilter === 'today' ? t.today : t.custom}</span>
+                            <ChevronDown size={12} className={`transition-transform duration-300 ${showDateMenu ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {showDateMenu && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowDateMenu(false)}></div>
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 z-50 animate-scale-in origin-top-right">
+                                    <div className="space-y-1 mb-3">
+                                        <button onClick={() => { setDateFilter('all'); setShowDateMenu(false); }} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'all' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                            {t.all}
+                                        </button>
+                                        <button onClick={() => { setDateFilter('today'); setShowDateMenu(false); }} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'today' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                            {t.today}
+                                        </button>
+                                        <button onClick={() => setDateFilter('custom')} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'custom' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                            {t.custom}
+                                        </button>
+                                    </div>
+
+                                    {dateFilter === 'custom' && (
+                                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2 text-center">{t.assignedDate}</p>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{t.startDate}</label>
+                                                <input type="date" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{t.endDate}</label>
+                                                <input type="date" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                      </div>
                      
                      {/* Sorting Dropdown */}
@@ -346,6 +463,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                         index={index}
                         onToggle={() => handleToggleTask(task.id)}
                         onEdit={() => setEditingTask(task)}
+                        onUpdate={handleUpdateTask}
                         activeGroup={activeGroup}
                       />
                   ))}
@@ -567,7 +685,14 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
 // --- Task Item Component ---
 
-const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEdit: () => void; activeGroup: Group | null; }> = ({ task, index, onToggle, onEdit, activeGroup }) => {
+const TaskItem: React.FC<{ 
+    task: Task; 
+    index: number; 
+    onToggle: () => void; 
+    onEdit: () => void; 
+    onUpdate: (id: number, data: Partial<Task>) => void;
+    activeGroup: Group | null; 
+}> = ({ task, index, onToggle, onEdit, onUpdate, activeGroup }) => {
     const { t, language } = useLanguage();
     
     // Calculate deadline status
@@ -588,16 +713,47 @@ const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEd
         return { isOverdue, text, dateStr: d.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };
     }, [task.deadline, language]);
 
+    // Assigned Date Info (for unfinished tasks)
+    const assignedDateInfo = useMemo(() => {
+        if (task.completed) return null;
+        const created = new Date(task.createdAt);
+        const today = new Date();
+        const isToday = created.toDateString() === today.toDateString();
+        
+        if (isToday) return null; // Don't show if assigned today
+
+        return {
+            dateStr: created.toLocaleDateString(language, { month: 'short', day: 'numeric' }),
+            fullDate: created.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        };
+    }, [task.createdAt, task.completed, language]);
+
     // Priority Styling
     const priority = task.priority || 'medium';
     const priorityColors = {
-        high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', leftBorder: 'border-l-rose-500', pillDot: 'bg-rose-500' },
-        medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', leftBorder: 'border-l-amber-500', pillDot: 'bg-amber-500' },
-        low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', leftBorder: 'border-l-emerald-500', pillDot: 'bg-emerald-500' }
+        high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', leftBorder: 'border-l-rose-500', pillDot: 'bg-rose-500', icon: 'text-rose-500' },
+        medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', leftBorder: 'border-l-amber-500', pillDot: 'bg-amber-500', icon: 'text-amber-500' },
+        low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', leftBorder: 'border-l-emerald-500', pillDot: 'bg-emerald-500', icon: 'text-emerald-500' }
     };
     
     const pStyle = priorityColors[priority];
     const assignee = activeGroup && task.assignedTo ? activeGroup.members.find(m => m.id === task.assignedTo) : null;
+
+    // Handlers for Inline Editing
+    const cyclePriority = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const next: Priority = priority === 'medium' ? 'high' : priority === 'high' ? 'low' : 'medium';
+        onUpdate(task.id, { priority: next });
+    };
+
+    const handleAssigneeClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!activeGroup) return;
+        const members = activeGroup.members;
+        const currentIndex = members.findIndex(m => m.id === task.assignedTo);
+        const nextIndex = (currentIndex + 1) % members.length;
+        onUpdate(task.id, { assignedTo: members[nextIndex].id });
+    };
 
     // Card Base Classes
     const baseClasses = `group relative p-5 rounded-[2rem] transition-all duration-300 cursor-pointer mb-3 transform-gpu animate-slide-up hover:scale-[1.01] active:scale-[0.99] border-2 border-l-8 ${pStyle.leftBorder}`;
@@ -625,31 +781,71 @@ const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEd
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                        <h3 className={`text-base font-bold leading-snug transition-all mb-2 break-words ${task.completed ? 'text-slate-400 line-through decoration-slate-300 decoration-2' : 'text-slate-800'}`}>
-                            {task.text}
-                        </h3>
+                        {/* Inline Editable Title */}
+                        <div className="w-full mr-2" onClick={(e) => e.stopPropagation()}>
+                            <textarea
+                                value={task.text}
+                                onChange={(e) => onUpdate(task.id, { text: e.target.value })}
+                                className={`w-full bg-transparent resize-none outline-none text-base font-bold leading-snug transition-all ${task.completed ? 'text-slate-400 line-through decoration-slate-300 decoration-2' : 'text-slate-800 placeholder-slate-400'}`}
+                                rows={1}
+                                style={{ fieldSizing: 'content' } as any} // Modern CSS for auto-height
+                                placeholder={t.taskContent}
+                                onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }}
+                            />
+                        </div>
                     </div>
 
-                    <div className="flex items-center flex-wrap gap-2">
-                         {/* Deadline Badge */}
-                         {deadlineInfo && !task.completed && (
-                            <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border ${deadlineInfo.isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                {deadlineInfo.isOverdue ? <AlertCircle size={10} strokeWidth={3}/> : <Clock size={10} strokeWidth={3}/>} {deadlineInfo.text}
+                    <div className="flex items-center flex-wrap gap-2 mt-2">
+                         {/* Assigned Date Badge (for unfinished tasks from past) */}
+                         {assignedDateInfo && (
+                            <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border bg-slate-50 text-slate-500 border-slate-100" title={t.assignedDate}>
+                                <Calendar size={10} strokeWidth={3}/> {assignedDateInfo.dateStr}
                             </span>
-                        )}
+                         )}
+
+                         {/* Inline Editable Deadline Badge */}
+                         <div className="relative group/date" onClick={(e) => e.stopPropagation()}>
+                            <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border cursor-pointer transition-colors ${
+                                deadlineInfo ? (deadlineInfo.isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100') : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100 hover:text-indigo-500'
+                            }`}>
+                                {deadlineInfo ? (deadlineInfo.isOverdue ? <AlertCircle size={10} strokeWidth={3}/> : <Clock size={10} strokeWidth={3}/>) : <CalendarClock size={10} strokeWidth={3}/>} 
+                                {deadlineInfo ? deadlineInfo.text : t.deadline}
+                            </span>
+                            <input 
+                                type="datetime-local" 
+                                value={task.deadline || ''} 
+                                onChange={(e) => onUpdate(task.id, { deadline: e.target.value })}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                        </div>
                         
-                        {/* Priority Badge - COLOURED PILL (Always Visible) */}
-                        <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg border flex items-center gap-1 ${pStyle.bg} ${pStyle.text} ${pStyle.border} ${task.completed ? 'opacity-70' : ''}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${pStyle.pillDot}`}></span>
+                        {/* Inline Editable Priority Badge */}
+                        <button 
+                            onClick={cyclePriority}
+                            className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg border flex items-center gap-1 transition-all hover:scale-105 active:scale-95 ${pStyle.bg} ${pStyle.text} ${pStyle.border} ${task.completed ? 'opacity-70' : ''}`}
+                        >
+                            <Flag size={10} fill="currentColor" className={pStyle.icon} />
                             {t[priority]}
-                        </span>
+                        </button>
                         
-                        {/* Assignee Badge */}
-                        {assignee && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 rounded-lg border border-indigo-100 pr-3">
-                                <img src={assignee.avatar} className="w-4 h-4 rounded-md object-cover" alt=""/>
-                                <span className="text-[10px] font-bold text-indigo-700 truncate max-w-[80px]">{assignee.name}</span>
-                            </div>
+                        {/* Inline Editable Assignee Badge */}
+                        {activeGroup && (
+                            <button 
+                                onClick={handleAssigneeClick}
+                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all hover:scale-105 active:scale-95 ${assignee ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
+                            >
+                                {assignee ? (
+                                    <>
+                                        <img src={assignee.avatar} className="w-4 h-4 rounded-md object-cover" alt=""/>
+                                        <span className="text-[10px] font-bold text-indigo-700 truncate max-w-[80px]">{assignee.name}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <User size={10} className="text-slate-400"/>
+                                        <span className="text-[10px] font-bold text-slate-400">{t.assignTo}</span>
+                                    </>
+                                )}
+                            </button>
                         )}
                         
                         {/* Subtasks Count */}
@@ -662,7 +858,7 @@ const TaskItem: React.FC<{ task: Task; index: number; onToggle: () => void; onEd
                     </div>
                 </div>
                 
-                {/* Arrow hint on hover */}
+                {/* Arrow hint on hover (opens full modal) */}
                 <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
                     <ArrowRight size={16} className="text-slate-300"/>
                 </div>

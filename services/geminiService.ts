@@ -1,11 +1,10 @@
 import { GoogleGenAI, Chat, Type } from "@google/genai";
 
-// Declare process for TypeScript since @types/node might not be present
-declare const process: { env: { API_KEY: string } };
-
 // Safely initialize GenAI only if key exists, otherwise provide a dummy implementation or throw localized error when called.
 const getAiClient = () => {
-    const apiKey = process.env.API_KEY;
+    // Use the global constant defined in vite.config.ts
+    const apiKey = process.env.GEMINI_API_KEY;
+    
     if (!apiKey || apiKey === 'undefined') {
         console.warn("Gemini API Key is missing or undefined.");
         return null;

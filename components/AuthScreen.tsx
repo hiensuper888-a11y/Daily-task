@@ -63,6 +63,11 @@ export const AuthScreen: React.FC = () => {
     window.dispatchEvent(new Event('auth-change'));
     window.dispatchEvent(new Event('local-storage'));
     window.dispatchEvent(new Event('storage'));
+    
+    // Dispatch again after a short delay to ensure all listeners are ready/updated
+    setTimeout(() => {
+        window.dispatchEvent(new Event('auth-change'));
+    }, 50);
   };
 
   const handleEmailAuth = async () => {
@@ -120,7 +125,7 @@ export const AuthScreen: React.FC = () => {
             
             {/* APP LOGO SECTION */}
             <div className="mb-8 flex flex-col items-center animate-slide-up">
-                <div className="w-24 h-24 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-4 transform rotate-3 hover:rotate-6 transition-transform duration-500 ring-4 ring-white/50 group">
+                <div className="w-24 h-24 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-4 transform rotate-3 hover:-rotate-6 transition-transform duration-500 ring-4 ring-white/50 group">
                     <CheckSquare size={48} className="text-white group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                 </div>
                 <h1 className="text-4xl font-black text-slate-800 tracking-tighter drop-shadow-sm">Daily Task</h1>
@@ -147,7 +152,7 @@ export const AuthScreen: React.FC = () => {
                                     type="email"
                                     value={emailInput}
                                     onChange={(e) => setEmailInput(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50/50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-100/50"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50/50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder-slate-400 focus:ring-4 focus:ring-indigo-100/50"
                                     placeholder="name@example.com"
                                 />
                             </div>
@@ -160,7 +165,7 @@ export const AuthScreen: React.FC = () => {
                                     type={showPassword ? "text" : "password"}
                                     value={passwordInput}
                                     onChange={(e) => setPasswordInput(e.target.value)}
-                                    className="w-full pl-12 pr-12 py-4 bg-slate-50/50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-100/50"
+                                    className="w-full pl-12 pr-12 py-4 bg-slate-50/50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all placeholder-slate-400 focus:ring-4 focus:ring-indigo-100/50"
                                     placeholder="••••••••"
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-1">
@@ -173,7 +178,7 @@ export const AuthScreen: React.FC = () => {
                     <button 
                         onClick={handleEmailAuth}
                         disabled={isSyncing}
-                        className="w-full mt-8 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 hover:bg-slate-800 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group"
+                        className="w-full mt-8 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 hover:bg-slate-800 active:scale-[1.02] active:opacity-95 transition-all flex items-center justify-center gap-3 group"
                     >
                         {isSyncing ? <RefreshCw size={20} className="animate-spin"/> : (authMode === 'login' ? <LogIn size={20}/> : <UserPlus size={20}/>)}
                         <span>{authMode === 'login' ? t.loginBtn : t.registerBtn}</span>

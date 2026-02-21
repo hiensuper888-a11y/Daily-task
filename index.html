@@ -7,7 +7,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- APP LOGO -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%236366f1'/%3E%3Cpath d='M30 52 L45 67 L72 32' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
     
     <meta property="og:title" content="Daily Task - Quản lý công việc chuyên nghiệp" />
@@ -228,22 +227,24 @@
         touch-action: manipulation;
       }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.564.0",
-    "pptxgenjs": "https://esm.sh/pptxgenjs@^4.0.1",
-    "firebase/": "https://esm.sh/firebase@^12.9.0/",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
-  }
-}
-</script>
-</head>
+    <script>
+      // Polyfill process to prevent libraries from crashing
+      window.process = { env: {} };
+
+      // Fix for "Cannot set property fetch of #<Window> which has only a getter"
+      // Some libraries (like debug tools) try to overwrite fetch. We make it writable here.
+      try {
+        const originalFetch = window.fetch;
+        Object.defineProperty(window, 'fetch', {
+          value: originalFetch,
+          writable: true,
+          configurable: true
+        });
+      } catch (e) {
+        console.warn('Could not patch window.fetch:', e);
+      }
+    </script>
+  </head>
   <body>
     <div class="mesh-bg">
         <div class="mesh-blob blob-1"></div>

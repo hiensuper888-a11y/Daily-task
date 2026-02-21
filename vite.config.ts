@@ -3,18 +3,17 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
-  const env = loadEnv(mode, (process as any).cwd(), '');
+  // Sử dụng process.cwd() chuẩn xác, không dùng (process as any)
+  const env = loadEnv(mode, process.cwd(), '');
   
   return {
     plugins: [react()],
     base: './', // Use relative paths for flexible deployment
     define: {
-      // Safely replace process.env.API_KEY with the string value during build
-      // Using JSON.stringify ensures it's wrapped in quotes
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || 'AIzaSyAm3oIyGTPb1-Knso8Rtj58vU4nvyOYxCU'),
-      // Prevent "process is not defined" error in browser
-      'process.env': {} 
+      // Chỉ đọc từ env. Không hardcode key thật vào đây!
+      // Nếu không có key trong .env, sẽ fallback về chuỗi rỗng để tránh lộ key.
+      'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || ''),
+      'process.env.NODE_ENV': JSON.stringify(mode),
     },
     build: {
       outDir: 'dist',

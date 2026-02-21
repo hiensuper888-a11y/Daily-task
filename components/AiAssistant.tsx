@@ -116,7 +116,7 @@ export const AiAssistant: React.FC = () => {
             </div>
 
             {/* Floating Input Area */}
-            <div className="fixed bottom-[90px] lg:bottom-6 left-4 right-4 lg:left-[300px] z-[40] pb-safe flex justify-center">
+            <div className="fixed bottom-[90px] left-4 right-4 lg:left-[340px] z-[40] pb-safe flex justify-center">
                 <div className="w-full max-w-2xl bg-white/80 backdrop-blur-[30px] rounded-[2rem] p-2 pl-3 shadow-float ring-1 ring-white/60 animate-slide-up flex items-center gap-2 group transition-all hover:shadow-[0_25px_60px_-10px_rgba(0,0,0,0.15)]">
                     <button onClick={() => setMessages([])} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={18}/></button>
                     
@@ -140,7 +140,7 @@ export const AiAssistant: React.FC = () => {
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
                         disabled={!isOnline}
                         placeholder={t.typeMessage}
-                        className="flex-1 bg-transparent border-none px-2 py-2 text-[15px] font-medium text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
+                        className="flex-1 bg-transparent border-none px-2 py-2 text-[15px] font-medium text-slate-800 placeholder-slate-400 min-w-0 outline-none"
                     />
                     
                     <button 

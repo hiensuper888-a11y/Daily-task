@@ -369,7 +369,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
         </div>
 
         <div className="flex items-center gap-2 mt-8 overflow-x-auto pb-2 scrollbar-none mask-gradient-x relative z-10">
-             {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
+             {(['day', 'week', 'month', 'year', 'custom'] as Period[]).map((p) => (
                 <button 
                     key={p} 
                     onClick={() => setPeriod(p)} 
@@ -379,6 +379,29 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                 </button>
             ))}
         </div>
+
+        {period === 'custom' && (
+            <div className="flex items-center gap-4 mt-4 animate-fade-in relative z-10">
+                <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t.startDate}</label>
+                    <input 
+                        type="date" 
+                        value={customStart} 
+                        onChange={(e) => setCustomStart(e.target.value)} 
+                        className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-bold outline-none focus:bg-white/20 transition-colors"
+                    />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t.endDate}</label>
+                    <input 
+                        type="date" 
+                        value={customEnd} 
+                        onChange={(e) => setCustomEnd(e.target.value)} 
+                        className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-bold outline-none focus:bg-white/20 transition-colors"
+                    />
+                </div>
+            </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-6 pb-32 custom-scrollbar space-y-6">
