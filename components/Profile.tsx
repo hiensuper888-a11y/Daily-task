@@ -11,8 +11,9 @@ import {
   signOut, 
   updateProfile,
   changePassword,
-  deleteOwnAccount
-} from '../services/firebaseConfig';
+  deleteOwnAccount,
+  getCurrentUser
+} from '../services/authService';
 import { Moon, Sun } from 'lucide-react';
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -68,7 +69,8 @@ export const Profile: React.FC = () => {
       setProfile(editForm); 
       setIsEditing(false); 
       try { 
-          if (isFirebaseConfigured() && auth && auth.currentUser) await updateProfile(auth.currentUser, { displayName: editForm.name, photoURL: editForm.avatar }); 
+          const user = await getCurrentUser();
+          if (isFirebaseConfigured() && user) await updateProfile(user, { displayName: editForm.name, photoURL: editForm.avatar }); 
       } catch (error) {} 
   };
   

@@ -88,6 +88,8 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
     const handleSync = (e?: Event) => {
         // Always re-read on auth-change because the KEY PREFIX has likely changed (guest -> user)
         if (e?.type === 'auth-change') {
+            const newKey = getStorageKey();
+            lastRawValue.current = window.localStorage.getItem(newKey);
             setStoredValue(readValue());
             return;
         }
@@ -97,6 +99,7 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
         
         // Update if the raw value in storage is different from what we last saw
         if (currentRaw !== lastRawValue.current) {
+            lastRawValue.current = currentRaw;
             setStoredValue(readValue());
         }
     };

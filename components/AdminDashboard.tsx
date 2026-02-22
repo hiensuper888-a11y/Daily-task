@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus } from 'lucide-react';
-import { getAllUsers, deleteUser, adminCreateUser, changePassword } from '../services/firebaseConfig';
+import { getAllUsers, deleteUser, adminCreateUser, changePassword } from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { Task } from '../types';

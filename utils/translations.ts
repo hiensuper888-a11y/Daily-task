@@ -39,7 +39,7 @@ const enTranslations = {
   lightMode: "Light Mode",
   
   // Alerts & Errors
-  firebaseError: "Firebase configuration error.",
+  firebaseError: "Authentication configuration error.",
   networkError: "Please check your internet connection.",
   fillAllFields: "Please fill in all required fields.",
   registerSuccess: "Registration successful! Please check your email.",
@@ -360,7 +360,7 @@ const viTranslations = {
   actions: "Hành động",
   darkMode: "Chế độ tối",
   lightMode: "Chế độ sáng",
-  firebaseError: "Lỗi cấu hình Firebase.",
+  firebaseError: "Lỗi cấu hình xác thực.",
   networkError: "Vui lòng kiểm tra kết nối mạng.",
   fillAllFields: "Vui lòng điền đầy đủ thông tin.",
   registerSuccess: "Đăng ký thành công! Vui lòng kiểm tra email.",
@@ -658,7 +658,7 @@ const zhTranslations = {
   actions: "操作",
   darkMode: "深色模式",
   lightMode: "浅色模式",
-  firebaseError: "Firebase 配置错误。",
+  firebaseError: "认证配置错误。",
   networkError: "请检查您的网络连接。",
   fillAllFields: "请填写所有必填字段。",
   registerSuccess: "注册成功！请检查您的电子邮件。",

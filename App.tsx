@@ -6,7 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { useRealtimeStorage, SESSION_KEY } from './hooks/useRealtimeStorage';
 import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
-import { searchUsers } from './services/firebaseConfig';
+import { searchUsers } from './services/authService';
 import { FloatingDock } from './components/FloatingDock';
 import { AuthScreen } from './components/AuthScreen';
 

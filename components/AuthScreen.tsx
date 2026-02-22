@@ -9,7 +9,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendEmailVerification 
-} from '../services/firebaseConfig';
+} from '../services/authService';
 import { SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { UserProfile } from '../types';
 
