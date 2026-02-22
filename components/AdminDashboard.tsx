@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus } from 'lucide-react';
+import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus, Database, Copy } from 'lucide-react';
 import { getAllUsers, deleteUser, adminCreateUser, changePassword } from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -27,6 +27,9 @@ export const AdminDashboard: React.FC = () => {
         role: 'member'
     });
     const [isCreating, setIsCreating] = useState(false);
+    
+    // Setup Modal State
+    const [showSetupModal, setShowSetupModal] = useState(false);
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -146,6 +149,12 @@ export const AdminDashboard: React.FC = () => {
                     <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t.manageUsers}</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setShowSetupModal(true)}
+                        className="px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-900/20 hover:bg-slate-800 dark:hover:bg-slate-600 transition-all active:scale-95"
+                    >
+                        <Database size={18}/> Setup DB
+                    </button>
                     <button 
                         onClick={() => setShowCreateModal(true)}
                         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20 transition-all active:scale-95"
@@ -541,6 +550,93 @@ export const AdminDashboard: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* SETUP INFO MODAL */}
+            {showSetupModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] w-full max-w-2xl shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-white dark:bg-slate-800 sticky top-0 z-10">
+                            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <Database size={24} className="text-indigo-600"/> Supabase Setup
+                            </h2>
+                            <button onClick={() => setShowSetupModal(false)} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                                <X size={20}/>
+                            </button>
+                        </div>
+                        
+                        <div className="p-8 overflow-y-auto custom-scrollbar">
+                            <p className="text-slate-600 dark:text-slate-300 mb-4">
+                                To enable real-time user management and admin features, please run the following SQL in your Supabase SQL Editor:
+                            </p>
+                            
+                            <div className="bg-slate-900 rounded-xl p-4 relative group">
+                                <pre className="text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap">
+{`-- Create profiles table
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade not null primary key,
+  email text,
+  display_name text,
+  avatar_url text,
+  role text default 'member',
+  is_online boolean default false,
+  created_at timestamptz default now(),
+  last_seen timestamptz default now()
+);
+
+-- Enable RLS
+alter table public.profiles enable row level security;
+
+-- Create policies (Adjust as needed for security)
+create policy "Public profiles are viewable by everyone"
+  on profiles for select
+  using ( true );
+
+create policy "Users can insert their own profile"
+  on profiles for insert
+  with check ( auth.uid() = id );
+
+create policy "Users can update own profile"
+  on profiles for update
+  using ( auth.uid() = id );
+
+-- Optional: Trigger to create profile on signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, display_name, avatar_url)
+  values (new.id, new.email, new.raw_user_meta_data->>'display_name', new.raw_user_meta_data->>'avatar_url');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();`}
+                                </pre>
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`create table if not exists public.profiles ( id uuid references auth.users on delete cascade not null primary key, email text, display_name text, avatar_url text, role text default 'member', is_online boolean default false, created_at timestamptz default now(), last_seen timestamptz default now() ); alter table public.profiles enable row level security; create policy "Public profiles are viewable by everyone" on profiles for select using ( true ); create policy "Users can insert their own profile" on profiles for insert with check ( auth.uid() = id ); create policy "Users can update own profile" on profiles for update using ( auth.uid() = id );`);
+                                        alert("SQL copied to clipboard!");
+                                    }}
+                                    className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Copy SQL"
+                                >
+                                    <Copy size={16}/>
+                                </button>
+                            </div>
+
+                            <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl">
+                                <h4 className="text-sm font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2 mb-2">
+                                    <Shield size={16}/> Important Note
+                                </h4>
+                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    The "Impersonate" feature allows you to view the app as another user. However, due to Row Level Security (RLS), you might not see their private data unless your RLS policies allow public/anon access or you have a service role key (which is not available in this client-side demo).
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
