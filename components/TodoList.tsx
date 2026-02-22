@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
 import { playSuccessSound } from '../utils/sound';
+import { supabase } from '../services/supabaseClient';
 
 interface TodoListProps {
   activeGroup: Group | null;
@@ -63,6 +64,30 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setSearchQuery(''); // Reset search on group switch
   }, [activeGroup?.id]);
 
+  // --- Sync Helper ---
+  const syncTaskToSupabase = async (task: Task, isDelete: boolean = false) => {
+      if (currentUserId === 'guest') return;
+      
+      try {
+          if (isDelete) {
+              await supabase.from('tasks').delete().eq('id', task.id);
+          } else {
+              await supabase.from('tasks').upsert({
+                  id: task.id,
+                  user_id: currentUserId,
+                  text: task.text,
+                  completed: task.completed,
+                  created_at: task.createdAt,
+                  deadline: task.deadline,
+                  priority: task.priority,
+                  raw_data: task
+              });
+          }
+      } catch (err) {
+          console.error("Failed to sync task to Supabase:", err);
+      }
+  };
+
   // --- Handlers ---
 
   const handleAddTask = async () => {
@@ -83,6 +108,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     };
 
     setTasks(prev => [newTask, ...prev]);
+    syncTaskToSupabase(newTask);
     
     // Reset form
     setNewTaskText('');
@@ -99,7 +125,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const handleUpdateTask = (taskId: number, updates: Partial<Task>) => {
       setTasks(prev => prev.map(task => {
           if (task.id === taskId) {
-              return { ...task, ...updates };
+              const updatedTask = { ...task, ...updates };
+              syncTaskToSupabase(updatedTask);
+              return updatedTask;
           }
           return task;
       }));
@@ -111,13 +139,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
         const newCompleted = !task.completed;
         const now = new Date().toISOString();
         if (newCompleted) playSuccessSound();
-        return { 
+        const updatedTask = { 
           ...task, 
           completed: newCompleted, 
           progress: newCompleted ? 100 : (task.subtasks?.length ? task.progress : 0),
           completedAt: newCompleted ? now : undefined,
           completedBy: newCompleted ? currentUserId : undefined
         };
+        syncTaskToSupabase(updatedTask);
+        return updatedTask;
       }
       return task;
     }));
@@ -125,13 +155,23 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
   const handleDeleteTask = (taskId: number) => {
     if (confirm(t.deleteTaskConfirm)) {
+        const taskToDelete = tasks.find(t => t.id === taskId);
+        if (taskToDelete) syncTaskToSupabase(taskToDelete, true);
+        
         setTasks(prev => prev.filter(t => t.id !== taskId));
         if (editingTask?.id === taskId) setEditingTask(null);
     }
   };
 
   const handleArchiveCompleted = () => {
-      setTasks(prev => prev.map(t => t.completed ? { ...t, archived: true } : t));
+      setTasks(prev => prev.map(t => {
+          if (t.completed) {
+              const archivedTask = { ...t, archived: true };
+              syncTaskToSupabase(archivedTask);
+              return archivedTask;
+          }
+          return t;
+      }));
   };
 
   // --- AI Handlers ---

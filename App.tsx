@@ -9,6 +9,7 @@ import { NotificationManager } from './components/NotificationManager';
 import { searchUsers } from './services/authService';
 import { FloatingDock } from './components/FloatingDock';
 import { AuthScreen } from './components/AuthScreen';
+import { supabase } from './services/supabaseClient';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
 const CalendarView = React.lazy(() => import('./components/CalendarView').then(module => ({ default: module.CalendarView })));
@@ -145,6 +146,32 @@ const AuthenticatedApp: React.FC = () => {
 
   const [personalTasks] = useRealtimeStorage<Task[]>('daily_tasks', []);
   const [storageVersion, setStorageVersion] = useState(0);
+
+  // --- PRESENCE HEARTBEAT ---
+  useEffect(() => {
+    if (!currentUserId || currentUserId === 'guest') return;
+
+    const updatePresence = async () => {
+        await supabase.from('profiles').update({ 
+            last_seen: new Date().toISOString(),
+            is_online: true 
+        }).eq('id', currentUserId);
+    };
+
+    updatePresence();
+    const interval = setInterval(updatePresence, 30000); // Heartbeat every 30s
+
+    const handleUnload = () => {
+        supabase.from('profiles').update({ is_online: false }).eq('id', currentUserId).then();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+        clearInterval(interval);
+        window.removeEventListener('beforeunload', handleUnload);
+        handleUnload();
+    };
+  }, [currentUserId]);
 
   useEffect(() => {
     const handleStorageChange = () => {

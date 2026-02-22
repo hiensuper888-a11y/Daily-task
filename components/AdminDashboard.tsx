@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus, Database, Copy } from 'lucide-react';
+import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus, Database, Copy, BarChart2 } from 'lucide-react';
 import { getAllUsers, deleteUser, adminCreateUser, changePassword } from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { Task } from '../types';
+import { UserStatistics } from './UserStatistics';
+import { supabase } from '../services/supabaseClient';
 
 export const AdminDashboard: React.FC = () => {
     const { t } = useLanguage();
@@ -14,6 +16,7 @@ export const AdminDashboard: React.FC = () => {
     
     // Detail Modal State
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
+    const [selectedUserForStats, setSelectedUserForStats] = useState<any | null>(null);
     const [userTasks, setUserTasks] = useState<Task[]>([]);
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
     const [newPassword, setNewPassword] = useState('');
@@ -32,7 +35,6 @@ export const AdminDashboard: React.FC = () => {
     const [showSetupModal, setShowSetupModal] = useState(false);
 
     const fetchUsers = async () => {
-        setIsLoading(true);
         try {
             const data = await getAllUsers();
             setUsers(data);
@@ -49,8 +51,18 @@ export const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         fetchUsers();
-        const interval = setInterval(fetchUsers, 30000); // Auto refresh every 30s
-        return () => clearInterval(interval);
+        
+        // Real-time subscription for user status updates
+        const channel = supabase
+            .channel('public:profiles')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+                fetchUsers();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const handleDeleteUser = async (uid: string, email: string) => {
@@ -139,7 +151,8 @@ export const AdminDashboard: React.FC = () => {
     );
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-6 pb-32 animate-fade-in">
+        <div className="h-full overflow-y-auto custom-scrollbar">
+            <div className="w-full max-w-6xl mx-auto p-6 pb-32 animate-fade-in">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
@@ -265,6 +278,13 @@ export const AdminDashboard: React.FC = () => {
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button 
+                                                    onClick={() => setSelectedUserForStats(user)}
+                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
+                                                    title="View Statistics"
+                                                >
+                                                    <BarChart2 size={18} />
+                                                </button>
                                                 <button 
                                                     onClick={() => handleViewDetails(user)}
                                                     className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
@@ -614,11 +634,28 @@ $$ language plpgsql security definer;
 
 create or replace trigger on_auth_user_created
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();`}
+  for each row execute procedure public.handle_new_user();
+
+-- Create tasks table for real-time tracking
+create table if not exists public.tasks (
+  id bigint primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  text text,
+  completed boolean default false,
+  created_at timestamptz default now(),
+  deadline timestamptz,
+  priority text,
+  raw_data jsonb
+);
+alter table public.tasks enable row level security;
+create policy "Users can manage their own tasks" on tasks for all using (auth.uid() = user_id);
+create policy "Admins can view all tasks" on tasks for select using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);`}
                                 </pre>
                                 <button 
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`create table if not exists public.profiles ( id uuid references auth.users on delete cascade not null primary key, email text, display_name text, avatar_url text, role text default 'member', is_online boolean default false, created_at timestamptz default now(), last_seen timestamptz default now() ); alter table public.profiles enable row level security; create policy "Public profiles are viewable by everyone" on profiles for select using ( true ); create policy "Users can insert their own profile" on profiles for insert with check ( auth.uid() = id ); create policy "Users can update own profile" on profiles for update using ( auth.uid() = id );`);
+                                        navigator.clipboard.writeText(`create table if not exists public.profiles ( id uuid references auth.users on delete cascade not null primary key, email text, display_name text, avatar_url text, role text default 'member', is_online boolean default false, created_at timestamptz default now(), last_seen timestamptz default now() ); alter table public.profiles enable row level security; create policy "Public profiles are viewable by everyone" on profiles for select using ( true ); create policy "Users can insert their own profile" on profiles for insert with check ( auth.uid() = id ); create policy "Users can update own profile" on profiles for update using ( auth.uid() = id ); create table if not exists public.tasks ( id bigint primary key, user_id uuid references auth.users(id) on delete cascade, text text, completed boolean default false, created_at timestamptz default now(), deadline timestamptz, priority text, raw_data jsonb ); alter table public.tasks enable row level security; create policy "Users can manage their own tasks" on tasks for all using (auth.uid() = user_id); create policy "Admins can view all tasks" on tasks for select using ( exists (select 1 from profiles where id = auth.uid() and role = 'admin') );`);
                                         alert("SQL copied to clipboard!");
                                     }}
                                     className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors opacity-0 group-hover:opacity-100"
@@ -640,6 +677,16 @@ create or replace trigger on_auth_user_created
                     </div>
                 </div>
             )}
+
+            {/* USER STATISTICS MODAL */}
+            {selectedUserForStats && (
+                <UserStatistics 
+                    userId={selectedUserForStats.uid || selectedUserForStats.id} 
+                    userName={selectedUserForStats.displayName || selectedUserForStats.display_name} 
+                    onClose={() => setSelectedUserForStats(null)} 
+                />
+            )}
+            </div>
         </div>
     );
 };
