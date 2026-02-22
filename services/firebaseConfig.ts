@@ -206,6 +206,32 @@ export const getAllUsers = async () => {
     }));
 };
 
+export const adminCreateUser = async (userData: { email: string; pass: string; displayName: string; role?: string }) => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const cleanEmail = userData.email.toLowerCase().trim();
+    const users = getUsers();
+    
+    if (users[cleanEmail]) {
+        throw new Error("Email already in use");
+    }
+
+    const uid = 'user_' + Math.random().toString(36).substring(2, 9);
+    const newUser = {
+        uid,
+        email: cleanEmail,
+        password: userData.pass,
+        emailVerified: true,
+        displayName: userData.displayName,
+        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.displayName)}&background=random`,
+        role: userData.role || 'member',
+        createdAt: Date.now()
+    };
+
+    users[cleanEmail] = newUser;
+    saveUsers(users);
+    return newUser;
+};
+
 export const deleteUser = async (uid: string) => {
     await new Promise(resolve => setTimeout(resolve, 800));
     const users = getUsers();

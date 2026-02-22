@@ -482,8 +482,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       <div className={`fixed bottom-0 left-0 right-0 z-40 pb-safe transition-transform duration-500 cubic-bezier(0.32,0.72,0,1) ${isInputExpanded ? 'translate-y-0' : 'translate-y-0'}`}>
           <div className={`mx-auto transition-all duration-300 ${isInputExpanded ? 'max-w-2xl px-4 pb-4' : 'max-w-xl px-4 pb-4 lg:pb-8'}`}>
               <div 
-                className={`bg-white/90 backdrop-blur-xl shadow-float border border-white/50 transition-all duration-300 overflow-hidden relative group ${
-                    isInputExpanded ? 'rounded-[2.5rem] p-4 ring-1 ring-black/5' : 'rounded-full p-2 pr-3 flex items-center gap-3 cursor-text hover:scale-[1.01]'
+                className={`bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-float border border-white/50 dark:border-slate-700/50 transition-all duration-300 overflow-hidden relative group ${
+                    isInputExpanded ? 'rounded-[2.5rem] p-4 ring-1 ring-black/5 dark:ring-white/5' : 'rounded-full p-2 pr-3 flex items-center gap-3 cursor-text hover:scale-[1.01]'
                 }`}
                 onClick={() => !isInputExpanded && setIsInputExpanded(true)}
               >
@@ -501,28 +501,28 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                           onFocus={() => setIsInputExpanded(true)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddTask(); }}
                           placeholder={t.addTaskPlaceholder}
-                          className={`w-full bg-transparent outline-none text-slate-800 placeholder-slate-400 font-bold ${isInputExpanded ? 'text-xl px-2 pt-1 pb-3' : 'text-base'}`}
+                          className={`w-full bg-transparent outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-bold ${isInputExpanded ? 'text-xl px-2 pt-1 pb-3' : 'text-base'}`}
                       />
                       
                       {isInputExpanded && (
                           <div className="flex items-center gap-2 mt-4 px-1 overflow-x-auto scrollbar-none pb-1 animate-slide-up">
                               {/* Date Picker Button */}
                               <div className="relative shrink-0 group/date">
-                                  <button className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newDeadline ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}>
-                                      <CalendarClock size={16} className={newDeadline ? "text-indigo-500" : "text-slate-400"} />
+                                  <button className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newDeadline ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-600/50 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                                      <CalendarClock size={16} className={newDeadline ? "text-indigo-500" : "text-slate-400 dark:text-slate-500"} />
                                       {newDeadline ? new Date(newDeadline).toLocaleDateString(language, {day: 'numeric', month: 'short', hour: '2-digit'}) : t.deadline}
                                   </button>
                                   <input type="datetime-local" value={newDeadline} onChange={(e) => setNewDeadline(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"/>
                               </div>
 
                               {/* Priority Pill Selector */}
-                              <button onClick={cyclePriority} className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newPriority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' : newPriority === 'low' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                              <button onClick={cyclePriority} className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newPriority === 'high' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/50' : newPriority === 'low' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50'}`}>
                                   <Flag size={16} fill="currentColor" className="opacity-50" /> {t[newPriority]}
                               </button>
 
                               {/* Assignee Selector */}
                               {activeGroup && (
-                                  <button onClick={() => setShowAssigneeList(!showAssigneeList)} className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newAssignee ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}>
+                                  <button onClick={() => setShowAssigneeList(!showAssigneeList)} className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newAssignee ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-600/50 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                                       {newAssignee ? (<><img src={activeGroup.members.find(m => m.id === newAssignee)?.avatar} className="w-4 h-4 rounded-full" alt=""/><span className="max-w-[80px] truncate">{activeGroup.members.find(m => m.id === newAssignee)?.name}</span></>) : (<><User size={16} /> {t.assignTask}</>)}
                                   </button>
                               )}
@@ -531,7 +531,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                   </div>
 
                   {isInputExpanded && (
-                      <button onClick={handleAddTask} disabled={!newTaskText.trim()} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-xl ${newTaskText.trim() ? 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-105 hover:rotate-[-10deg]' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                      <button onClick={handleAddTask} disabled={!newTaskText.trim()} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 shadow-xl ${newTaskText.trim() ? 'bg-slate-900 dark:bg-indigo-600 text-white hover:bg-slate-800 dark:hover:bg-indigo-500 hover:scale-105 hover:rotate-[-10deg]' : 'bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed'}`}>
                           <Send size={24} className={newTaskText.trim() ? "ml-0.5" : ""} />
                       </button>
                   )}
@@ -539,15 +539,15 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
               {/* Expanded Assignee List */}
               {isInputExpanded && showAssigneeList && activeGroup && (
-                  <div className="mt-4 bg-white/90 backdrop-blur-xl border border-white rounded-[2rem] p-4 shadow-2xl animate-slide-up overflow-x-auto">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">{t.memberList}</h4>
+                  <div className="mt-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-white dark:border-slate-700 rounded-[2rem] p-4 shadow-2xl animate-slide-up overflow-x-auto">
+                      <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-1">{t.memberList}</h4>
                       <div className="flex gap-4">
                           {activeGroup.members.map(member => (
                               <button key={member.id} onClick={() => { setNewAssignee(newAssignee === member.id ? '' : member.id); setShowAssigneeList(false); }} className={`flex flex-col items-center gap-2 shrink-0 transition-all ${newAssignee === member.id ? 'opacity-100 scale-110' : 'opacity-60 hover:opacity-100'}`}>
-                                  <div className={`w-12 h-12 rounded-2xl p-0.5 border-2 shadow-sm ${newAssignee === member.id ? 'border-indigo-600' : 'border-transparent'}`}>
-                                      <img src={member.avatar} className="w-full h-full rounded-[0.9rem] object-cover bg-slate-100" alt={member.name} />
+                                  <div className={`w-12 h-12 rounded-2xl p-0.5 border-2 shadow-sm ${newAssignee === member.id ? 'border-indigo-600 dark:border-indigo-400' : 'border-transparent'}`}>
+                                      <img src={member.avatar} className="w-full h-full rounded-[0.9rem] object-cover bg-slate-100 dark:bg-slate-700" alt={member.name} />
                                   </div>
-                                  <span className="text-[10px] font-bold text-slate-600 max-w-[60px] truncate">{member.name}</span>
+                                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 max-w-[60px] truncate">{member.name}</span>
                               </button>
                           ))}
                       </div>
@@ -819,7 +819,7 @@ const TaskItem: React.FC<{
                     <div className="flex items-center flex-wrap gap-2 mt-2">
                          {/* Assigned Date Badge (for unfinished tasks from past) */}
                          {assignedDateInfo && (
-                            <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border bg-slate-50 text-slate-500 border-slate-100" title={t.assignedDate}>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700" title={t.assignedDate}>
                                 <Calendar size={10} strokeWidth={3}/> {assignedDateInfo.dateStr}
                             </span>
                          )}
@@ -827,7 +827,7 @@ const TaskItem: React.FC<{
                          {/* Inline Editable Deadline Badge */}
                          <div className="relative group/date" onClick={(e) => e.stopPropagation()}>
                             <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border cursor-pointer transition-colors ${
-                                deadlineInfo ? (deadlineInfo.isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100') : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100 hover:text-indigo-500'
+                                deadlineInfo ? (deadlineInfo.isOverdue ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700') : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500 dark:hover:text-indigo-400'
                             }`}>
                                 {deadlineInfo ? (deadlineInfo.isOverdue ? <AlertCircle size={10} strokeWidth={3}/> : <Clock size={10} strokeWidth={3}/>) : <CalendarClock size={10} strokeWidth={3}/>} 
                                 {deadlineInfo ? deadlineInfo.text : t.deadline}
@@ -871,7 +871,7 @@ const TaskItem: React.FC<{
                         
                         {/* Subtasks Count */}
                         {task.subtasks && task.subtasks.length > 0 && (
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 px-2 py-1 rounded-lg bg-slate-50 border border-slate-100">
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                                 <Layout size={10} />
                                 {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
                             </div>
