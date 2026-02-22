@@ -32,17 +32,26 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
       const finalKey = getStorageKey();
       const item = window.localStorage.getItem(finalKey);
       
-      // Update our ref for comparison later
-      lastRawValue.current = item;
-
       return item ? JSON.parse(item) : initialValueRef.current;
     } catch (error) {
       console.warn('Error reading from storage:', error);
       return initialValueRef.current;
     }
-  }, [getStorageKey]); // Removed initialValue from deps
+  }, [getStorageKey]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
+  
+  // Track the key we've loaded to detect changes during render
+  const [lastLoadedKey, setLastLoadedKey] = useState(getStorageKey);
+
+  // If the key has changed, update state during render (safe for the SAME component)
+  // but we must be careful not to trigger updates in OTHER components.
+  const currentKey = getStorageKey();
+  if (currentKey !== lastLoadedKey) {
+    setLastLoadedKey(currentKey);
+    setStoredValue(readValue());
+  }
+
   const isTabVisible = useRef(true);
 
   // Function to set value
@@ -71,10 +80,11 @@ export function useRealtimeStorage<T>(key: string, initialValue: T, globalKey: b
   }, [key, getStorageKey]);
 
   useEffect(() => {
-    // 1. Initial read on mount/key change
-    setStoredValue(readValue());
+    // Update our ref for comparison
+    const finalKey = getStorageKey();
+    lastRawValue.current = window.localStorage.getItem(finalKey);
 
-    // 2. Event handler for sync
+    // Event handler for sync
     const handleSync = (e?: Event) => {
         // Always re-read on auth-change because the KEY PREFIX has likely changed (guest -> user)
         if (e?.type === 'auth-change') {

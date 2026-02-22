@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Check, Trash2, Plus, Calendar, User, Users, CheckSquare, 
-  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight, ChevronDown, AlignLeft
+  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight, ChevronDown, AlignLeft, Paperclip, Download
 } from 'lucide-react';
-import { Task, Subtask, Group, Priority, SortOption, FilterType, UserProfile } from '../types';
+import { Task, Subtask, Group, Priority, SortOption, FilterType, UserProfile, Attachment } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
@@ -161,6 +161,59 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       } finally {
           setIsAiProcessing(false);
       }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !editingTask) return;
+
+      // Limit size to 5MB for base64 storage
+      if (file.size > 5 * 1024 * 1024) {
+          alert("File too large (max 5MB)");
+          return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          const newAttachment: Attachment = {
+              id: Date.now().toString(),
+              name: file.name,
+              type: file.type,
+              url: base64,
+              size: file.size,
+              createdAt: new Date().toISOString()
+          };
+          setEditingTask(prev => prev ? {
+              ...prev,
+              attachments: [...(prev.attachments || []), newAttachment]
+          } : null);
+      };
+      reader.readAsDataURL(file);
+  };
+
+  const handleDownload = (attachment: Attachment) => {
+      const link = document.createElement('a');
+      link.href = attachment.url;
+      link.download = attachment.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
+  const removeAttachment = (id: string) => {
+      setEditingTask(prev => prev ? {
+          ...prev,
+          attachments: prev.attachments?.filter(a => a.id !== id)
+      } : null);
+  };
+
+  const formatSize = (bytes: number) => {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const handleSaveEdit = () => {
@@ -510,7 +563,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                               <div className="relative shrink-0 group/date">
                                   <button className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${newDeadline ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-600/50 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                                       <CalendarClock size={16} className={newDeadline ? "text-indigo-500" : "text-slate-400 dark:text-slate-500"} />
-                                      {newDeadline ? new Date(newDeadline).toLocaleDateString(language, {day: 'numeric', month: 'short', hour: '2-digit'}) : t.deadline}
+                                      {newDeadline ? new Date(newDeadline).toLocaleDateString(language, {day: 'numeric', month: 'short', hour: '2-digit'}) : t.dueDate}
                                   </button>
                                   <input type="datetime-local" value={newDeadline} onChange={(e) => setNewDeadline(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"/>
                               </div>
@@ -588,9 +641,9 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
                     {/* Meta Data Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        {/* Deadline */}
+                        {/* Due Date */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{t.deadline}</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{t.dueDate}</label>
                             <div className="relative">
                                 <input 
                                     type="datetime-local"
@@ -666,6 +719,44 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                              <button onClick={() => setEditingTask({ ...editingTask, subtasks: [...(editingTask.subtasks || []), { id: Date.now(), text: '', completed: false }] })} className="w-full py-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all border border-dashed border-slate-200 hover:border-indigo-200">
                                  <Plus size={14}/> {t.add}
                              </button>
+                        </div>
+                    </div>
+
+                    {/* Attachments */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center px-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.attachments}</label>
+                            <label className="cursor-pointer text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-indigo-100 transition-colors border border-indigo-100 shadow-sm">
+                                <Paperclip size={12}/> {t.add}
+                                <input type="file" className="hidden" onChange={handleFileUpload} />
+                            </label>
+                        </div>
+                        <div className="space-y-2">
+                            {editingTask.attachments?.map((at) => (
+                                <div key={at.id} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl group hover:border-indigo-200 transition-all shadow-sm">
+                                    <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                        <Paperclip size={16}/>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-slate-700 truncate">{at.name}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">{formatSize(at.size || 0)}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={() => handleDownload(at)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                                            <Download size={16}/>
+                                        </button>
+                                        <button onClick={() => removeAttachment(at.id)} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                                            <X size={16}/>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {(!editingTask.attachments || editingTask.attachments.length === 0) && (
+                                <div className="py-8 border-2 border-dashed border-slate-100 rounded-[2rem] flex flex-col items-center justify-center text-slate-300">
+                                    <Paperclip size={24} className="mb-2 opacity-20"/>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest">{t.noAttachments}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -830,7 +921,7 @@ const TaskItem: React.FC<{
                                 deadlineInfo ? (deadlineInfo.isOverdue ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700') : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500 dark:hover:text-indigo-400'
                             }`}>
                                 {deadlineInfo ? (deadlineInfo.isOverdue ? <AlertCircle size={10} strokeWidth={3}/> : <Clock size={10} strokeWidth={3}/>) : <CalendarClock size={10} strokeWidth={3}/>} 
-                                {deadlineInfo ? deadlineInfo.text : t.deadline}
+                                {deadlineInfo ? `${deadlineInfo.text} (${deadlineInfo.dateStr})` : t.dueDate}
                             </span>
                             <input 
                                 type="datetime-local" 
@@ -874,6 +965,14 @@ const TaskItem: React.FC<{
                             <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                                 <Layout size={10} />
                                 {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                            </div>
+                        )}
+
+                        {/* Attachments Count */}
+                        {task.attachments && task.attachments.length > 0 && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                <Paperclip size={10} />
+                                {task.attachments.length}
                             </div>
                         )}
                     </div>

@@ -112,6 +112,7 @@ const enTranslations = {
   newest: "Newest",
   oldest: "Oldest",
   deadline: "Deadline",
+  dueDate: "Due Date",
   assignedDate: "Assigned",
   estimatedTime: "Est. Time",
   minutes: "mins",
@@ -320,6 +321,8 @@ const enTranslations = {
   deleteAccountDesc: "Permanently remove your account and all data.",
   deleteAccountConfirm: "Are you sure you want to delete your account? This action cannot be undone and you will lose all data.",
   accountDeleted: "Account deleted.",
+  selectedDay: "Selected Day",
+  backToToday: "Back to Today",
 };
 
 const viTranslations = {
@@ -424,6 +427,7 @@ const viTranslations = {
   newest: "Mới nhất",
   oldest: "Cũ nhất",
   deadline: "Hạn chót",
+  dueDate: "Ngày hết hạn",
   assignedDate: "Ngày giao",
   estimatedTime: "Dự kiến",
   minutes: "phút",
@@ -615,6 +619,8 @@ const viTranslations = {
   deleteAccountDesc: "Xóa vĩnh viễn tài khoản và tất cả dữ liệu của bạn.",
   deleteAccountConfirm: "Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác và bạn sẽ mất tất cả dữ liệu.",
   accountDeleted: "Đã xóa tài khoản.",
+  selectedDay: "Ngày đã chọn",
+  backToToday: "Về hôm nay",
 };
 
 const zhTranslations = {
@@ -719,6 +725,7 @@ const zhTranslations = {
   newest: "最新",
   oldest: "最旧",
   deadline: "截止日期",
+  dueDate: "截止日期",
   assignedDate: "分配日期",
   estimatedTime: "预计时间",
   minutes: "分钟",
@@ -908,6 +915,8 @@ const zhTranslations = {
   deleteAccountDesc: "永久删除您的账户及所有数据。",
   deleteAccountConfirm: "您确定要注销账户吗？此操作无法撤销，您将丢失所有数据。",
   accountDeleted: "账户已注销。",
+  selectedDay: "选中日期",
+  backToToday: "返回今天",
 };
 
 const jaTranslations = {
@@ -1012,6 +1021,7 @@ const jaTranslations = {
   newest: "最新",
   oldest: "最古",
   deadline: "期限",
+  dueDate: "期限",
   assignedDate: "割当日",
   estimatedTime: "予定時間",
   minutes: "分",
@@ -1201,6 +1211,8 @@ const jaTranslations = {
   deleteAccountDesc: "アカウントとすべてのデータを永久に削除します。",
   deleteAccountConfirm: "アカウントを削除してもよろしいですか？この操作は取り消せず、すべてのデータが失われます。",
   accountDeleted: "アカウントを削除しました。",
+  selectedDay: "選択された日",
+  backToToday: "今日に戻る",
 };
 
 const deTranslations = {
@@ -1305,6 +1317,7 @@ const deTranslations = {
   newest: "Neueste",
   oldest: "Älteste",
   deadline: "Frist",
+  dueDate: "Fälligkeitsdatum",
   assignedDate: "Zugewiesen",
   estimatedTime: "Geschätzte Zeit",
   minutes: "Min",
@@ -1494,6 +1507,8 @@ const deTranslations = {
   deleteAccountDesc: "Entfernen Sie Ihr Konto und alle Daten dauerhaft.",
   deleteAccountConfirm: "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden und Sie verlieren alle Daten.",
   accountDeleted: "Konto gelöscht.",
+  selectedDay: "Ausgewählter Tag",
+  backToToday: "Zurück zu Heute",
 };
 
 const frTranslations = {
@@ -1598,6 +1613,7 @@ const frTranslations = {
   newest: "Le plus récent",
   oldest: "Le plus ancien",
   deadline: "Échéance",
+  dueDate: "Date d'échéance",
   assignedDate: "Assigné le",
   estimatedTime: "Temps estimé",
   minutes: "min",
@@ -1787,6 +1803,8 @@ const frTranslations = {
   deleteAccountDesc: "Supprimez définitivement votre compte et toutes vos données.",
   deleteAccountConfirm: "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et vous perdrez toutes vos données.",
   accountDeleted: "Compte supprimé.",
+  selectedDay: "Jour sélectionné",
+  backToToday: "Retour à aujourd'hui",
 };
 
 const esTranslations = {
@@ -1900,6 +1918,7 @@ const esTranslations = {
   newest: "Más reciente",
   oldest: "Más antiguo",
   deadline: "Fecha límite",
+  dueDate: "Fecha de vencimiento",
   assignedDate: "Asignado",
   estimatedTime: "Tiempo est.",
   minutes: "min",
@@ -2106,6 +2125,8 @@ const esTranslations = {
   deleteAccountDesc: "Elimine permanentemente su cuenta y todos sus datos.",
   deleteAccountConfirm: "¿Está seguro de que desea eliminar su cuenta? Esta acción no se puede deshacer y perderá todos sus datos.",
   accountDeleted: "Cuenta eliminada.",
+  selectedDay: "Día seleccionado",
+  backToToday: "Volver a hoy",
 };
 
 export const translations = {

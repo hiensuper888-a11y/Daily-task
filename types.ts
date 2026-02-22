@@ -9,11 +9,13 @@ export type Priority = 'low' | 'medium' | 'high';
 
 export interface Attachment {
   id: string;
-  type: 'image' | 'video' | 'file';
+  type: string;
   name: string;
   url: string; // Base64 or URL
   size?: number;
+  createdAt?: string;
 }
+
 
 export interface Comment {
   id: string;
