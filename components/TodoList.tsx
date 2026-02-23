@@ -85,7 +85,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const [showSortMenu, setShowSortMenu] = useState(false);
   
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'specific' | 'custom'>('all');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
   const [customDateStart, setCustomDateStart] = useState('');
   const [customDateEnd, setCustomDateEnd] = useState('');
   const [showDateMenu, setShowDateMenu] = useState(false);
@@ -436,7 +436,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => !t.archived); 
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
 
     // Global rule: Tasks completed before target date are hidden (unless in custom date view)
     // Incomplete tasks always carry over to the next day.
@@ -476,8 +476,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
         end.setHours(23, 59, 59, 999);
         
         result = result.filter(t => {
-            const d = new Date(t.createdAt);
-            return d >= start && d <= end;
+            const created = new Date(t.createdAt);
+            const deadline = t.deadline ? new Date(t.deadline) : null;
+            const completed = t.completedAt ? new Date(t.completedAt) : null;
+            
+            return (created >= start && created <= end) ||
+                   (deadline && deadline >= start && deadline <= end) ||
+                   (completed && completed >= start && completed <= end);
         });
     }
 
@@ -666,7 +671,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                         {showDateMenu && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowDateMenu(false)}></div>
-                                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 z-50 animate-scale-in origin-top-right">
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 z-50 animate-scale-in origin-top-right max-h-[60vh] overflow-y-auto custom-scrollbar">
                                     <div className="space-y-1 mb-3">
                                         <button onClick={() => { setDateFilter('all'); setShowDateMenu(false); }} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'all' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
                                             {t.all}
@@ -756,6 +761,22 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       {/* 2. Task List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="px-3 pb-32 pt-4 space-y-3">
+          {filteredTasks.filter(t => !t.completed).length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-2xl p-3 flex items-center gap-3 animate-fade-in shadow-sm mx-1">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl shadow-inner">
+                      <AlertCircle size={16} strokeWidth={3} />
+                  </div>
+                  <div>
+                      <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                          Bạn có {filteredTasks.filter(t => !t.completed).length} công việc chưa hoàn thành
+                      </p>
+                      <p className="text-[10px] font-semibold text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+                          Hãy cố gắng hoàn thành nhé!
+                      </p>
+                  </div>
+              </div>
+          )}
+
           {filteredTasks.length === 0 && stats.total > 0 && stats.percent === 100 ? (
               <StreakCompletionCard streak={userProfile.currentStreak || 0} onStartNewTask={() => setIsInputExpanded(true)} />
           ) : filteredTasks.length === 0 ? (

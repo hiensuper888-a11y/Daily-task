@@ -75,7 +75,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
 
   const currentReflectionKey = useMemo(() => {
      const { end } = getDateRange();
-     return end.toISOString().split('T')[0];
+     return end.toLocaleDateString('en-CA');
   }, [getDateRange]); 
 
   const handleReflectionChange = (field: 'evaluation' | 'improvement', value: string) => {

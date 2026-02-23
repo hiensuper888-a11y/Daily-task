@@ -14,7 +14,7 @@ interface CalendarViewProps {
 export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
   const { t, language } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(new Date().toLocaleDateString('en-CA'));
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Real-time clock
@@ -32,11 +32,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
   const tasksByDate = useMemo(() => {
     const map: Record<string, Task[]> = {};
     tasks.forEach(task => {
-      if (task.deadline && !task.archived) {
+      if (!task.archived) {
         try {
-            const date = new Date(task.deadline).toISOString().split('T')[0];
-            if (!map[date]) map[date] = [];
-            map[date].push(task);
+            const dateStr = task.deadline ? new Date(task.deadline).toLocaleDateString('en-CA') : new Date(task.createdAt).toLocaleDateString('en-CA');
+            if (!map[dateStr]) map[dateStr] = [];
+            map[dateStr].push(task);
         } catch (e) {
             // Ignore invalid dates
         }
@@ -57,7 +57,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
   const goToToday = () => {
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDate(today.toISOString().split('T')[0]);
+    setSelectedDate(today.toLocaleDateString('en-CA'));
   };
 
   const selectedDayTasks = useMemo(() => {
@@ -71,7 +71,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
   }, [selectedDate, language]);
 
   const isSelectedToday = useMemo(() => {
-    return selectedDate === new Date().toISOString().split('T')[0];
+    return selectedDate === new Date().toLocaleDateString('en-CA');
   }, [selectedDate]);
 
   const monthName = currentDate.toLocaleString(language, { month: 'long', year: 'numeric' });
@@ -203,9 +203,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
           <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-2">
             {calendarDays.map((date, i) => {
               const dateObj = new Date(date.year, date.month, date.day);
-              const dateStr = dateObj.toISOString().split('T')[0];
+              const dateStr = dateObj.toLocaleDateString('en-CA');
               const dayTasks = tasksByDate[dateStr] || [];
-              const isToday = new Date().toISOString().split('T')[0] === dateStr;
+              const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
               const isSelected = selectedDate === dateStr;
 
               return (

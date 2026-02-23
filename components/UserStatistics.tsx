@@ -14,8 +14,8 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-        start: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0], // Last 7 days
-        end: new Date().toISOString().split('T')[0]
+        start: new Date(new Date().setDate(new Date().getDate() - 7)).toLocaleDateString('en-CA'), // Last 7 days
+        end: new Date().toLocaleDateString('en-CA')
     });
 
     useEffect(() => {
