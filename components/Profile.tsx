@@ -176,11 +176,11 @@ export const Profile: React.FC = () => {
             
             <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
-                    <Flame size={24} />
+                    <Flame size={24} className="animate-fire-pulse" />
                 </div>
                 <div>
                     <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Chuỗi Giữ Lửa</h3>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Hoàn thành ít nhất 1 nhiệm vụ mỗi ngày</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Hoàn thành tất cả nhiệm vụ trong ngày</p>
                 </div>
             </div>
 

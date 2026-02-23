@@ -8,8 +8,9 @@ import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
 import { searchUsers } from './services/authService';
 import { FloatingDock } from './components/FloatingDock';
-import { AuthScreen } from './components/AuthScreen';
+import Auth from './components/Auth';
 import { supabase } from './services/supabaseClient';
+import { Session } from '@supabase/supabase-js';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
 const CalendarView = React.lazy(() => import('./components/CalendarView').then(module => ({ default: module.CalendarView })));
@@ -405,7 +406,7 @@ const AuthenticatedApp: React.FC = () => {
                           {/* Streak Indicator */}
                           {!activeGroup && userProfile.currentStreak ? (
                               <div className="flex items-center gap-1 text-xs font-bold text-orange-400 mt-1">
-                                  <Flame size={12} className="animate-pulse"/> {userProfile.currentStreak} ngày
+                                  <Flame size={12} className="animate-fire-pulse"/> {userProfile.currentStreak} ngày
                               </div>
                           ) : null}
                           {/* OPTIMIZED: CLOCK ISOLATED HERE */}
@@ -736,13 +737,22 @@ const AuthenticatedApp: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-    // We need to check auth status here to decide what to render
-    const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
-        name: 'Người dùng', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
-    });
+    const [session, setSession] = useState<Session | null>(null);
 
-    if (!userProfile.isLoggedIn) {
-        return <AuthScreen />;
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    if (!session) {
+        return <Auth />;
     }
 
     return <AuthenticatedApp />;

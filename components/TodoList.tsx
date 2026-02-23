@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   Check, Trash2, Plus, Calendar, User, Users, CheckSquare, 
-  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight, ChevronDown, AlignLeft, Paperclip, Download
+  X, SortAsc, Archive, Sparkles, Settings, Clock, Flag, AlertCircle, CalendarClock, PanelLeft, Send, Search, MoreHorizontal, Layout, Filter, Edit2, ArrowRight, ChevronDown, AlignLeft, Paperclip, Download, Flame
 } from 'lucide-react';
 import { Task, Subtask, Group, Priority, SortOption, FilterType, UserProfile, Attachment } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,7 +9,48 @@ import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
 import { playSuccessSound } from '../utils/sound';
 import { supabase } from '../services/supabaseClient';
-import confetti from 'canvas-confetti';
+
+const StreakFireAnimation = ({ onAnimationEnd }: { onAnimationEnd: () => void }) => {
+    useEffect(() => {
+        const timer = setTimeout(onAnimationEnd, 2200); // Match animation duration + delay
+        return () => clearTimeout(timer);
+    }, [onAnimationEnd]);
+
+    return (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-none animate-fade-in">
+            <div className="relative text-center">
+                <div className="relative w-48 h-48">
+                    <Flame size={128} className="absolute inset-0 m-auto text-orange-400 animate-realistic-fire drop-shadow-[0_0_20px_rgba(251,146,60,0.8)]" style={{ animationDuration: '1.2s' }} />
+                    <Sparkles size={80} className="absolute inset-0 m-auto text-yellow-300 animate-pulse" style={{ animationDelay: '0.2s', animationDuration: '1.5s' }}/>
+                </div>
+                <div className="mt-2 text-white text-4xl font-black drop-shadow-lg animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                    <p>Chuỗi Giữ Lửa!</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const StreakCompletionCard = ({ streak, onStartNewTask }: { streak: number, onStartNewTask: () => void }) => {
+    const { t } = useLanguage();
+    return (
+        <div className="m-3 p-6 bg-gradient-to-br from-orange-50 to-amber-100 dark:from-slate-800 dark:to-slate-800/50 rounded-3xl text-center animate-fade-in border border-orange-200/50 dark:border-slate-700">
+            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-red-500 to-orange-400 rounded-3xl flex items-center justify-center shadow-lg shadow-orange-500/20 mb-4">
+                <Flame size={40} className="text-white animate-realistic-fire" />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 dark:text-white">Chuỗi Giữ Lửa</h3>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mb-1">Bạn đã hoàn thành tất cả nhiệm vụ trong ngày!</p>
+            <p className="text-2xl font-black text-orange-500">{streak} ngày</p>
+            <button 
+                onClick={onStartNewTask}
+                className="mt-4 px-6 py-3 bg-slate-900 dark:bg-indigo-600 text-white rounded-full font-bold text-sm shadow-lg hover:bg-slate-800 dark:hover:bg-indigo-500 transition-all"
+            >
+                Bắt đầu ngày mới
+            </button>
+        </div>
+    );
+};
+
 
 interface TodoListProps {
   activeGroup: Group | null;
@@ -54,6 +95,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
+  const [showStreakAnimation, setShowStreakAnimation] = useState(false);
+
+  const handleAnimationEnd = useCallback(() => {
+    setShowStreakAnimation(false);
+  }, []);
 
   // Reset input state when switching groups
   useEffect(() => {
@@ -134,7 +180,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       }));
   };
 
-  const checkAndUpdateStreak = () => {
+  const checkAndUpdateStreak = (updatedTasks: Task[]) => {
     if (currentUserId === 'guest') return;
     
     const now = new Date();
@@ -142,6 +188,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+    
+    // Check if all tasks for today are completed
+    const todayTasks = updatedTasks.filter(t => {
+        if (t.archived) return false;
+        const createdAtStr = new Date(t.createdAt).toLocaleDateString('en-CA');
+        const deadlineStr = t.deadline ? new Date(t.deadline).toLocaleDateString('en-CA') : null;
+        return createdAtStr === todayStr || deadlineStr === todayStr;
+    });
+
+    if (todayTasks.length === 0) return; // No tasks for today
+    const allCompleted = todayTasks.every(t => t.completed);
+    if (!allCompleted) return; // Not all completed
     
     let updatedProfile = { ...userProfile };
     let streakChanged = false;
@@ -186,34 +244,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       if (newTitle) {
         updatedProfile.unlockedTitles = [...titles, newTitle];
         
-        // Fire effect
+        // Big Fire effect for title
         const duration = 3000;
         const end = Date.now() + duration;
 
-        const frame = () => {
-          confetti({
-            particleCount: 5,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ['#ff0000', '#ffa500', '#ffff00']
-          });
-          confetti({
-            particleCount: 5,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ['#ff0000', '#ffa500', '#ffff00']
-          });
-
-          if (Date.now() < end) {
-            requestAnimationFrame(frame);
-          }
-        };
-        frame();
+        
 
         // Use a simple alert or custom toast if available
+        setShowStreakAnimation(true);
         setTimeout(() => alert(`🔥 Chúc mừng! Bạn đã đạt danh hiệu mới: ${newTitle} (Streak: ${streak} ngày)`), 500);
+      } else {
+        // Small fire effect for regular streak increase
+        setShowStreakAnimation(true);
       }
 
       localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
@@ -232,26 +274,33 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   };
 
   const handleToggleTask = (taskId: number) => {
-    setTasks(prev => prev.map(task => {
+    const originalTask = tasks.find(t => t.id === taskId);
+    if (!originalTask) return;
+
+    const updatedTasks = tasks.map(task => {
       if (task.id === taskId) {
         const newCompleted = !task.completed;
         const now = new Date().toISOString();
-        if (newCompleted) {
-            playSuccessSound();
-            checkAndUpdateStreak();
-        }
-        const updatedTask = { 
-          ...task, 
-          completed: newCompleted, 
+        return {
+          ...task,
+          completed: newCompleted,
           progress: newCompleted ? 100 : (task.subtasks?.length ? task.progress : 0),
           completedAt: newCompleted ? now : undefined,
           completedBy: newCompleted ? currentUserId : undefined
         };
-        syncTaskToSupabase(updatedTask);
-        return updatedTask;
       }
       return task;
-    }));
+    });
+
+    const updatedTask = updatedTasks.find(t => t.id === taskId)!;
+
+    setTasks(updatedTasks);
+    syncTaskToSupabase(updatedTask);
+
+    if (!originalTask.completed && updatedTask.completed) {
+      playSuccessSound();
+      checkAndUpdateStreak(updatedTasks);
+    }
   };
 
   const handleDeleteTask = (taskId: number) => {
@@ -451,6 +500,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
   return (
     <div className="flex flex-col h-full bg-transparent relative">
+      {showStreakAnimation && <StreakFireAnimation onAnimationEnd={handleAnimationEnd} />}
       
       {/* 1. Header Section */}
       <div className="shrink-0 z-10 transition-all duration-500">
@@ -471,8 +521,17 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                             <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 shadow-sm"></div>
                         </div>
                         <div className="flex flex-col">
-                            <h1 className={`text-lg font-black leading-none truncate max-w-[150px] lg:max-w-xs ${isCustomTheme ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{activeGroup ? activeGroup.name : t.todoHeader}</h1>
-                            <span className={`text-[11px] font-bold uppercase tracking-widest mt-1 opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                                <h1 className={`text-lg font-black leading-none truncate ${isCustomTheme ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{activeGroup ? activeGroup.name : t.todoHeader}</h1>
+                                {!activeGroup && typeof userProfile.currentStreak === 'number' ? (
+                                    <span className={`flex-shrink-0 flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md ${isCustomTheme ? 'bg-white/20 text-orange-300' : 'bg-orange-50 dark:bg-orange-500/10 text-orange-500'}`}>
+                                        <Flame size={12} className="animate-realistic-fire"/> {userProfile.currentStreak}
+                                    </span>
+                                ) : null}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-[11px] font-bold uppercase tracking-widest opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -639,8 +698,11 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       </div>
 
       {/* 2. Task List */}
-      <div className="flex-1 overflow-y-auto px-3 pb-32 pt-4 custom-scrollbar space-y-3">
-          {filteredTasks.length === 0 ? (
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="px-3 pb-32 pt-4 space-y-3">
+          {filteredTasks.length === 0 && stats.total > 0 && stats.percent === 100 ? (
+              <StreakCompletionCard streak={userProfile.currentStreak || 0} onStartNewTask={() => setIsInputExpanded(true)} />
+          ) : filteredTasks.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-slate-400 animate-fade-in">
                   <div className="w-24 h-24 bg-gradient-to-br from-indigo-50 to-white rounded-[2rem] flex items-center justify-center mb-4 shadow-sm ring-1 ring-indigo-50">
                       <Sparkles size={40} className="text-indigo-200 animate-pulse"/>
@@ -663,6 +725,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                   ))}
               </div>
           )}
+        </div>
       </div>
 
       {/* 3. Floating Input Bar */}

@@ -56,6 +56,8 @@
               'pop': 'pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
               'check-bounce': 'check-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
               'slide-in-bottom': 'slide-in-bottom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'fire-pulse': 'fire-pulse 1.5s ease-in-out infinite alternate',
+              'realistic-fire': 'realistic-fire 1.2s ease-in-out infinite alternate',
             },
             keyframes: {
               float: {
@@ -97,6 +99,33 @@
               'slide-in-bottom': {
                 '0%': { transform: 'translateY(20px)', opacity: '0' },
                 '100%': { transform: 'translateY(0)', opacity: '1' }
+              },
+              'fire-pulse': {
+                '0%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 2px rgba(255, 165, 0, 0.5))', color: '#f97316' },
+                '50%': { transform: 'scale(1.15) rotate(5deg)', filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8))', color: '#ef4444' },
+                '100%': { transform: 'scale(1) rotate(-5deg)', filter: 'drop-shadow(0 0 2px rgba(255, 165, 0, 0.5))', color: '#f59e0b' }
+              },
+              'realistic-fire': {
+                '0%, 100%': {
+                  transform: 'scale(1) translateY(0) skew(0)',
+                  filter: 'drop-shadow(0 0 5px #f97316) drop-shadow(0 0 10px #ef4444) blur(0.5px)',
+                  opacity: 1
+                },
+                '20%': {
+                  transform: 'scale(1.1, 0.9) translateY(-5px) skew(-5deg)',
+                  filter: 'drop-shadow(0 0 10px #f97316) drop-shadow(0 0 20px #ef4444) blur(0px)',
+                  opacity: 0.9
+                },
+                '50%': {
+                  transform: 'scale(0.95, 1.05) translateY(0) skew(5deg)',
+                  filter: 'drop-shadow(0 0 8px #f97316) drop-shadow(0 0 15px #ef4444) blur(1px)',
+                  opacity: 1
+                },
+                '80%': {
+                  transform: 'scale(1.05, 0.95) translateY(-2px) skew(-3deg)',
+                  filter: 'drop-shadow(0 0 12px #f97316) drop-shadow(0 0 25px #ef4444) blur(0.5px)',
+                  opacity: 0.95
+                }
               }
             }
           }

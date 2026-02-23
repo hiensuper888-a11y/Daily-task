@@ -323,6 +323,13 @@ const enTranslations = {
   accountDeleted: "Account deleted.",
   selectedDay: "Selected Day",
   backToToday: "Back to Today",
+  loginWelcome: "Welcome to Daily Task. Please sign in to continue.",
+  signIn: "Sign In",
+  signUp: "Sign Up",
+  signInWith: "Sign in with {provider}",
+  signUpWith: "Sign up with {provider}",
+  forgotPassword: "Forgot your password?",
+  sendResetInstructions: "Send reset instructions",
 };
 
 const viTranslations = {
@@ -621,6 +628,13 @@ const viTranslations = {
   accountDeleted: "Đã xóa tài khoản.",
   selectedDay: "Ngày đã chọn",
   backToToday: "Về hôm nay",
+  loginWelcome: "Chào mừng đến với Daily Task. Vui lòng đăng nhập để tiếp tục.",
+  signIn: "Đăng nhập",
+  signUp: "Đăng ký",
+  signInWith: "Đăng nhập với {provider}",
+  signUpWith: "Đăng ký với {provider}",
+  forgotPassword: "Quên mật khẩu?",
+  sendResetInstructions: "Gửi hướng dẫn đặt lại",
 };
 
 const zhTranslations = {
@@ -917,6 +931,13 @@ const zhTranslations = {
   accountDeleted: "账户已注销。",
   selectedDay: "选中日期",
   backToToday: "返回今天",
+  loginWelcome: "Welcome to Daily Task. Please sign in to continue.",
+  signIn: "Sign In",
+  signUp: "Sign Up",
+  signInWith: "Sign in with {provider}",
+  signUpWith: "Sign up with {provider}",
+  forgotPassword: "Forgot your password?",
+  sendResetInstructions: "Send reset instructions",
 };
 
 const jaTranslations = {
@@ -1213,6 +1234,13 @@ const jaTranslations = {
   accountDeleted: "アカウントを削除しました。",
   selectedDay: "選択された日",
   backToToday: "今日に戻る",
+  loginWelcome: "Welcome to Daily Task. Please sign in to continue.",
+  signIn: "Sign In",
+  signUp: "Sign Up",
+  signInWith: "Sign in with {provider}",
+  signUpWith: "Sign up with {provider}",
+  forgotPassword: "Forgot your password?",
+  sendResetInstructions: "Send reset instructions",
 };
 
 const deTranslations = {
@@ -1509,6 +1537,13 @@ const deTranslations = {
   accountDeleted: "Konto gelöscht.",
   selectedDay: "Ausgewählter Tag",
   backToToday: "Zurück zu Heute",
+  loginWelcome: "Welcome to Daily Task. Please sign in to continue.",
+  signIn: "Sign In",
+  signUp: "Sign Up",
+  signInWith: "Sign in with {provider}",
+  signUpWith: "Sign up with {provider}",
+  forgotPassword: "Forgot your password?",
+  sendResetInstructions: "Send reset instructions",
 };
 
 const frTranslations = {
@@ -1805,6 +1840,13 @@ const frTranslations = {
   accountDeleted: "Compte supprimé.",
   selectedDay: "Jour sélectionné",
   backToToday: "Retour à aujourd'hui",
+  loginWelcome: "Welcome to Daily Task. Please sign in to continue.",
+  signIn: "Sign In",
+  signUp: "Sign Up",
+  signInWith: "Sign in with {provider}",
+  signUpWith: "Sign up with {provider}",
+  forgotPassword: "Forgot your password?",
+  sendResetInstructions: "Send reset instructions",
 };
 
 const esTranslations = {
@@ -2127,6 +2169,13 @@ const esTranslations = {
   accountDeleted: "Cuenta eliminada.",
   selectedDay: "Día seleccionado",
   backToToday: "Volver a hoy",
+  loginWelcome: "Welcome to Daily Task. Please sign in to continue.",
+  signIn: "Sign In",
+  signUp: "Sign Up",
+  signInWith: "Sign in with {provider}",
+  signUpWith: "Sign up with {provider}",
+  forgotPassword: "Forgot your password?",
+  sendResetInstructions: "Send reset instructions",
 };
 
 export const translations = {
