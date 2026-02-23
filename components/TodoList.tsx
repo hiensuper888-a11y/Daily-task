@@ -440,13 +440,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
     // Global rule: Tasks completed before target date are hidden (unless in custom date view)
     // Incomplete tasks always carry over to the next day.
-    if (dateFilter !== 'custom') {
+    if (dateFilter === 'today' || dateFilter === 'specific') {
         const targetDate = dateFilter === 'specific' ? selectedDate : today;
         
         result = result.filter(t => {
-            const createdDate = t.createdAt.split('T')[0];
-            const deadlineDate = t.deadline ? t.deadline.split('T')[0] : null;
-            const completedDate = t.completedAt ? t.completedAt.split('T')[0] : null;
+            const createdDate = new Date(t.createdAt).toLocaleDateString('en-CA');
+            const deadlineDate = t.deadline ? new Date(t.deadline).toLocaleDateString('en-CA') : null;
+            const completedDate = t.completedAt ? new Date(t.completedAt).toLocaleDateString('en-CA') : null;
 
             // If the task was completed on the target date, show it
             if (completedDate === targetDate) return true;
@@ -664,7 +664,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                             }`}
                         >
                             <Calendar size={14}/>
-                            <span className="hidden sm:inline">{dateFilter === 'all' ? t.all : dateFilter === 'today' ? t.today : t.custom}</span>
+                            <span className="hidden sm:inline">{dateFilter === 'all' ? t.all : dateFilter === 'today' ? t.today : dateFilter === 'specific' ? 'Ngày cụ thể' : t.custom}</span>
                             <ChevronDown size={12} className={`transition-transform duration-300 ${showDateMenu ? 'rotate-180' : ''}`} />
                         </button>
                         
@@ -1179,17 +1179,11 @@ const TaskItem: React.FC<{
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                        {/* Inline Editable Title */}
-                        <div className="w-full mr-2" onClick={(e) => e.stopPropagation()}>
-                            <textarea
-                                value={task.text}
-                                onChange={(e) => onUpdate(task.id, { text: e.target.value })}
-                                className={`w-full bg-transparent resize-none outline-none text-base font-bold leading-snug transition-all ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through decoration-slate-300 dark:decoration-slate-600 decoration-2' : 'text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500'}`}
-                                rows={1}
-                                style={{ fieldSizing: 'content' } as any} // Modern CSS for auto-height
-                                placeholder={t.taskContent}
-                                onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }}
-                            />
+                        {/* Task Title */}
+                        <div className="w-full mr-2">
+                            <p className={`w-full bg-transparent text-base font-bold leading-snug transition-all ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through decoration-slate-300 dark:decoration-slate-600 decoration-2' : 'text-slate-800 dark:text-slate-100'}`}>
+                                {task.text || t.taskContent}
+                            </p>
                         </div>
                     </div>
 
