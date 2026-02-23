@@ -8,7 +8,7 @@ import { useDeadlineNotifications } from './hooks/useDeadlineNotifications';
 import { NotificationManager } from './components/NotificationManager';
 import { searchUsers } from './services/authService';
 import { FloatingDock } from './components/FloatingDock';
-import Auth from './components/Auth';
+import { AuthScreen } from './components/AuthScreen';
 import { supabase } from './services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
@@ -738,8 +738,10 @@ const AuthenticatedApp: React.FC = () => {
 
 const AppContent: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
+    const [localSession, setLocalSession] = useState<string | null>(localStorage.getItem(SESSION_KEY));
 
     useEffect(() => {
+        // Supabase Auth Listener
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
         });
@@ -748,11 +750,28 @@ const AppContent: React.FC = () => {
             setSession(session);
         });
 
-        return () => subscription.unsubscribe();
+        // Local/Firebase Auth Listener
+        const handleAuthChange = () => {
+            setLocalSession(localStorage.getItem(SESSION_KEY));
+        };
+        
+        // Listen for both custom event and storage events
+        window.addEventListener('auth-change', handleAuthChange);
+        window.addEventListener('storage', handleAuthChange);
+        window.addEventListener('local-storage', handleAuthChange);
+
+        return () => {
+            subscription.unsubscribe();
+            window.removeEventListener('auth-change', handleAuthChange);
+            window.removeEventListener('storage', handleAuthChange);
+            window.removeEventListener('local-storage', handleAuthChange);
+        };
     }, []);
 
-    if (!session) {
-        return <Auth />;
+    const isAuthenticated = session || (localSession && localSession !== 'guest');
+
+    if (!isAuthenticated) {
+        return <AuthScreen />;
     }
 
     return <AuthenticatedApp />;
