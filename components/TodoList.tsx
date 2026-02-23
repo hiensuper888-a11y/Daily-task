@@ -68,7 +68,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const isGlobalStorage = !!activeGroup; 
   
   const [tasks, setTasks] = useRealtimeStorage<Task[]>(storageKey, [], isGlobalStorage);
-  const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
+  const [userProfile, setUserProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
       name: 'User', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
   });
   
@@ -84,7 +84,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const [sort, setSort] = useState<SortOption>('date_new'); 
   const [showSortMenu, setShowSortMenu] = useState(false);
   
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'custom'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'specific' | 'custom'>('all');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [customDateStart, setCustomDateStart] = useState('');
   const [customDateEnd, setCustomDateEnd] = useState('');
   const [showDateMenu, setShowDateMenu] = useState(false);
@@ -140,12 +141,18 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const handleAddTask = async () => {
     if (!newTaskText.trim()) return;
 
+    let createdAtDate = new Date();
+    if (dateFilter === 'specific' && selectedDate) {
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        createdAtDate.setFullYear(year, month - 1, day);
+    }
+
     const newTask: Task = {
       id: Date.now(),
       text: newTaskText,
       completed: false,
       progress: 0,
-      createdAt: new Date().toISOString(),
+      createdAt: createdAtDate.toISOString(),
       deadline: newDeadline || undefined,
       priority: newPriority,
       subtasks: [],
@@ -192,6 +199,13 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     // Check if all tasks for today are completed
     const todayTasks = updatedTasks.filter(t => {
         if (t.archived) return false;
+        if (!t.completed) return true; // Incomplete tasks carry over
+        
+        if (t.completedAt) {
+            const completedAtStr = new Date(t.completedAt).toLocaleDateString('en-CA');
+            return completedAtStr === todayStr;
+        }
+        
         const createdAtStr = new Date(t.createdAt).toLocaleDateString('en-CA');
         const deadlineStr = t.deadline ? new Date(t.deadline).toLocaleDateString('en-CA') : null;
         return createdAtStr === todayStr || deadlineStr === todayStr;
@@ -258,8 +272,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
         setShowStreakAnimation(true);
       }
 
-      localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
-      window.dispatchEvent(new Event('local-storage'));
+      setUserProfile(updatedProfile);
       
       // Update to Supabase
       if (currentUserId !== 'guest') {
@@ -423,15 +436,40 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => !t.archived); 
 
+    const today = new Date().toISOString().split('T')[0];
+
+    // Global rule: Tasks completed before target date are hidden (unless in custom date view)
+    // Incomplete tasks always carry over to the next day.
+    if (dateFilter !== 'custom') {
+        const targetDate = dateFilter === 'specific' ? selectedDate : today;
+        
+        result = result.filter(t => {
+            const createdDate = t.createdAt.split('T')[0];
+            const deadlineDate = t.deadline ? t.deadline.split('T')[0] : null;
+            const completedDate = t.completedAt ? t.completedAt.split('T')[0] : null;
+
+            // If the task was completed on the target date, show it
+            if (completedDate === targetDate) return true;
+            
+            // If the task was created or due on the target date, show it
+            if (createdDate === targetDate || deadlineDate === targetDate) return true;
+
+            // Carry over logic: if the task was created BEFORE target date, and is STILL incomplete (or was completed AFTER target date), show it
+            if (createdDate < targetDate) {
+                if (!t.completed) return true;
+                if (completedDate && completedDate > targetDate) return true;
+            }
+
+            return false;
+        });
+    }
+
     if (filter === 'active') result = result.filter(t => !t.completed);
     else if (filter === 'completed') result = result.filter(t => t.completed);
     else if (filter === 'assigned_to_me' && activeGroup) result = result.filter(t => t.assignedTo === currentUserId);
 
     // Date Filtering
-    if (dateFilter === 'today') {
-        const today = new Date().toISOString().split('T')[0];
-        result = result.filter(t => t.createdAt.startsWith(today) || (t.deadline && t.deadline.startsWith(today)));
-    } else if (dateFilter === 'custom' && customDateStart && customDateEnd) {
+    if (dateFilter === 'custom' && customDateStart && customDateEnd) {
         const start = new Date(customDateStart);
         start.setHours(0, 0, 0, 0);
         const end = new Date(customDateEnd);
@@ -496,6 +534,14 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   
   const isCustomTheme = !!(memberSettings?.headerBackground || activeGroup?.background);
 
+  const displayDate = useMemo(() => {
+      if (dateFilter === 'all') return t.all;
+      if (dateFilter === 'custom') return `${customDateStart} - ${customDateEnd}`;
+      
+      const d = dateFilter === 'specific' ? new Date(selectedDate) : new Date();
+      return d.toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+  }, [dateFilter, selectedDate, customDateStart, customDateEnd, language, t]);
+
   // --- Render ---
 
   return (
@@ -503,7 +549,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       {showStreakAnimation && <StreakFireAnimation onAnimationEnd={handleAnimationEnd} />}
       
       {/* 1. Header Section */}
-      <div className="shrink-0 z-10 transition-all duration-500">
+      <div className="shrink-0 z-50 transition-all duration-500 relative">
           <div className={`pt-4 pb-6 px-6 transition-all duration-500 ${isCustomTheme ? 'bg-black/40 backdrop-blur-xl rounded-b-[2.5rem] shadow-2xl mx-2 mt-2 text-white border-b border-white/10' : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50'}`} style={headerStyle}>
             
             {/* Top Row: Navigation & Actions */}
@@ -530,7 +576,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                                 ) : null}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-[11px] font-bold uppercase tracking-widest opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                                <span className={`text-[11px] font-bold uppercase tracking-widest opacity-70 ${isCustomTheme ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>{displayDate}</span>
                             </div>
                         </div>
                     </div>
@@ -628,10 +674,20 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                                         <button onClick={() => { setDateFilter('today'); setShowDateMenu(false); }} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'today' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
                                             {t.today}
                                         </button>
+                                        <button onClick={() => setDateFilter('specific')} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'specific' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                            Ngày cụ thể
+                                        </button>
                                         <button onClick={() => setDateFilter('custom')} className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors ${dateFilter === 'custom' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
                                             {t.custom}
                                         </button>
                                     </div>
+
+                                    {dateFilter === 'specific' && (
+                                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2 text-center">Chọn ngày</p>
+                                            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors" />
+                                        </div>
+                                    )}
 
                                     {dateFilter === 'custom' && (
                                         <div className="space-y-2 pt-2 border-t border-slate-100">
@@ -1008,20 +1064,25 @@ const TaskItem: React.FC<{
         return { isOverdue, text, dateStr: d.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };
     }, [task.deadline, language]);
 
-    // Assigned Date Info (for unfinished tasks)
+    // Assigned Date Info
     const assignedDateInfo = useMemo(() => {
-        if (task.completed) return null;
         const created = new Date(task.createdAt);
-        const today = new Date();
-        const isToday = created.toDateString() === today.toDateString();
-        
-        if (isToday) return null; // Don't show if assigned today
-
         return {
             dateStr: created.toLocaleDateString(language, { month: 'short', day: 'numeric' }),
             fullDate: created.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         };
-    }, [task.createdAt, task.completed, language]);
+    }, [task.createdAt, language]);
+
+    // Completed Date Info
+    const completedDateInfo = useMemo(() => {
+        if (!task.completed || !task.completedAt) return null;
+        const completed = new Date(task.completedAt);
+        return {
+            dateStr: completed.toLocaleDateString(language, { month: 'short', day: 'numeric' }),
+            timeStr: completed.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' }),
+            fullDate: completed.toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        };
+    }, [task.completed, task.completedAt, language]);
 
     // Priority Styling
     const priority = task.priority || 'medium';
@@ -1112,10 +1173,17 @@ const TaskItem: React.FC<{
                     </div>
 
                     <div className="flex items-center flex-wrap gap-2 mt-2">
-                         {/* Assigned Date Badge (for unfinished tasks from past) */}
+                         {/* Assigned Date Badge */}
                          {assignedDateInfo && (
                             <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700" title={t.assignedDate}>
-                                <Calendar size={10} strokeWidth={3}/> {assignedDateInfo.dateStr}
+                                <Calendar size={10} strokeWidth={3}/> Giao: {assignedDateInfo.dateStr}
+                            </span>
+                         )}
+
+                         {/* Completed Date Badge */}
+                         {completedDateInfo && (
+                            <span className="text-[10px] font-extrabold uppercase tracking-wide px-2.5 py-1 rounded-lg flex items-center gap-1.5 border bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" title="Ngày hoàn thành">
+                                <Check size={10} strokeWidth={3}/> Xong: {completedDateInfo.dateStr} {completedDateInfo.timeStr}
                             </span>
                          )}
 
