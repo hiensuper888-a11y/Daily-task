@@ -103,6 +103,11 @@ export interface UserProfile {
   // New fields
   jobTitle?: string;   // Chức vụ
   department?: string; // Bộ phận
+  // Streak & Achievements
+  currentStreak?: number;
+  longestStreak?: number;
+  lastTaskCompletedDate?: string; // YYYY-MM-DD
+  unlockedTitles?: string[];
 }
 
 export interface DailyReflection {

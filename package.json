@@ -27,6 +27,8 @@
   "dependencies": {
     "@google/genai": "*",
     "@supabase/supabase-js": "^2.97.0",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
     "firebase": "^10.8.0",
     "lucide-react": "^0.344.0",
     "pptxgenjs": "^3.12.0",

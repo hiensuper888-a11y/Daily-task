@@ -10,7 +10,11 @@ create table if not exists public.profiles (
   role text default 'member',
   is_online boolean default false,
   created_at timestamptz default now(),
-  last_seen timestamptz default now()
+  last_seen timestamptz default now(),
+  current_streak integer default 0,
+  longest_streak integer default 0,
+  last_task_completed_date text,
+  unlocked_titles text[] default '{}'
 );
 
 -- Enable RLS on profiles

@@ -9,6 +9,7 @@ import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { generateSubtasksWithGemini, refineTaskTextWithGemini } from '../services/geminiService';
 import { playSuccessSound } from '../utils/sound';
 import { supabase } from '../services/supabaseClient';
+import confetti from 'canvas-confetti';
 
 interface TodoListProps {
   activeGroup: Group | null;
@@ -133,12 +134,112 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       }));
   };
 
+  const checkAndUpdateStreak = () => {
+    if (currentUserId === 'guest') return;
+    
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+    
+    let updatedProfile = { ...userProfile };
+    let streakChanged = false;
+
+    if (!updatedProfile.lastTaskCompletedDate) {
+      updatedProfile.currentStreak = 1;
+      updatedProfile.longestStreak = 1;
+      updatedProfile.lastTaskCompletedDate = todayStr;
+      streakChanged = true;
+    } else if (updatedProfile.lastTaskCompletedDate !== todayStr) {
+      if (updatedProfile.lastTaskCompletedDate === yesterdayStr) {
+        updatedProfile.currentStreak = (updatedProfile.currentStreak || 0) + 1;
+      } else {
+        updatedProfile.currentStreak = 1; 
+      }
+      
+      if (updatedProfile.currentStreak > (updatedProfile.longestStreak || 0)) {
+        updatedProfile.longestStreak = updatedProfile.currentStreak;
+      }
+      updatedProfile.lastTaskCompletedDate = todayStr;
+      streakChanged = true;
+    }
+
+    if (streakChanged) {
+      const streak = updatedProfile.currentStreak || 0;
+      const titles = updatedProfile.unlockedTitles || [];
+      let newTitle = '';
+
+      if (streak >= 1825 && !titles.includes('Đấng Sáng Tạo')) newTitle = 'Đấng Sáng Tạo';
+      else if (streak >= 1460 && !titles.includes('Vị Thần Thời Gian')) newTitle = 'Vị Thần Thời Gian';
+      else if (streak >= 1095 && !titles.includes('Thực Thể Bất Tử')) newTitle = 'Thực Thể Bất Tử';
+      else if (streak >= 730 && !titles.includes('Kẻ Thống Trị Kỷ Nguyên')) newTitle = 'Kẻ Thống Trị Kỷ Nguyên';
+      else if (streak >= 365 && !titles.includes('Thần Đồng Năng Suất')) newTitle = 'Thần Đồng Năng Suất';
+      else if (streak >= 100 && !titles.includes('Huyền Thoại Sống')) newTitle = 'Huyền Thoại Sống';
+      else if (streak >= 60 && !titles.includes('Chúa Tể Thời Gian')) newTitle = 'Chúa Tể Thời Gian';
+      else if (streak >= 30 && !titles.includes('Bậc Thầy Kỷ Luật')) newTitle = 'Bậc Thầy Kỷ Luật';
+      else if (streak >= 14 && !titles.includes('Kẻ Hủy Diệt Deadline')) newTitle = 'Kẻ Hủy Diệt Deadline';
+      else if (streak >= 7 && !titles.includes('Chiến Binh Bền Bỉ')) newTitle = 'Chiến Binh Bền Bỉ';
+      else if (streak >= 3 && !titles.includes('Ngọn Lửa Nhỏ')) newTitle = 'Ngọn Lửa Nhỏ';
+      else if (streak >= 1 && !titles.includes('Tân Binh Chăm Chỉ')) newTitle = 'Tân Binh Chăm Chỉ';
+
+      if (newTitle) {
+        updatedProfile.unlockedTitles = [...titles, newTitle];
+        
+        // Fire effect
+        const duration = 3000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ['#ff0000', '#ffa500', '#ffff00']
+          });
+          confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ['#ff0000', '#ffa500', '#ffff00']
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+
+        // Use a simple alert or custom toast if available
+        setTimeout(() => alert(`🔥 Chúc mừng! Bạn đã đạt danh hiệu mới: ${newTitle} (Streak: ${streak} ngày)`), 500);
+      }
+
+      localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+      window.dispatchEvent(new Event('local-storage'));
+      
+      // Update to Supabase
+      if (currentUserId !== 'guest') {
+          supabase.from('profiles').update({
+              current_streak: updatedProfile.currentStreak,
+              longest_streak: updatedProfile.longestStreak,
+              last_task_completed_date: updatedProfile.lastTaskCompletedDate,
+              unlocked_titles: updatedProfile.unlockedTitles
+          }).eq('id', currentUserId).then();
+      }
+    }
+  };
+
   const handleToggleTask = (taskId: number) => {
     setTasks(prev => prev.map(task => {
       if (task.id === taskId) {
         const newCompleted = !task.completed;
         const now = new Date().toISOString();
-        if (newCompleted) playSuccessSound();
+        if (newCompleted) {
+            playSuccessSound();
+            checkAndUpdateStreak();
+        }
         const updatedTask = { 
           ...task, 
           completed: newCompleted, 

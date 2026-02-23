@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Mail, Save, Calendar, MapPin, Home, Briefcase, Camera, Phone, LayoutDashboard, Building2, UserSquare, Lock, Trash2, AlertTriangle } from 'lucide-react';
+import { User, LogOut, Mail, Save, Calendar, MapPin, Home, Briefcase, Camera, Phone, LayoutDashboard, Building2, UserSquare, Lock, Trash2, AlertTriangle, Flame, Trophy } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { UserProfile, Task } from '../types';
@@ -31,6 +31,21 @@ const DEFAULT_PROFILE: UserProfile = {
     jobTitle: '',
     department: ''
 };
+
+const STREAK_MILESTONES = [
+    { days: 1, title: 'Tân Binh Chăm Chỉ', icon: '🌱' },
+    { days: 3, title: 'Ngọn Lửa Nhỏ', icon: '🕯️' },
+    { days: 7, title: 'Chiến Binh Bền Bỉ', icon: '⚔️' },
+    { days: 14, title: 'Kẻ Hủy Diệt Deadline', icon: '💥' },
+    { days: 30, title: 'Bậc Thầy Kỷ Luật', icon: '🧘' },
+    { days: 60, title: 'Chúa Tể Thời Gian', icon: '⏳' },
+    { days: 100, title: 'Huyền Thoại Sống', icon: '🐉' },
+    { days: 365, title: 'Thần Đồng Năng Suất', icon: '👑' },
+    { days: 730, title: 'Kẻ Thống Trị Kỷ Nguyên', icon: '⚡' },
+    { days: 1095, title: 'Thực Thể Bất Tử', icon: '🌌' },
+    { days: 1460, title: 'Vị Thần Thời Gian', icon: '⏳' },
+    { days: 1825, title: 'Đấng Sáng Tạo', icon: '👁️' },
+];
 
 export const Profile: React.FC = () => {
   const { t } = useLanguage();
@@ -153,6 +168,62 @@ export const Profile: React.FC = () => {
                       <button onClick={logout} className="px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-red-100 dark:border-red-900/30"><LogOut size={16}/></button>
                  </div>
              </div>
+        </div>
+
+        {/* Streak & Achievements Section */}
+        <div className="glass-panel rounded-[2.5rem] p-6 md:p-8 mb-6 border-white/60 dark:border-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-32 bg-gradient-to-br from-orange-500/10 to-rose-500/10 rounded-full blur-3xl -z-10 opacity-60"></div>
+            
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+                    <Flame size={24} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Chuỗi Giữ Lửa</h3>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Hoàn thành ít nhất 1 nhiệm vụ mỗi ngày</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Hiện Tại</p>
+                    <p className="text-3xl font-black text-orange-500 flex items-center justify-center gap-1">
+                        {profile.currentStreak || 0} <span className="text-lg">🔥</span>
+                    </p>
+                </div>
+                <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Kỷ Lục</p>
+                    <p className="text-3xl font-black text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1">
+                        {profile.longestStreak || 0} <span className="text-lg">👑</span>
+                    </p>
+                </div>
+                <div className="col-span-2 bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col justify-center">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Danh Hiệu Cao Nhất</p>
+                    <p className="text-lg font-black text-indigo-600 dark:text-indigo-400">
+                        {profile.unlockedTitles && profile.unlockedTitles.length > 0 
+                            ? profile.unlockedTitles[profile.unlockedTitles.length - 1] 
+                            : 'Chưa có danh hiệu'}
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                    <Trophy size={16} className="text-amber-500"/> Bộ Sưu Tập Danh Hiệu
+                </h4>
+                <div className="flex flex-wrap gap-3">
+                    {STREAK_MILESTONES.map(milestone => {
+                        const isUnlocked = profile.unlockedTitles?.includes(milestone.title) || (profile.longestStreak || 0) >= milestone.days;
+                        return (
+                            <div key={milestone.days} className={`px-4 py-2 rounded-xl border text-sm font-bold flex items-center gap-2 transition-all ${isUnlocked ? 'bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border-amber-200 dark:border-amber-700/50 text-amber-700 dark:text-amber-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 opacity-60 grayscale'}`}>
+                                <span>{milestone.icon}</span>
+                                <span>{milestone.title}</span>
+                                <span className="text-[10px] bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-md ml-1">{milestone.days}d</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
 
         {/* Info Grid */}

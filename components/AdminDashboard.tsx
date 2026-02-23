@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus, Database, Copy, BarChart2 } from 'lucide-react';
+import { Users, Trash2, Search, RefreshCw, Shield, Activity, Clock, UserX, Eye, LogIn, X, CheckCircle2, Circle, Calendar as CalendarIcon, Mail, Phone, MapPin, Briefcase, Plus, Key, Save, UserPlus, Database, Copy, BarChart2, Flame } from 'lucide-react';
 import { getAllUsers, deleteUser, adminCreateUser, changePassword } from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SESSION_KEY } from '../hooks/useRealtimeStorage';
@@ -233,6 +233,7 @@ export const AdminDashboard: React.FC = () => {
                                 <th className="p-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t.user}</th>
                                 <th className="p-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t.role}</th>
                                 <th className="p-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t.status}</th>
+                                <th className="p-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Streak</th>
                                 <th className="p-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t.assignedDate}</th>
                                 <th className="p-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">{t.actions}</th>
                             </tr>
@@ -240,11 +241,11 @@ export const AdminDashboard: React.FC = () => {
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-slate-400 dark:text-slate-500 font-medium">{t.syncing}</td>
+                                    <td colSpan={6} className="p-8 text-center text-slate-400 dark:text-slate-500 font-medium">{t.syncing}</td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-slate-400 dark:text-slate-500 font-medium">{t.emptyTasks}</td>
+                                    <td colSpan={6} className="p-8 text-center text-slate-400 dark:text-slate-500 font-medium">{t.emptyTasks}</td>
                                 </tr>
                             ) : (
                                 filteredUsers.map(user => (
@@ -269,6 +270,11 @@ export const AdminDashboard: React.FC = () => {
                                                 <span className={`text-xs font-bold ${user.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                                     {user.isOnline ? t.online : 'Offline'}
                                                 </span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-1 text-xs font-bold text-orange-500">
+                                                <Flame size={14} /> {user.currentStreak || 0}
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -606,7 +612,11 @@ create table if not exists public.profiles (
   role text default 'member',
   is_online boolean default false,
   created_at timestamptz default now(),
-  last_seen timestamptz default now()
+  last_seen timestamptz default now(),
+  current_streak integer default 0,
+  longest_streak integer default 0,
+  last_task_completed_date text,
+  unlocked_titles text[] default '{}'
 );
 
 -- Enable RLS on profiles
@@ -681,7 +691,11 @@ create table if not exists public.profiles (
   role text default 'member',
   is_online boolean default false,
   created_at timestamptz default now(),
-  last_seen timestamptz default now()
+  last_seen timestamptz default now(),
+  current_streak integer default 0,
+  longest_streak integer default 0,
+  last_task_completed_date text,
+  unlocked_titles text[] default '{}'
 );
 
 -- Enable RLS on profiles

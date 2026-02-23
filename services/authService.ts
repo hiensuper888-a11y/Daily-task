@@ -219,7 +219,11 @@ export const getAllUsers = async () => {
                 role: p.role || 'member',
                 isOnline: p.is_online,
                 createdAt: p.created_at || new Date().toISOString(),
-                lastLoginAt: p.last_seen
+                lastLoginAt: p.last_seen,
+                currentStreak: p.current_streak || 0,
+                longestStreak: p.longest_streak || 0,
+                lastTaskCompletedDate: p.last_task_completed_date,
+                unlockedTitles: p.unlocked_titles || []
             }));
         }
     } catch (e) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
-import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, PanelLeft, LayoutGrid, MoreHorizontal, Sparkles, Clock, UserPlus } from 'lucide-react';
+import { Wand2, Globe, BarChart3, UserCircle2, CheckSquare, MessageSquare, Users, Plus, ScanLine, Copy, X, Image as ImageIcon, Settings, UserMinus, Trash2, LogOut, Loader2, Home, ChevronRight, Activity, Search, Check, Edit2, QrCode, Share2, Crown, Shield, Bell, Menu, PanelLeft, LayoutGrid, MoreHorizontal, Sparkles, Clock, UserPlus, Flame } from 'lucide-react';
 import { AppTab, Language, Group, UserProfile, Task, GroupMember } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -402,6 +402,12 @@ const AuthenticatedApp: React.FC = () => {
                           <h2 className="text-base font-bold truncate leading-tight text-white/90">
                               {activeGroup ? activeGroup.name : t.personal}
                           </h2>
+                          {/* Streak Indicator */}
+                          {!activeGroup && userProfile.currentStreak ? (
+                              <div className="flex items-center gap-1 text-xs font-bold text-orange-400 mt-1">
+                                  <Flame size={12} className="animate-pulse"/> {userProfile.currentStreak} ngày
+                              </div>
+                          ) : null}
                           {/* OPTIMIZED: CLOCK ISOLATED HERE */}
                           <SidebarClock language={language} />
                       </div>
