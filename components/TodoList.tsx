@@ -112,6 +112,55 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setSearchQuery(''); // Reset search on group switch
   }, [activeGroup?.id]);
 
+  // Fetch tasks from Supabase
+  useEffect(() => {
+      if (currentUserId === 'guest') return;
+
+      const fetchTasks = async () => {
+          try {
+              let query = supabase.from('tasks').select('raw_data');
+              
+              if (activeGroup) {
+                  // Fetch group tasks
+                  // Use raw_data->>groupId
+                  query = query.eq('raw_data->>groupId', activeGroup.id);
+              } else {
+                  // Personal tasks
+                  query = query.eq('user_id', currentUserId).is('raw_data->>groupId', null);
+              }
+
+              const { data, error } = await query;
+              
+              if (error) throw error;
+              
+              if (data) {
+                  const fetchedTasks = data.map(row => row.raw_data as Task);
+                  setTasks(fetchedTasks);
+              }
+          } catch (error) {
+              console.error('Error fetching tasks:', error);
+          }
+      };
+
+      fetchTasks();
+
+      // Realtime subscription
+      const channel = supabase.channel(`tasks_${storageKey}`)
+          .on('postgres_changes', { 
+              event: '*', 
+              schema: 'public', 
+              table: 'tasks',
+              filter: activeGroup ? undefined : `user_id=eq.${currentUserId}`
+          }, () => {
+              fetchTasks();
+          })
+          .subscribe();
+
+      return () => {
+          supabase.removeChannel(channel);
+      };
+  }, [currentUserId, activeGroup?.id, storageKey]);
+
   // --- Sync Helper ---
   const syncTaskToSupabase = async (task: Task, isDelete: boolean = false) => {
       if (currentUserId === 'guest') return;

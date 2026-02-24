@@ -45,7 +45,7 @@ const getGlobalGroups = (): Group[] => {
     } catch { return []; }
 };
 
-const saveGlobalGroup = (group: Group) => {
+const saveGlobalGroup = async (group: Group) => {
     const groups = getGlobalGroups();
     const index = groups.findIndex(g => g.id === group.id);
     if (index >= 0) {
@@ -55,12 +55,35 @@ const saveGlobalGroup = (group: Group) => {
     }
     localStorage.setItem(GLOBAL_GROUPS_KEY, JSON.stringify(groups));
     window.dispatchEvent(new Event('storage'));
+
+    const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+    if (currentUserId !== 'guest') {
+        try {
+            await supabase.from('groups').upsert({
+                id: group.id,
+                name: group.name,
+                join_code: group.joinCode,
+                raw_data: group
+            });
+        } catch (error) {
+            console.error('Error saving group to Supabase:', error);
+        }
+    }
 };
 
-const deleteGlobalGroup = (groupId: string) => {
+const deleteGlobalGroup = async (groupId: string) => {
     const groups = getGlobalGroups().filter(g => g.id !== groupId);
     localStorage.setItem(GLOBAL_GROUPS_KEY, JSON.stringify(groups));
     window.dispatchEvent(new Event('storage'));
+
+    const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+    if (currentUserId !== 'guest') {
+        try {
+            await supabase.from('groups').delete().eq('id', groupId);
+        } catch (error) {
+            console.error('Error deleting group from Supabase:', error);
+        }
+    }
 };
 
 const copyToClipboard = (text: string) => {
@@ -137,11 +160,62 @@ const AuthenticatedApp: React.FC = () => {
   
   const personalBgInputRef = useRef<HTMLInputElement>(null);
 
-  const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
+  const [userProfile, setUserProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
       name: 'Người dùng', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
   });
   
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+  
+  // Fetch user profile from Supabase
+  useEffect(() => {
+      if (currentUserId === 'guest') return;
+
+      const fetchProfile = async () => {
+          try {
+              const { data, error } = await supabase.from('profiles').select('*').eq('id', currentUserId).single();
+              if (error) throw error;
+              if (data) {
+                  setUserProfile(prev => ({
+                      ...prev,
+                      name: data.name || prev.name,
+                      avatar: data.avatar || prev.avatar,
+                      currentStreak: data.current_streak,
+                      longestStreak: data.longest_streak,
+                      lastTaskCompletedDate: data.last_task_completed_date,
+                      unlockedTitles: data.unlocked_titles || []
+                  }));
+              }
+          } catch (error) {
+              console.error('Error fetching profile:', error);
+          }
+      };
+
+      fetchProfile();
+
+      const channel = supabase.channel(`profile_${currentUserId}`)
+          .on('postgres_changes', { 
+              event: 'UPDATE', 
+              schema: 'public', 
+              table: 'profiles',
+              filter: `id=eq.${currentUserId}`
+          }, (payload) => {
+              const data = payload.new;
+              setUserProfile(prev => ({
+                  ...prev,
+                  name: data.name || prev.name,
+                  avatar: data.avatar || prev.avatar,
+                  currentStreak: data.current_streak,
+                  longestStreak: data.longest_streak,
+                  lastTaskCompletedDate: data.last_task_completed_date,
+                  unlockedTitles: data.unlocked_titles || []
+              }));
+          })
+          .subscribe();
+
+      return () => {
+          supabase.removeChannel(channel);
+      };
+  }, [currentUserId, setUserProfile]);
   
   const activeGroup = useMemo(() => myGroups.find(g => g.id === activeGroupId) || null, [myGroups, activeGroupId]);
 
@@ -188,40 +262,57 @@ const AuthenticatedApp: React.FC = () => {
 
   const lastGroupsRaw = useRef<string>('');
 
-  const syncGroups = useCallback(() => {
-      const raw = localStorage.getItem(GLOBAL_GROUPS_KEY) || '[]';
-      // Optimization: Cheap string comparison to avoid parsing
-      if (raw === lastGroupsRaw.current) return;
-      
-      lastGroupsRaw.current = raw;
-      
+  const syncGroups = useCallback(async () => {
+      if (currentUserId === 'guest') {
+          const raw = localStorage.getItem(GLOBAL_GROUPS_KEY) || '[]';
+          if (raw === lastGroupsRaw.current) return;
+          lastGroupsRaw.current = raw;
+          try {
+              const globalGroups = JSON.parse(raw);
+              const relevantGroups = globalGroups.filter((g: Group) => 
+                  g.members.some(m => m.id === currentUserId)
+              );
+              setMyGroups(prev => JSON.stringify(prev) !== JSON.stringify(relevantGroups) ? relevantGroups : prev);
+          } catch (e) { console.error("Error parsing groups", e); }
+          return;
+      }
+
       try {
-          const globalGroups = JSON.parse(raw);
-          const relevantGroups = globalGroups.filter((g: Group) => 
-              g.members.some(m => m.id === currentUserId)
-          );
+          // Fetch groups where user is a member
+          const { data, error } = await supabase.from('groups').select('raw_data');
+          if (error) throw error;
           
-          setMyGroups(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(relevantGroups)) {
-                  return relevantGroups;
-              }
-              return prev;
-          });
-      } catch (e) {
-          console.error("Error parsing groups", e);
+          if (data) {
+              const globalGroups = data.map(row => row.raw_data as Group);
+              const relevantGroups = globalGroups.filter((g: Group) => 
+                  g.members.some(m => m.id === currentUserId)
+              );
+              setMyGroups(prev => JSON.stringify(prev) !== JSON.stringify(relevantGroups) ? relevantGroups : prev);
+          }
+      } catch (error) {
+          console.error('Error fetching groups:', error);
       }
   }, [currentUserId]);
 
   useEffect(() => {
       syncGroups();
-      // Increase interval to 3s to save battery, since we have storage listener
-      const interval = setInterval(syncGroups, 3000); 
-      window.addEventListener('storage', syncGroups);
-      return () => {
-          clearInterval(interval);
-          window.removeEventListener('storage', syncGroups);
+      
+      if (currentUserId !== 'guest') {
+          const channel = supabase.channel('groups_sync')
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
+                  syncGroups();
+              })
+              .subscribe();
+          return () => { supabase.removeChannel(channel); };
+      } else {
+          const interval = setInterval(syncGroups, 3000); 
+          window.addEventListener('storage', syncGroups);
+          return () => {
+              clearInterval(interval);
+              window.removeEventListener('storage', syncGroups);
+          }
       }
-  }, [syncGroups]);
+  }, [syncGroups, currentUserId]);
 
   useEffect(() => {
       if (activeGroupId && !myGroups.find(g => g.id === activeGroupId)) {
