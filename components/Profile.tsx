@@ -45,6 +45,11 @@ const STREAK_MILESTONES = [
     { days: 1095, title: 'Thực Thể Bất Tử', icon: '🌌' },
     { days: 1460, title: 'Vị Thần Thời Gian', icon: '⏳' },
     { days: 1825, title: 'Đấng Sáng Tạo', icon: '👁️' },
+    { days: 2190, title: 'Kẻ Xuyên Không', icon: '🌀' },
+    { days: 2555, title: 'Chúa Tể Vũ Trụ', icon: '🪐' },
+    { days: 2920, title: 'Thực Thể Tối Thượng', icon: '✨' },
+    { days: 3285, title: 'Đấng Toàn Năng', icon: '🌟' },
+    { days: 3650, title: 'Huyền Thoại Vĩnh Cửu', icon: '♾️' },
 ];
 
 export const Profile: React.FC = () => {

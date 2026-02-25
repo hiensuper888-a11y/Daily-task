@@ -162,10 +162,16 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     >
       {/* COLLAPSED STATE (The "Magic Orb") */}
       <div className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isExpanded ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'}`}>
-        <div className="group relative w-14 h-14 cursor-pointer">
-            <div className="absolute inset-0 bg-slate-900 rounded-2xl shadow-lg transform rotate-3 transition-transform group-hover:rotate-6 opacity-30"></div>
-            <div className="relative w-full h-full rounded-2xl bg-[#0f172a] border border-white/10 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-300 overflow-hidden ring-1 ring-white/10">
-                <LayoutGrid size={24} className="text-white relative z-10" strokeWidth={2} />
+        <div className="group relative w-14 h-[5rem] cursor-pointer">
+            {/* Outer glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-[2rem] blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
+            
+            {/* Main pill */}
+            <div className="relative w-full h-full rounded-[2rem] bg-gradient-to-b from-indigo-500 to-purple-600 border border-white/20 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden ring-1 ring-white/30">
+                {/* Inner shine */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-50"></div>
+                
+                <LayoutGrid size={26} className="text-white relative z-10 drop-shadow-md group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
             </div>
         </div>
       </div>
@@ -173,7 +179,7 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
       {/* EXPANDED STATE */}
       <div 
         className={`
-            relative rounded-[2rem] flex items-center shadow-2xl ring-1 ring-black/5 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-xl bg-white/95
+            relative rounded-[2rem] flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-xl bg-white/95 dark:bg-slate-900/95
             ${isExpanded ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-10 pointer-events-none w-0 h-0 p-0 overflow-hidden'}
             ${isVertical ? 'flex-col w-[4rem] py-2 gap-1' : 'flex-row h-[4rem] px-2 gap-1'}
         `}
@@ -191,7 +197,7 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
                 className="relative w-10 h-10 flex flex-col items-center justify-center group z-10"
                 style={{ transitionDelay: `${isExpanded ? index * 30 : 0}ms` }}
             >
-                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isActive ? `bg-gradient-to-br ${item.color} opacity-100 shadow-sm` : 'opacity-0 hover:bg-slate-100'}`}></div>
+                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isActive ? `bg-gradient-to-br ${item.color} opacity-100 shadow-sm` : 'opacity-0 hover:bg-slate-100 dark:hover:bg-slate-800'}`}></div>
                 <div className={`relative z-10 transition-all duration-300 transform ${isActive ? 'text-white scale-100' : `text-slate-400 group-hover:${item.text}`}`}>
                     <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 </div>

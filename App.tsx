@@ -464,7 +464,7 @@ const AuthenticatedApp: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-surface-50 dark:bg-slate-900 relative font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300">
+    <div className="h-full flex flex-col bg-transparent dark:bg-transparent relative font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300">
       
       {/* SIDEBAR FOR GROUPS (Desktop / Toggle on Mobile) - Z-INDEX 200 */}
       <div className={`fixed inset-y-0 left-0 w-80 bg-[#0B1120] border-r border-white/5 z-[200] transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl flex flex-col`}>

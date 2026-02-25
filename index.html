@@ -19,6 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -156,7 +157,7 @@
       }
 
       .dark body {
-        background-color: #0f172a;
+        background-color: #020617;
         color: #f8fafc;
       }
 
@@ -174,7 +175,7 @@
       }
 
       .dark .mesh-bg {
-        background: #0f172a;
+        background: #020617;
       }
       
       .mesh-blob {
@@ -190,16 +191,16 @@
 
       .dark .mesh-blob {
         mix-blend-mode: screen;
-        opacity: 0.2;
+        opacity: 0.15;
       }
       
       .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #e0e7ff; animation-delay: 0s; }
       .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #f3e8ff; animation-delay: -5s; }
       .blob-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: #dcfce7; animation-delay: -10s; }
 
-      .dark .blob-1 { background: #312e81; }
-      .dark .blob-2 { background: #4c1d95; }
-      .dark .blob-3 { background: #064e3b; }
+      .dark .blob-1 { background: #4338ca; }
+      .dark .blob-2 { background: #6b21a8; }
+      .dark .blob-3 { background: #0f766e; }
 
       /* Custom Scrollbar - Improved Visibility */
       .custom-scrollbar {

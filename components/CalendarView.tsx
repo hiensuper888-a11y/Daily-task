@@ -330,7 +330,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
           {isPanelExpanded ? (
             <div className="w-[350px] h-[500px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-2xl rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 shadow-2xl flex flex-col overflow-hidden animate-scale-in">
               <div 
-                className="p-6 border-b border-slate-100 dark:border-slate-700/50 cursor-move flex items-center justify-between"
+                className="p-6 border-b border-slate-100 dark:border-slate-700/50 cursor-move flex items-center justify-between touch-none"
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
@@ -436,7 +436,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ activeGroup }) => {
             </div>
           ) : (
             <div 
-              className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl flex items-center justify-center cursor-move hover:scale-105 active:scale-95 transition-transform"
+              className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl flex items-center justify-center cursor-move hover:scale-105 active:scale-95 transition-transform touch-none"
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
