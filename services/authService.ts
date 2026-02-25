@@ -97,6 +97,21 @@ export const createUserWithEmailAndPassword = async (_auth: any, email: string, 
     return { user };
 };
 
+export const signInWithFacebook = async () => {
+    if (!isFirebaseConfigured()) {
+        throw new Error("Supabase is not configured.");
+    }
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+            redirectTo: window.location.origin,
+        }
+    });
+    
+    if (error) throw error;
+};
+
 export const signInWithEmailAndPassword = async (_auth: any, email: string, pass: string) => {
     // Normal Supabase Login
     const { data, error } = await supabase.auth.signInWithPassword({
