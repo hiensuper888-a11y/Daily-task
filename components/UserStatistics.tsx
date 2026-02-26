@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Calendar, CheckCircle2, Circle, AlertCircle, Filter, Download } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, AlertCircle, Filter, X } from 'lucide-react';
 import { Task } from '../types';
 
 interface UserStatisticsProps {
@@ -90,17 +90,47 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
     }, [tasks]);
 
     const chartData = useMemo(() => {
-        const grouped: Record<string, { date: string; completed: number; pending: number }> = {};
+        const grouped: Record<string, { date: string; completed: number; pending: number; rawDate: string }> = {};
         
+        const start = new Date(dateRange.start);
+        const end = new Date(dateRange.end);
+        
+        // Initialize all dates in range to avoid gaps
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toLocaleDateString('en-CA');
+            const displayDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            grouped[dateStr] = { date: displayDate, completed: 0, pending: 0, rawDate: dateStr };
+        }
+
         tasks.forEach(t => {
-            const date = new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            if (!grouped[date]) grouped[date] = { date, completed: 0, pending: 0 };
-            if (t.completed) grouped[date].completed++;
-            else grouped[date].pending++;
+            const createdDateStr = new Date(t.createdAt).toLocaleDateString('en-CA');
+            const deadlineStr = t.deadline ? new Date(t.deadline).toLocaleDateString('en-CA') : null;
+            const completedDateStr = t.completedAt ? new Date(t.completedAt).toLocaleDateString('en-CA') : null;
+
+            if (t.completed && completedDateStr && grouped[completedDateStr]) {
+                grouped[completedDateStr].completed++;
+            } else if (!t.completed) {
+                if (grouped[createdDateStr]) {
+                    grouped[createdDateStr].pending++;
+                }
+                if (deadlineStr && deadlineStr !== createdDateStr && grouped[deadlineStr]) {
+                    grouped[deadlineStr].pending++;
+                }
+            }
         });
 
-        return Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [tasks]);
+        return Object.values(grouped).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
+    }, [tasks, dateRange]);
+
+    const setQuickRange = (days: number) => {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - days);
+        setDateRange({
+            start: start.toLocaleDateString('en-CA'),
+            end: end.toLocaleDateString('en-CA')
+        });
+    };
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -117,32 +147,35 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
                         <p className="text-sm font-bold text-slate-500 dark:text-slate-400">User: <span className="text-indigo-600 dark:text-indigo-400">{userName}</span></p>
                     </div>
                     <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                        <Filter size={20} className="rotate-45"/> {/* Close Icon substitute */}
+                        <X size={20} />
                     </button>
                 </div>
 
                 {/* Filters */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex flex-wrap gap-4 items-center">
-                    <div className="flex items-center gap-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Calendar size={16} className="text-slate-400"/>
-                        <span className="text-xs font-bold uppercase text-slate-500">Date Range:</span>
+                        <span className="text-xs font-bold uppercase text-slate-500 mr-2">Date Range:</span>
+                        <input 
+                            type="date" 
+                            value={dateRange.start} 
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <span className="text-slate-400">-</span>
+                        <input 
+                            type="date" 
+                            value={dateRange.end} 
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
                     </div>
-                    <input 
-                        type="date" 
-                        value={dateRange.start} 
-                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <span className="text-slate-400">-</span>
-                    <input 
-                        type="date" 
-                        value={dateRange.end} 
-                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button onClick={fetchTasks} className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20">
-                        Apply Filter
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button onClick={() => setQuickRange(0)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Today</button>
+                        <button onClick={() => setQuickRange(7)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">7 Days</button>
+                        <button onClick={() => setQuickRange(30)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">30 Days</button>
+                        <button onClick={() => setQuickRange(365)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">1 Year</button>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -169,8 +202,8 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
                     </div>
 
                     {/* Charts */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 h-[300px]">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 h-[300px] lg:col-span-2">
                             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Tasks Over Time</h3>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData}>
@@ -188,31 +221,58 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
                             </ResponsiveContainer>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 h-[300px]">
-                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Tasks by Priority</h3>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={[
-                                            { name: 'High', value: stats.byPriority.high },
-                                            { name: 'Medium', value: stats.byPriority.medium },
-                                            { name: 'Low', value: stats.byPriority.low },
-                                        ]}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        <Cell key="high" fill="#f43f5e" />
-                                        <Cell key="medium" fill="#f59e0b" />
-                                        <Cell key="low" fill="#10b981" />
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </ResponsiveContainer>
+                        <div className="flex flex-col gap-6">
+                            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex-1 min-h-[250px]">
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Completion Status</h3>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={[
+                                                { name: 'Completed', value: stats.completed },
+                                                { name: 'Pending', value: stats.pending },
+                                            ]}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={40}
+                                            outerRadius={60}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            <Cell key="completed" fill="#10b981" />
+                                            <Cell key="pending" fill="#f59e0b" />
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            
+                            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex-1 min-h-[250px]">
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tasks by Priority</h3>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={[
+                                                { name: 'High', value: stats.byPriority.high },
+                                                { name: 'Medium', value: stats.byPriority.medium },
+                                                { name: 'Low', value: stats.byPriority.low },
+                                            ]}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={40}
+                                            outerRadius={60}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            <Cell key="high" fill="#f43f5e" />
+                                            <Cell key="medium" fill="#f59e0b" />
+                                            <Cell key="low" fill="#10b981" />
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
 
