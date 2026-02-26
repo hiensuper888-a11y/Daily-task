@@ -120,18 +120,27 @@ export const AuthScreen: React.FC = () => {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      }
     });
   };
 
   const handleFacebookLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
+      options: {
+        redirectTo: window.location.origin,
+      }
     });
   };
 
   const handleTwitterLogin = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'twitter',
+      provider: 'x',
+      options: {
+        redirectTo: window.location.origin,
+      }
     });
   };
 
