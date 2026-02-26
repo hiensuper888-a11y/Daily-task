@@ -165,6 +165,24 @@ const AuthenticatedApp: React.FC = () => {
   });
   
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+
+  // --- STREAK CHECK ---
+  useEffect(() => {
+    if (!userProfile.lastTaskCompletedDate) return;
+    
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+    
+    if (userProfile.lastTaskCompletedDate < yesterdayStr && (userProfile.currentStreak || 0) > 0) {
+      setUserProfile(prev => ({ ...prev, currentStreak: 0 }));
+      
+      if (currentUserId !== 'guest') {
+        supabase.from('profiles').update({ current_streak: 0 }).eq('id', currentUserId).then();
+      }
+    }
+  }, [userProfile.lastTaskCompletedDate, userProfile.currentStreak, currentUserId, setUserProfile]);
   
   // Fetch user profile from Supabase
   useEffect(() => {
