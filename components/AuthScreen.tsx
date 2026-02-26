@@ -29,6 +29,12 @@ const FacebookIcon = () => (
     </svg>
 );
 
+const XIcon = () => (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+);
+
 export const AuthScreen: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const isOnline = useOnlineStatus();
@@ -120,6 +126,12 @@ export const AuthScreen: React.FC = () => {
   const handleFacebookLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
+    });
+  };
+
+  const handleTwitterLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'twitter',
     });
   };
 
@@ -222,21 +234,29 @@ export const AuthScreen: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-center gap-4">
                         <button 
                             onClick={handleGoogleLogin}
-                            className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold shadow-sm hover:bg-slate-50 active:scale-[1.02] transition-all flex items-center justify-center gap-3 group"
+                            title={t.loginGoogle}
+                            className="w-14 h-14 bg-white border border-slate-200 text-slate-700 rounded-2xl shadow-sm hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
                         >
                             <GoogleIcon />
-                            <span>{t.loginGoogle}</span>
                         </button>
 
                         <button 
                             onClick={handleFacebookLogin}
-                            className="w-full py-4 bg-[#1877F2] text-white rounded-2xl font-bold shadow-sm hover:bg-[#166FE5] active:scale-[1.02] transition-all flex items-center justify-center gap-3 group"
+                            title="Login with Facebook"
+                            className="w-14 h-14 bg-[#1877F2] text-white rounded-2xl shadow-sm hover:bg-[#166FE5] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
                         >
                             <FacebookIcon />
-                            <span>Login with Facebook</span>
+                        </button>
+
+                        <button 
+                            onClick={handleTwitterLogin}
+                            title="Login with X"
+                            className="w-14 h-14 bg-black text-white rounded-2xl shadow-sm hover:bg-slate-900 hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+                        >
+                            <XIcon />
                         </button>
                     </div>
 
