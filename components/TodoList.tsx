@@ -471,6 +471,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   const handleSaveEdit = () => {
       if (!editingTask) return;
       setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
+      syncTaskToSupabase(editingTask);
       setEditingTask(null);
   };
 
