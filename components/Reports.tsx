@@ -344,7 +344,7 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
   return (
     <div className="flex flex-col h-full bg-transparent relative">
       <div className={`relative overflow-hidden bg-gradient-to-r p-8 text-white shrink-0 shadow-lg md:rounded-b-[2.5rem] z-10 transition-colors duration-500 ${isGroupView ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-violet-600'}`}>
-        <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><PieChart size={120} /></div>
+        <div className="absolute right-0 bottom-0 opacity-10 p-4 animate-float"><PieChartIcon size={120} /></div>
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
