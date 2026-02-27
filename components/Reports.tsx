@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users, Trophy, Medal, Crown, Table2, CheckCircle2, Circle, Download } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Calendar, PieChart as PieChartIcon, FileSpreadsheet, FileText, FileCode, Presentation, Share2, PenSquare, ArrowUpRight, User, Users, Trophy, Medal, Crown, Table2, CheckCircle2, Circle, Download } from 'lucide-react';
 import { Task, ReflectionMap, Group } from '../types';
 import { useRealtimeStorage, SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { useLanguage } from '../contexts/LanguageContext';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 // @ts-ignore
 import PptxGenJS from 'pptxgenjs';
 
@@ -476,6 +477,51 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                           <div className="h-full w-px bg-slate-100 absolute top-0 -z-10 group-hover:bg-slate-200 transition-colors"></div>
                       </div>
                   ))}
+              </div>
+          </div>
+
+          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><PieChartIcon size={20} className="text-indigo-500"/> Task Distribution</h3>
+              <div className="h-64 w-full">
+                  {chartData.filteredTasks.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                              <Pie
+                                  data={[
+                                      { name: t.completed, value: chartData.filteredTasks.filter(t => t.completed).length, color: '#10b981' },
+                                      { name: t.active, value: chartData.filteredTasks.filter(t => !t.completed).length, color: '#6366f1' }
+                                  ]}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={60}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                              >
+                                  {[
+                                      { name: t.completed, value: chartData.filteredTasks.filter(t => t.completed).length, color: '#10b981' },
+                                      { name: t.active, value: chartData.filteredTasks.filter(t => !t.completed).length, color: '#6366f1' }
+                                  ].map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                              </Pie>
+                              <Tooltip 
+                                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -10px rgba(0,0,0,0.1)' }}
+                                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                              />
+                              <Legend 
+                                  verticalAlign="bottom" 
+                                  height={36}
+                                  iconType="circle"
+                                  wrapperStyle={{ fontSize: '12px', fontWeight: 'bold', paddingTop: '20px' }}
+                              />
+                          </PieChart>
+                      </ResponsiveContainer>
+                  ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-bold">
+                          No tasks found for this period
+                      </div>
+                  )}
               </div>
           </div>
 
