@@ -308,12 +308,22 @@ const AuthenticatedApp: React.FC = () => {
               setMyGroups(prev => JSON.stringify(prev) !== JSON.stringify(relevantGroups) ? relevantGroups : prev);
           }
       } catch (error) {
-          console.error('Error fetching groups:', error);
+          console.error('Error fetching groups from Supabase, falling back to local storage:', error);
+          const raw = localStorage.getItem(GLOBAL_GROUPS_KEY) || '[]';
+          try {
+              const globalGroups = JSON.parse(raw);
+              const relevantGroups = globalGroups.filter((g: Group) => 
+                  g.members.some(m => m.id === currentUserId)
+              );
+              setMyGroups(prev => JSON.stringify(prev) !== JSON.stringify(relevantGroups) ? relevantGroups : prev);
+          } catch (e) { console.error("Error parsing groups", e); }
       }
   }, [currentUserId]);
 
   useEffect(() => {
       syncGroups();
+      
+      window.addEventListener('storage', syncGroups);
       
       if (currentUserId !== 'guest') {
           const channel = supabase.channel('groups_sync')
@@ -321,10 +331,12 @@ const AuthenticatedApp: React.FC = () => {
                   syncGroups();
               })
               .subscribe();
-          return () => { supabase.removeChannel(channel); };
+          return () => { 
+              supabase.removeChannel(channel); 
+              window.removeEventListener('storage', syncGroups);
+          };
       } else {
           const interval = setInterval(syncGroups, 3000); 
-          window.addEventListener('storage', syncGroups);
           return () => {
               clearInterval(interval);
               window.removeEventListener('storage', syncGroups);

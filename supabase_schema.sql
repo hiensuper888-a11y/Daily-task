@@ -74,3 +74,32 @@ create policy "Admins can view all tasks"
   using (
     exists (select 1 from profiles where id = auth.uid() and role = 'admin')
   );
+
+-- Create groups table
+create table if not exists public.groups (
+  id text primary key,
+  name text,
+  join_code text unique,
+  raw_data jsonb,
+  created_at timestamptz default now()
+);
+
+-- Enable RLS on groups
+alter table public.groups enable row level security;
+
+-- Groups policies
+create policy "Groups are viewable by everyone"
+  on groups for select
+  using ( true );
+
+create policy "Users can insert groups"
+  on groups for insert
+  with check ( auth.uid() is not null );
+
+create policy "Users can update groups"
+  on groups for update
+  using ( auth.uid() is not null );
+
+create policy "Users can delete groups"
+  on groups for delete
+  using ( auth.uid() is not null );
