@@ -481,45 +481,44 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
           </div>
 
           <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
-              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><PieChartIcon size={20} className="text-indigo-500"/> Task Distribution</h3>
-              <div className="h-64 w-full">
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><PieChartIcon size={20} className="text-indigo-500"/> {t.taskDistribution || "Task Distribution"}</h3>
+              <div className="h-80 w-full">
                   {chartData.filteredTasks.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                               <Pie
-                                  data={[
-                                      { name: t.completed, value: chartData.filteredTasks.filter(t => t.completed).length, color: '#10b981' },
-                                      { name: t.active, value: chartData.filteredTasks.filter(t => !t.completed).length, color: '#6366f1' }
-                                  ]}
+                                  data={chartData.filteredTasks.map((task, index) => ({
+                                      name: task.text.length > 25 ? task.text.substring(0, 25) + '...' : task.text,
+                                      value: 1,
+                                      color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16', '#3b82f6', '#22c55e', '#eab308', '#f43f5e', '#a855f7'][index % 15]
+                                  }))}
                                   cx="50%"
-                                  cy="50%"
+                                  cy="45%"
                                   innerRadius={60}
-                                  outerRadius={80}
-                                  paddingAngle={5}
+                                  outerRadius={90}
+                                  paddingAngle={2}
                                   dataKey="value"
                               >
-                                  {[
-                                      { name: t.completed, value: chartData.filteredTasks.filter(t => t.completed).length, color: '#10b981' },
-                                      { name: t.active, value: chartData.filteredTasks.filter(t => !t.completed).length, color: '#6366f1' }
-                                  ].map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                  {chartData.filteredTasks.map((task, index) => (
+                                      <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16', '#3b82f6', '#22c55e', '#eab308', '#f43f5e', '#a855f7'][index % 15]} />
                                   ))}
                               </Pie>
                               <Tooltip 
                                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -10px rgba(0,0,0,0.1)' }}
                                   itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                  formatter={(value: any, name: string | undefined) => [name || '', 'Task']}
                               />
                               <Legend 
                                   verticalAlign="bottom" 
-                                  height={36}
+                                  height={80}
                                   iconType="circle"
-                                  wrapperStyle={{ fontSize: '12px', fontWeight: 'bold', paddingTop: '20px' }}
+                                  wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', paddingTop: '10px', overflowY: 'auto', maxHeight: '80px' }}
                               />
                           </PieChart>
                       </ResponsiveContainer>
                   ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-bold">
-                          No tasks found for this period
+                          {t.noTasksFound || "No tasks found for this period"}
                       </div>
                   )}
               </div>
