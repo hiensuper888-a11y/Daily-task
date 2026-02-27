@@ -224,54 +224,58 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
                         <div className="flex flex-col gap-6">
                             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex-1 min-h-[250px]">
                                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Completion Status</h3>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={[
-                                                { name: 'Completed', value: stats.completed },
-                                                { name: 'Pending', value: stats.pending },
-                                            ]}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={40}
-                                            outerRadius={60}
-                                            paddingAngle={5}
-                                            dataKey="value"
-                                        >
-                                            <Cell key="completed" fill="#10b981" />
-                                            <Cell key="pending" fill="#f59e0b" />
-                                        </Pie>
-                                        <Tooltip />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                <div className="h-[200px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={[
+                                                    { name: 'Completed', value: stats.completed },
+                                                    { name: 'Pending', value: stats.pending },
+                                                ]}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={40}
+                                                outerRadius={60}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                <Cell key="completed" fill="#10b981" />
+                                                <Cell key="pending" fill="#f59e0b" />
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
                             
                             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex-1 min-h-[250px]">
                                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tasks by Priority</h3>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={[
-                                                { name: 'High', value: stats.byPriority.high },
-                                                { name: 'Medium', value: stats.byPriority.medium },
-                                                { name: 'Low', value: stats.byPriority.low },
-                                            ]}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={40}
-                                            outerRadius={60}
-                                            paddingAngle={5}
-                                            dataKey="value"
-                                        >
-                                            <Cell key="high" fill="#f43f5e" />
-                                            <Cell key="medium" fill="#f59e0b" />
-                                            <Cell key="low" fill="#10b981" />
-                                        </Pie>
-                                        <Tooltip />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                <div className="h-[200px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={[
+                                                    { name: 'High', value: stats.byPriority.high },
+                                                    { name: 'Medium', value: stats.byPriority.medium },
+                                                    { name: 'Low', value: stats.byPriority.low },
+                                                ]}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={40}
+                                                outerRadius={60}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                <Cell key="high" fill="#f43f5e" />
+                                                <Cell key="medium" fill="#f59e0b" />
+                                                <Cell key="low" fill="#10b981" />
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
                         </div>
                     </div>
