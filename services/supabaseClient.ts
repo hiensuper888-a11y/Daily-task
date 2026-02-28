@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // User provided credentials
@@ -13,10 +12,18 @@ if (SUPABASE_ANON_KEY.startsWith('sb_publishable_')) {
 let client;
 
 try {
+    const isWebSocketSupported = typeof WebSocket !== 'undefined';
+
     // Polyfill WebSocket if missing to prevent Supabase Realtime crash on some mobile browsers
-    if (typeof WebSocket === 'undefined') {
-        console.warn("WebSocket is not available. Polyfilling with dummy implementation to support REST-only mode.");
-        (globalThis as any).WebSocket = class DummyWebSocket {
+    if (!isWebSocketSupported) {
+        console.warn("WebSocket is not available. Disabling Realtime and polyfilling to prevent crashes.");
+        
+        // Polyfill globalThis if missing (older browsers)
+        if (typeof globalThis === 'undefined') {
+            (window as any).globalThis = window;
+        }
+
+        class DummyWebSocket {
             onopen: any;
             onmessage: any;
             onerror: any;
@@ -35,6 +42,7 @@ try {
             constructor() { 
                 console.warn('Supabase Realtime is disabled because WebSocket is not supported.'); 
                 setTimeout(() => {
+                    // Simulate immediate close/error to prevent hanging
                     if (this.onerror) this.onerror(new Event('error'));
                     if (this.onclose) this.onclose(new CloseEvent('close'));
                 }, 0);
@@ -44,7 +52,11 @@ try {
             addEventListener() {}
             removeEventListener() {}
             dispatchEvent() { return true; }
-        };
+        }
+
+        // Assign to global scope
+        if (typeof window !== 'undefined') (window as any).WebSocket = DummyWebSocket;
+        if (typeof globalThis !== 'undefined') (globalThis as any).WebSocket = DummyWebSocket;
     }
 
     client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -53,10 +65,13 @@ try {
             autoRefreshToken: true,
         },
         realtime: {
+            // Explicitly disable realtime if no WebSocket support
+            // Note: 'enabled' is not in the type definition but is supported by the client. Casting to any to avoid TS error.
+            enabled: isWebSocketSupported,
             params: {
                 eventsPerSecond: 10,
             },
-        },
+        } as any,
     });
 } catch (error) {
     console.error("Failed to initialize Supabase client:", error);
