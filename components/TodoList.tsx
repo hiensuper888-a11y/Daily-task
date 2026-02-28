@@ -285,15 +285,21 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     // Check if all tasks for today are completed
     const todayTasks = updatedTasks.filter(t => {
         if (t.archived) return false;
-        if (!t.completed) return true; // Incomplete tasks carry over
         
-        if (t.completedAt) {
-            const completedAtStr = new Date(t.completedAt).toLocaleDateString('en-CA');
-            return completedAtStr === todayStr;
+        // If completed, only count if completed TODAY
+        if (t.completed) {
+            if (t.completedAt) {
+                const completedAtStr = new Date(t.completedAt).toLocaleDateString('en-CA');
+                return completedAtStr === todayStr;
+            }
+            return false; // Old completion or missing date
         }
         
+        // If incomplete, only count if it's RELEVANT to today (Created Today or Deadline Today)
+        // We ignore old overdue tasks to prevent them from blocking the streak increment
         const createdAtStr = new Date(t.createdAt).toLocaleDateString('en-CA');
         const deadlineStr = t.deadline ? new Date(t.deadline).toLocaleDateString('en-CA') : null;
+        
         return createdAtStr === todayStr || deadlineStr === todayStr;
     });
 

@@ -14,28 +14,21 @@ import {
 } from "lucide-react";
 import { AppTab, UserProfile } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
-import { useRealtimeStorage } from "../hooks/useRealtimeStorage";
 
 interface FloatingDockProps {
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
   onTabChange?: () => void;
+  userProfile: UserProfile;
 }
 
 export const FloatingDock: React.FC<FloatingDockProps> = ({
   activeTab,
   setActiveTab,
   onTabChange,
+  userProfile,
 }) => {
   const { t } = useLanguage();
-  const [userProfile] = useRealtimeStorage<UserProfile>("user_profile", {
-    name: "User",
-    email: "",
-    avatar: "",
-    provider: null,
-    isLoggedIn: false,
-    uid: "",
-  });
 
   const isAdmin = userProfile.email === "admin@dailytask.com";
 

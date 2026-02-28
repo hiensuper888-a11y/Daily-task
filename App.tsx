@@ -654,7 +654,7 @@ const AuthenticatedApp: React.FC = () => {
         </Suspense>
       </div>
 
-      <FloatingDock activeTab={activeTab} setActiveTab={setActiveTab} />
+      <FloatingDock activeTab={activeTab} setActiveTab={setActiveTab} userProfile={userProfile} />
 
       {/* --- MODALS - Z-INDEX 250 --- */}
 
