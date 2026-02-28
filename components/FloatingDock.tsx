@@ -1,11 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  CheckSquare, MessageSquare, Wand2, BarChart3, UserCircle2, 
-  LayoutGrid, X, GripHorizontal, GripVertical, Calendar, Shield
-} from 'lucide-react';
-import { AppTab, UserProfile } from '../types';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useRealtimeStorage } from '../hooks/useRealtimeStorage';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  CheckSquare,
+  MessageSquare,
+  Wand2,
+  BarChart3,
+  UserCircle2,
+  LayoutGrid,
+  X,
+  GripHorizontal,
+  GripVertical,
+  Calendar,
+  Shield,
+} from "lucide-react";
+import { AppTab, UserProfile } from "../types";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useRealtimeStorage } from "../hooks/useRealtimeStorage";
 
 interface FloatingDockProps {
   activeTab: AppTab;
@@ -13,24 +22,41 @@ interface FloatingDockProps {
   onTabChange?: () => void;
 }
 
-export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActiveTab, onTabChange }) => {
+export const FloatingDock: React.FC<FloatingDockProps> = ({
+  activeTab,
+  setActiveTab,
+  onTabChange,
+}) => {
   const { t } = useLanguage();
-  const [userProfile] = useRealtimeStorage<UserProfile>('user_profile', { 
-      name: 'User', email: '', avatar: '', provider: null, isLoggedIn: false, uid: '' 
+  const [userProfile] = useRealtimeStorage<UserProfile>("user_profile", {
+    name: "User",
+    email: "",
+    avatar: "",
+    provider: null,
+    isLoggedIn: false,
+    uid: "",
   });
-  
-  const isAdmin = userProfile.email === 'admin@dailytask.com';
-  
+
+  const isAdmin = userProfile.email === "admin@dailytask.com";
+
   // FIX: Move default Y position up (minus 150px) to clear the bottom Add button area
-  const [position, setPosition] = useState({ 
-      x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0, 
-      y: typeof window !== 'undefined' ? window.innerHeight - 160 : 0 
+  const [position, setPosition] = useState({
+    x: typeof window !== "undefined" ? window.innerWidth - 80 : 0,
+    y: typeof window !== "undefined" ? window.innerHeight - 160 : 0,
   });
-  
+
+  // Ensure position is correct after mount (fixes mobile viewport issues)
+  useEffect(() => {
+    setPosition({
+      x: window.innerWidth - 80,
+      y: window.innerHeight - 160,
+    });
+  }, []);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [hasMoved, setHasMoved] = useState(false); 
-  
+  const [hasMoved, setHasMoved] = useState(false);
+
   // Drag logic refs
   const dragStartPos = useRef({ x: 0, y: 0 });
   const dockStartPos = useRef({ x: 0, y: 0 });
@@ -38,9 +64,15 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const COLLAPSE_TIMEOUT = 5000;
-  const EDGE_THRESHOLD = 80; 
+  const EDGE_THRESHOLD = 80;
 
-  const isVertical = position.x < EDGE_THRESHOLD || position.x > window.innerWidth - EDGE_THRESHOLD - 80;
+  const isVertical =
+    position.x < EDGE_THRESHOLD ||
+    position.x > window.innerWidth - EDGE_THRESHOLD - 80;
+  const isBottomHalf =
+    position.y > (typeof window !== "undefined" ? window.innerHeight / 2 : 0);
+  const isRightHalf =
+    position.x > (typeof window !== "undefined" ? window.innerWidth / 2 : 0);
 
   const resetIdleTimer = () => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -60,25 +92,25 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
 
   // Handle Resize
   useEffect(() => {
-      const handleResize = () => {
-          if (!hasMoved) {
-              // Keep relative position on resize
-              setPosition({ x: window.innerWidth - 80, y: window.innerHeight - 160 });
-          } else {
-              // Clamp to screen
-              setPosition(prev => ({
-                  x: Math.min(Math.max(20, prev.x), window.innerWidth - 80),
-                  y: Math.min(Math.max(20, prev.y), window.innerHeight - 80)
-              }));
-          }
-      };
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+    const handleResize = () => {
+      if (!hasMoved) {
+        // Keep relative position on resize
+        setPosition({ x: window.innerWidth - 80, y: window.innerHeight - 160 });
+      } else {
+        // Clamp to screen
+        setPosition((prev) => ({
+          x: Math.min(Math.max(20, prev.x), window.innerWidth - 80),
+          y: Math.min(Math.max(20, prev.y), window.innerHeight - 80),
+        }));
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [hasMoved]);
 
   // Handle Dragging
   const handlePointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('button') && isExpanded) return;
+    if ((e.target as HTMLElement).closest("button") && isExpanded) return;
 
     e.preventDefault();
     setIsDragging(true);
@@ -95,15 +127,18 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     const dx = e.clientX - dragStartPos.current.x;
     const dy = e.clientY - dragStartPos.current.y;
 
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+    // Increased threshold to 15px to prevent accidental drags on mobile taps
+    if (Math.abs(dx) > 15 || Math.abs(dy) > 15) {
       isDragGesture.current = true;
       setHasMoved(true);
     }
 
-    setPosition({
-      x: dockStartPos.current.x + dx,
-      y: dockStartPos.current.y + dy
-    });
+    if (isDragGesture.current) {
+      setPosition({
+        x: dockStartPos.current.x + dx,
+        y: dockStartPos.current.y + dy,
+      });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -120,7 +155,7 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
     if (newY > window.innerHeight - 80) newY = window.innerHeight - 80;
 
     if (!isDragging && (newX !== position.x || newY !== position.y)) {
-        setPosition({ x: newX, y: newY });
+      setPosition({ x: newX, y: newY });
     }
 
     if (!isDragGesture.current && !isExpanded) {
@@ -135,25 +170,76 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
   };
 
   const menuItems = [
-    { id: 'tasks', icon: CheckSquare, label: t.tasks, color: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/40', text: 'text-blue-600' },
-    { id: 'calendar', icon: Calendar, label: t.calendar, color: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/40', text: 'text-emerald-600' },
-    { id: 'ai', icon: MessageSquare, label: 'AI', color: 'from-violet-500 to-purple-600', shadow: 'shadow-purple-500/40', text: 'text-purple-600' },
-    { id: 'studio', icon: Wand2, label: 'Studio', color: 'from-fuchsia-500 to-pink-600', shadow: 'shadow-pink-500/40', text: 'text-pink-600' },
-    { id: 'reports', icon: BarChart3, label: 'Stats', color: 'from-amber-400 to-orange-500', shadow: 'shadow-orange-500/40', text: 'text-orange-600' },
-    { id: 'profile', icon: UserCircle2, label: t.profile, color: 'from-slate-500 to-slate-700', shadow: 'shadow-slate-500/40', text: 'text-slate-600' },
+    {
+      id: "tasks",
+      icon: CheckSquare,
+      label: t.tasks,
+      color: "from-blue-500 to-indigo-600",
+      shadow: "shadow-blue-500/40",
+      text: "text-blue-600",
+    },
+    {
+      id: "calendar",
+      icon: Calendar,
+      label: t.calendar,
+      color: "from-emerald-500 to-teal-600",
+      shadow: "shadow-emerald-500/40",
+      text: "text-emerald-600",
+    },
+    {
+      id: "ai",
+      icon: MessageSquare,
+      label: "AI",
+      color: "from-violet-500 to-purple-600",
+      shadow: "shadow-purple-500/40",
+      text: "text-purple-600",
+    },
+    {
+      id: "studio",
+      icon: Wand2,
+      label: "Studio",
+      color: "from-fuchsia-500 to-pink-600",
+      shadow: "shadow-pink-500/40",
+      text: "text-pink-600",
+    },
+    {
+      id: "reports",
+      icon: BarChart3,
+      label: "Stats",
+      color: "from-amber-400 to-orange-500",
+      shadow: "shadow-orange-500/40",
+      text: "text-orange-600",
+    },
+    {
+      id: "profile",
+      icon: UserCircle2,
+      label: t.profile,
+      color: "from-slate-500 to-slate-700",
+      shadow: "shadow-slate-500/40",
+      text: "text-slate-600",
+    },
   ];
 
   if (isAdmin) {
-      menuItems.push({ id: 'admin', icon: Shield, label: 'Admin', color: 'from-slate-800 to-black', shadow: 'shadow-slate-900/40', text: 'text-slate-900' });
+    menuItems.push({
+      id: "admin",
+      icon: Shield,
+      label: "Admin",
+      color: "from-slate-800 to-black",
+      shadow: "shadow-slate-900/40",
+      text: "text-slate-900",
+    });
   }
 
   return (
-    <div 
+    <div
       className="fixed z-[9999] touch-none select-none"
-      style={{ 
-        left: position.x, 
+      style={{
+        left: position.x,
         top: position.y,
-        transition: isDragging ? 'none' : 'top 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transition: isDragging
+          ? "none"
+          : "top 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)",
       }}
       onMouseEnter={resetIdleTimer}
       onPointerDown={handlePointerDown}
@@ -161,57 +247,96 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ activeTab, setActive
       onPointerUp={handlePointerUp}
     >
       {/* COLLAPSED STATE (The "Magic Orb") */}
-      <div className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isExpanded ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'}`}>
+      <div
+        className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isExpanded ? "opacity-0 scale-50 pointer-events-none" : "opacity-100 scale-100"}`}
+      >
         <div className="group relative w-14 h-[5rem] cursor-pointer">
-            {/* Outer glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-[2rem] blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
-            
-            {/* Main pill */}
-            <div className="relative w-full h-full rounded-[2rem] bg-gradient-to-b from-indigo-500 to-purple-600 border border-white/20 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden ring-1 ring-white/30">
-                {/* Inner shine */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-50"></div>
-                
-                <LayoutGrid size={26} className="text-white relative z-10 drop-shadow-md group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
-            </div>
+          {/* Outer glow */}
+          <div className="absolute inset-0 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-[2rem] blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
+
+          {/* Main pill */}
+          <div className="relative w-full h-full rounded-[2rem] bg-gradient-to-b from-indigo-500 to-purple-600 border border-white/20 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden ring-1 ring-white/30">
+            {/* Inner shine */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-50"></div>
+
+            <LayoutGrid
+              size={26}
+              className="text-white relative z-10 drop-shadow-md group-hover:scale-110 transition-transform duration-300"
+              strokeWidth={2.5}
+            />
+          </div>
         </div>
       </div>
 
       {/* EXPANDED STATE */}
-      <div 
+      <div
         className={`
-            relative rounded-[2rem] flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] origin-center backdrop-blur-xl bg-white/95 dark:bg-slate-900/95
-            ${isExpanded ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-10 pointer-events-none w-0 h-0 p-0 overflow-hidden'}
-            ${isVertical ? 'flex-col w-[4rem] py-2 gap-1' : 'flex-row h-[4rem] px-2 gap-1'}
+            absolute rounded-[2rem] flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] backdrop-blur-xl bg-white/95 dark:bg-slate-900/95
+            ${isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"}
+            ${isVertical ? "flex-col w-[4rem] py-2 gap-1" : "flex-row h-[4rem] px-2 gap-1"}
         `}
+        style={{
+          ...(isVertical
+            ? {
+                left: "50%",
+                transform: `translateX(-50%) scale(${isExpanded ? 1 : 0.5})`,
+                transformOrigin: isBottomHalf ? "bottom center" : "top center",
+                ...(isBottomHalf ? { bottom: "-40px" } : { top: "-40px" }),
+              }
+            : {
+                top: "50%",
+                transform: `translateY(-50%) scale(${isExpanded ? 1 : 0.5})`,
+                transformOrigin: isRightHalf ? "right center" : "left center",
+                ...(isRightHalf ? { right: "-28px" } : { left: "-28px" }),
+              }),
+        }}
       >
-        <div className={`text-slate-300 cursor-move flex items-center justify-center z-10 ${isVertical ? 'h-4 w-full mb-1' : 'w-4 h-full mr-1'}`}>
-            {isVertical ? <GripHorizontal size={14} /> : <GripVertical size={14} />}
+        <div
+          className={`text-slate-300 cursor-move flex items-center justify-center z-10 ${isVertical ? "h-4 w-full mb-1" : "w-4 h-full mr-1"}`}
+        >
+          {isVertical ? (
+            <GripHorizontal size={14} />
+          ) : (
+            <GripVertical size={14} />
+          )}
         </div>
 
         {menuItems.map((item, index) => {
           const isActive = activeTab === item.id;
           return (
-            <button 
-                key={item.id}
-                onClick={(e) => { e.stopPropagation(); handleTabClick(item.id as AppTab); }}
-                className="relative w-10 h-10 flex flex-col items-center justify-center group z-10"
-                style={{ transitionDelay: `${isExpanded ? index * 30 : 0}ms` }}
+            <button
+              key={item.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTabClick(item.id as AppTab);
+              }}
+              className="relative w-10 h-10 flex flex-col items-center justify-center group z-10"
+              style={{ transitionDelay: `${isExpanded ? index * 30 : 0}ms` }}
             >
-                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isActive ? `bg-gradient-to-br ${item.color} opacity-100 shadow-sm` : 'opacity-0 hover:bg-slate-100 dark:hover:bg-slate-800'}`}></div>
-                <div className={`relative z-10 transition-all duration-300 transform ${isActive ? 'text-white scale-100' : `text-slate-400 group-hover:${item.text}`}`}>
-                    <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                </div>
+              <div
+                className={`absolute inset-0 rounded-xl transition-all duration-300 ${isActive ? `bg-gradient-to-br ${item.color} opacity-100 shadow-sm` : "opacity-0 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+              ></div>
+              <div
+                className={`relative z-10 transition-all duration-300 transform ${isActive ? "text-white scale-100" : `text-slate-400 group-hover:${item.text}`}`}
+              >
+                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </div>
             </button>
           );
         })}
 
-        <div className={`bg-slate-100 ${isVertical ? 'h-px w-6 my-1' : 'w-px h-6 mx-1'}`}></div>
+        <div
+          className={`bg-slate-100 ${isVertical ? "h-px w-6 my-1" : "w-px h-6 mx-1"}`}
+        ></div>
 
-        <button 
-            onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-colors z-10 active:scale-90"
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(false);
+          }}
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-colors z-10 active:scale-90"
         >
-            <X size={16} strokeWidth={2.5} />
+          <X size={16} strokeWidth={2.5} />
         </button>
       </div>
     </div>
