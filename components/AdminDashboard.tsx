@@ -100,7 +100,7 @@ export const AdminDashboard: React.FC = () => {
             if (error) throw error;
             
             if (data) {
-                setUserTasks(data.map(row => row.raw_data as Task));
+                setUserTasks(data.map((row: any) => row.raw_data as Task));
             } else {
                 setUserTasks([]);
             }
@@ -129,7 +129,7 @@ export const AdminDashboard: React.FC = () => {
                         .eq('user_id', selectedUser.uid);
                         
                     if (!error && data) {
-                        setUserTasks(data.map(row => row.raw_data as Task));
+                        setUserTasks(data.map((row: any) => row.raw_data as Task));
                     }
                 } catch (e) {
                     console.error("Error refetching tasks:", e);

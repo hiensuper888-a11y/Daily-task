@@ -223,7 +223,7 @@ const AuthenticatedApp: React.FC = () => {
               schema: 'public', 
               table: 'profiles',
               filter: `id=eq.${currentUserId}`
-          }, (payload) => {
+          }, (payload: any) => {
               const data = payload.new;
               setUserProfile(prev => ({
                   ...prev,
@@ -315,7 +315,7 @@ const AuthenticatedApp: React.FC = () => {
           if (error) throw error;
           
           if (data) {
-              const globalGroups = data.map(row => row.raw_data as Group);
+              const globalGroups = data.map((row: any) => row.raw_data as Group);
               const relevantGroups = globalGroups.filter((g: Group) => 
                   g.members.some(m => m.id === currentUserId)
               );
@@ -877,11 +877,11 @@ const AppContent: React.FC = () => {
 
     useEffect(() => {
         // Supabase Auth Listener
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }: any) => {
             setSession(session);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             setSession(session);
         });
 

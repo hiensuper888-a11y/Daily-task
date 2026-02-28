@@ -134,7 +134,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
               if (error) throw error;
               
               if (data) {
-                  const fetchedTasks = data.map(row => row.raw_data as Task);
+                  const fetchedTasks = data.map((row: any) => row.raw_data as Task);
                   setTasks(fetchedTasks);
               }
           } catch (error) {
