@@ -90,7 +90,19 @@ export const Profile: React.FC = () => {
       setIsEditing(false); 
       try { 
           const user = await getCurrentUser();
-          if (isFirebaseConfigured() && user) await updateProfile(user, { displayName: editForm.name, photoURL: editForm.avatar }); 
+          if (isFirebaseConfigured() && user) {
+              await updateProfile(user, { 
+                  displayName: editForm.name, 
+                  photoURL: editForm.avatar,
+                  birthYear: editForm.birthYear,
+                  hometown: editForm.hometown,
+                  address: editForm.address,
+                  company: editForm.company,
+                  phoneNumber: editForm.phoneNumber,
+                  jobTitle: editForm.jobTitle,
+                  department: editForm.department
+              }); 
+          }
       } catch (error) {} 
   };
   

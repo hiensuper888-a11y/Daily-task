@@ -166,7 +166,7 @@ export const sendEmailVerification = async (user: any) => {
 };
 
 
-export const updateProfile = async (user: any, updates: { displayName?: string; photoURL?: string }) => {
+export const updateProfile = async (user: any, updates: { displayName?: string; photoURL?: string; birthYear?: string; hometown?: string; address?: string; company?: string; phoneNumber?: string; jobTitle?: string; department?: string }) => {
     const { data, error } = await supabase.auth.updateUser({
         data: {
             display_name: updates.displayName,
@@ -180,7 +180,14 @@ export const updateProfile = async (user: any, updates: { displayName?: string; 
     if (user?.uid) {
         await supabase.from('profiles').update({
             display_name: updates.displayName,
-            avatar_url: updates.photoURL
+            avatar_url: updates.photoURL,
+            birth_year: updates.birthYear,
+            hometown: updates.hometown,
+            address: updates.address,
+            company: updates.company,
+            phone_number: updates.phoneNumber,
+            job_title: updates.jobTitle,
+            department: updates.department
         }).eq('id', user.uid);
     }
 };

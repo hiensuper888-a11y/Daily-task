@@ -85,23 +85,62 @@ export const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleViewDetails = (user: any) => {
+    const handleViewDetails = async (user: any) => {
         setSelectedUser(user);
         setIsUpdatingPassword(false);
         setNewPassword('');
-        // Fetch user's tasks from localStorage
-        const taskKey = `${user.uid}_daily_tasks`;
-        const storedTasks = localStorage.getItem(taskKey);
-        if (storedTasks) {
-            try {
-                setUserTasks(JSON.parse(storedTasks));
-            } catch (e) {
+        
+        // Fetch user's tasks from Supabase
+        try {
+            const { data, error } = await supabase
+                .from('tasks')
+                .select('raw_data')
+                .eq('user_id', user.uid);
+                
+            if (error) throw error;
+            
+            if (data) {
+                setUserTasks(data.map(row => row.raw_data as Task));
+            } else {
                 setUserTasks([]);
             }
-        } else {
+        } catch (error) {
+            console.error("Error fetching user tasks:", error);
             setUserTasks([]);
         }
     };
+
+    // Real-time listener for selected user's tasks
+    useEffect(() => {
+        if (!selectedUser) return;
+
+        const channel = supabase.channel(`admin_tasks_${selectedUser.uid}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'tasks',
+                filter: `user_id=eq.${selectedUser.uid}`
+            }, async () => {
+                // Refetch tasks when there's a change
+                try {
+                    const { data, error } = await supabase
+                        .from('tasks')
+                        .select('raw_data')
+                        .eq('user_id', selectedUser.uid);
+                        
+                    if (!error && data) {
+                        setUserTasks(data.map(row => row.raw_data as Task));
+                    }
+                } catch (e) {
+                    console.error("Error refetching tasks:", e);
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [selectedUser]);
 
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -23,7 +23,7 @@ export const UserStatistics: React.FC<UserStatisticsProps> = ({ userId, userName
         
         // Real-time subscription
         const channel = supabase
-            .channel('public:tasks')
+            .channel(`user_stats_${userId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, (payload) => {
                 fetchTasks(); // Refresh on change
             })
