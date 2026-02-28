@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       sourcemap: false,
       chunkSizeWarningLimit: 1000,
+      target: 'es2020', // Ensure compatibility with older mobile browsers
     },
     server: {
       port: 3000,
