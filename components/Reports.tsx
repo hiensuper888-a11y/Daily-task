@@ -341,6 +341,28 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
     return () => { document.head.removeChild(style); };
   }, []);
 
+  const taskDistribution = useMemo(() => {
+      const dist: Record<string, { count: number, originalName: string }> = {};
+      
+      chartData.filteredTasks.forEach(task => {
+          const normalized = task.text.trim().toLowerCase();
+          if (dist[normalized]) {
+              dist[normalized].count += 1;
+          } else {
+              dist[normalized] = { count: 1, originalName: task.text.trim() };
+          }
+      });
+
+      return Object.values(dist)
+          .map((item, index) => ({
+              name: item.originalName.length > 25 ? item.originalName.substring(0, 25) + '...' : item.originalName,
+              fullName: item.originalName,
+              value: item.count,
+              color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16', '#3b82f6', '#22c55e', '#eab308', '#f43f5e', '#a855f7'][index % 15]
+          }))
+          .sort((a, b) => b.value - a.value);
+  }, [chartData.filteredTasks]);
+
   return (
     <div className="flex flex-col h-full bg-transparent relative">
       <div className={`relative overflow-hidden bg-gradient-to-r p-8 text-white shrink-0 shadow-lg md:rounded-b-[2.5rem] z-10 transition-colors duration-500 ${isGroupView ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-violet-600'}`}>
@@ -483,15 +505,11 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
           <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
               <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><PieChartIcon size={20} className="text-indigo-500"/> {t.taskDistribution || "Task Distribution"}</h3>
               <div className="h-80 w-full">
-                  {chartData.filteredTasks.length > 0 ? (
+                  {taskDistribution.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                               <Pie
-                                  data={chartData.filteredTasks.map((task, index) => ({
-                                      name: task.text.length > 25 ? task.text.substring(0, 25) + '...' : task.text,
-                                      value: 1,
-                                      color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16', '#3b82f6', '#22c55e', '#eab308', '#f43f5e', '#a855f7'][index % 15]
-                                  }))}
+                                  data={taskDistribution}
                                   cx="50%"
                                   cy="45%"
                                   innerRadius={60}
@@ -499,14 +517,14 @@ export const Reports: React.FC<ReportsProps> = ({ activeGroup }) => {
                                   paddingAngle={2}
                                   dataKey="value"
                               >
-                                  {chartData.filteredTasks.map((task, index) => (
-                                      <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16', '#3b82f6', '#22c55e', '#eab308', '#f43f5e', '#a855f7'][index % 15]} />
+                                  {taskDistribution.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
                                   ))}
                               </Pie>
                               <Tooltip 
                                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -10px rgba(0,0,0,0.1)' }}
                                   itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                  formatter={(value: any, name: string | undefined) => [name || '', 'Task']}
+                                  formatter={(value: any, name: string | undefined) => [value, 'Tasks']}
                               />
                               <Legend 
                                   verticalAlign="bottom" 

@@ -165,10 +165,13 @@ const AuthenticatedApp: React.FC = () => {
   });
   
   const currentUserId = typeof window !== 'undefined' ? (localStorage.getItem(SESSION_KEY) || 'guest') : 'guest';
+  const [isProfileSynced, setIsProfileSynced] = useState(false);
 
   // --- STREAK CHECK ---
   useEffect(() => {
     if (!userProfile.lastTaskCompletedDate) return;
+    // Prevent streak reset if we haven't synced with server yet (unless guest)
+    if (currentUserId !== 'guest' && !isProfileSynced) return;
     
     const today = new Date();
     const yesterday = new Date(today);
@@ -182,11 +185,14 @@ const AuthenticatedApp: React.FC = () => {
         supabase.from('profiles').update({ current_streak: 0 }).eq('id', currentUserId).then();
       }
     }
-  }, [userProfile.lastTaskCompletedDate, userProfile.currentStreak, currentUserId, setUserProfile]);
+  }, [userProfile.lastTaskCompletedDate, userProfile.currentStreak, currentUserId, setUserProfile, isProfileSynced]);
   
   // Fetch user profile from Supabase
   useEffect(() => {
-      if (currentUserId === 'guest') return;
+      if (currentUserId === 'guest') {
+          setIsProfileSynced(true);
+          return;
+      }
 
       const fetchProfile = async () => {
           try {
@@ -212,6 +218,8 @@ const AuthenticatedApp: React.FC = () => {
               }
           } catch (error) {
               console.error('Error fetching profile:', error);
+          } finally {
+              setIsProfileSynced(true);
           }
       };
 
