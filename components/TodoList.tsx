@@ -809,25 +809,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       </div>
 
       {/* 2. Task List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="px-3 pb-32 pt-4 space-y-3">
-          {filteredTasks.filter(t => !t.completed).length > 0 && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-2xl p-3 flex items-center gap-3 animate-fade-in shadow-sm mx-1">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl shadow-inner">
-                      <AlertCircle size={16} strokeWidth={3} />
-                  </div>
-                  <div>
-                      <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
-                          Bạn có {filteredTasks.filter(t => !t.completed).length} công việc chưa hoàn thành
-                      </p>
-                      <p className="text-[10px] font-semibold text-amber-600/80 dark:text-amber-400/70 mt-0.5">
-                          Hãy cố gắng hoàn thành nhé!
-                      </p>
-                  </div>
-              </div>
-          )}
-
-          {filteredTasks.length === 0 && stats.total > 0 && stats.percent === 100 ? (
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-32 pt-2 space-y-3">
+        {filteredTasks.length === 0 && stats.total > 0 && stats.percent === 100 ? (
               <StreakCompletionCard streak={userProfile.currentStreak || 0} onStartNewTask={() => setIsInputExpanded(true)} />
           ) : filteredTasks.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-slate-400 animate-fade-in">
@@ -838,7 +821,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                   <p className="text-xs font-semibold text-slate-300 mt-1">{t.emptyChill}</p>
               </div>
           ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 pb-24">
                   {filteredTasks.map((task, index) => (
                       <TaskItem 
                         key={task.id} 
@@ -852,7 +835,6 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
                   ))}
               </div>
           )}
-        </div>
       </div>
 
       {/* 3. Floating Input Bar */}
