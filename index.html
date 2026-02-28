@@ -299,6 +299,18 @@
       })();
     </script>
     <script>
+      // Global Error Handler for Mobile Debugging
+      window.onerror = function(message, source, lineno, colno, error) {
+        console.error("Global Error:", message, source, lineno, colno, error);
+        // Only show alert if critical to avoid spamming
+        if (message && message.toString().toLowerCase().includes('script error')) return;
+      };
+
+      window.addEventListener('unhandledrejection', function(event) {
+        console.error("Unhandled Rejection:", event.reason);
+      });
+    </script>
+    <script>
       // Polyfill process to prevent libraries from crashing
       window.process = { env: {} };
 
