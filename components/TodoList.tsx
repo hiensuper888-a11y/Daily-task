@@ -151,8 +151,41 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
               schema: 'public', 
               table: 'tasks',
               filter: activeGroup ? undefined : `user_id=eq.${currentUserId}`
-          }, () => {
-              fetchTasks();
+          }, (payload: any) => {
+              // Optimize: Handle payload directly instead of refetching
+              if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                  const newData = payload.new;
+                  const task = newData.raw_data as Task;
+                  
+                  if (!task) return;
+
+                  // Client-side filtering for groups (since we can't easily filter JSONB in subscription)
+                  if (activeGroup) {
+                      if (task.groupId !== activeGroup.id) return;
+                  } else {
+                      // For personal tasks, ensure it's not a group task and belongs to user
+                      if (task.groupId) return;
+                      if (newData.user_id !== currentUserId) return;
+                  }
+
+                  setTasks(prev => {
+                      const index = prev.findIndex(t => t.id === task.id);
+                      if (index >= 0) {
+                          // Update existing
+                          const newTasks = [...prev];
+                          // Only update if timestamp is newer to avoid overwriting local optimistic updates?
+                          // For now, simple replacement to ensure sync.
+                          newTasks[index] = task;
+                          return newTasks;
+                      } else {
+                          // Insert new
+                          return [task, ...prev];
+                      }
+                  });
+              } else if (payload.eventType === 'DELETE') {
+                  const deletedId = payload.old.id; // Assuming id column matches task.id
+                  setTasks(prev => prev.filter(t => t.id != deletedId));
+              }
           })
           .subscribe();
 
