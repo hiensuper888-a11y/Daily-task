@@ -94,6 +94,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
   
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isFetching, setIsFetching] = useState(true); // Add loading state
   
   const inputRef = useRef<HTMLInputElement>(null);
   const [showStreakAnimation, setShowStreakAnimation] = useState(false);
@@ -117,6 +118,7 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       if (currentUserId === 'guest') return;
 
       const fetchTasks = async () => {
+          setIsFetching(true);
           try {
               let query = supabase.from('tasks').select('raw_data');
               
@@ -139,6 +141,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
               }
           } catch (error) {
               console.error('Error fetching tasks:', error);
+          } finally {
+              setIsFetching(false);
           }
       };
 
@@ -843,7 +847,12 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
 
       {/* 2. Task List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-32 pt-2 space-y-3">
-        {filteredTasks.length === 0 && stats.total > 0 && stats.percent === 100 ? (
+        {isFetching && tasks.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-slate-400 animate-fade-in">
+                <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                <p className="font-bold text-sm text-slate-400">Đang đồng bộ dữ liệu...</p>
+            </div>
+        ) : filteredTasks.length === 0 && stats.total > 0 && stats.percent === 100 ? (
               <StreakCompletionCard streak={userProfile.currentStreak || 0} onStartNewTask={() => setIsInputExpanded(true)} />
           ) : filteredTasks.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-slate-400 animate-fade-in">
