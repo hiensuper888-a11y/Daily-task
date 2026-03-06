@@ -192,11 +192,33 @@ export const Profile: React.FC = () => {
             <div className="absolute top-0 right-0 p-32 bg-gradient-to-br from-orange-500/10 to-rose-500/10 rounded-full blur-3xl -z-10 opacity-60"></div>
             
             <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
-                    <Flame size={24} className="animate-fire-pulse" />
+                <div className="w-20 h-20 rounded-2xl bg-slate-900/5 dark:bg-slate-900/50 flex items-center justify-center relative overflow-visible group">
+                    {/* Ambient Glow */}
+                    <div className="absolute inset-0 bg-orange-600/30 rounded-full blur-3xl animate-pulse group-hover:bg-orange-500/40 transition-colors duration-500"></div>
+                    
+                    {/* Realistic Fire Core - Surrounding & Rising */}
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        {/* 1. Large Back Flame (Red/Dark Orange) - Shape Follower */}
+                        <Flame size={56} className="absolute text-red-600 blur-[8px] animate-fire-wave-intense opacity-80 dark:mix-blend-screen origin-bottom" style={{ animationDuration: '1.5s' }} />
+                        
+                        {/* 2. Middle Flame (Orange/Amber) - Shape Follower */}
+                        <Flame size={48} className="absolute text-orange-500 blur-[4px] animate-fire-wave-intense opacity-90 dark:mix-blend-screen origin-bottom" style={{ animationDelay: '-0.5s', animationDuration: '1.3s' }} />
+                        
+                        {/* 3. Inner Flame (Yellow) - Shape Follower */}
+                        <Flame size={40} className="absolute text-yellow-400 blur-[2px] animate-fire-wave-intense opacity-100 dark:mix-blend-screen origin-bottom" style={{ animationDelay: '-1s', animationDuration: '1.1s' }} />
+
+                        {/* Rising Sparks/Embers - Floating up */}
+                        <div className="absolute bottom-0 left-1/2 w-1 h-1 bg-yellow-200 rounded-full animate-spark-rise opacity-0 blur-[0.5px]" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }}></div>
+                        <div className="absolute bottom-0 left-[30%] w-0.5 h-0.5 bg-orange-300 rounded-full animate-spark-rise opacity-0 blur-[0.5px]" style={{ animationDuration: '2.2s', animationDelay: '0.8s' }}></div>
+                        <div className="absolute bottom-2 left-[70%] w-0.5 h-0.5 bg-white rounded-full animate-spark-rise opacity-0 blur-[0.5px]" style={{ animationDuration: '1.8s', animationDelay: '0.5s' }}></div>
+                        <div className="absolute bottom-1 left-[40%] w-0.5 h-0.5 bg-amber-100 rounded-full animate-spark-rise opacity-0 blur-[0.5px]" style={{ animationDuration: '2.5s', animationDelay: '0.1s' }}></div>
+
+                        {/* Main Icon - Centered in the heat */}
+                        <Flame size={36} className="relative z-10 text-white drop-shadow-[0_0_15px_rgba(255,100,0,0.8)] animate-fire-flicker-intense" />
+                    </div>
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Chuỗi Giữ Lửa</h3>
+                    <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 group-hover:text-orange-500 transition-colors">Chuỗi Giữ Lửa</h3>
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Hoàn thành tất cả nhiệm vụ trong ngày</p>
                 </div>
             </div>
@@ -204,8 +226,8 @@ export const Profile: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Hiện Tại</p>
-                    <p className="text-3xl font-black text-orange-500 flex items-center justify-center gap-1">
-                        {profile.currentStreak || 0} <span className="text-lg">🔥</span>
+                    <p className="text-3xl font-black text-orange-500 flex items-center justify-center gap-1 drop-shadow-sm">
+                        {profile.currentStreak || 0} <Flame size={24} className="text-orange-500 fill-orange-500 animate-fire-pulse" />
                     </p>
                 </div>
                 <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
