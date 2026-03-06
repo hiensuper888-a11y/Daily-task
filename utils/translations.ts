@@ -100,6 +100,7 @@ const enTranslations = {
   
   // Time & Deadlines
   overdue: "Overdue",
+  upcoming: "Upcoming",
   hoursLeft: "h left",
   minsLeft: "m left",
   tomorrow: "Tomorrow",
@@ -332,6 +333,8 @@ const enTranslations = {
   signUpWith: "Sign up with {provider}",
   forgotPassword: "Forgot your password?",
   sendResetInstructions: "Send reset instructions",
+  dailySummaryTitle: "Daily Summary",
+  dailySummary: "You have {today} tasks for today and {backlog} overdue tasks.",
 };
 
 const viTranslations = {
@@ -426,6 +429,7 @@ const viTranslations = {
   leaderFeedbackPlaceholder: "Nhận xét của trưởng nhóm...",
   rating: "Đánh giá",
   overdue: "Quá hạn",
+  upcoming: "Sắp đến hạn",
   hoursLeft: "h nữa",
   minsLeft: "p nữa",
   tomorrow: "Ngày mai",
@@ -639,6 +643,8 @@ const viTranslations = {
   signUpWith: "Đăng ký với {provider}",
   forgotPassword: "Quên mật khẩu?",
   sendResetInstructions: "Gửi hướng dẫn đặt lại",
+  dailySummaryTitle: "Tổng kết ngày",
+  dailySummary: "Bạn có {today} nhiệm vụ hôm nay và {backlog} nhiệm vụ tồn đọng.",
 };
 
 const zhTranslations = {
@@ -944,6 +950,9 @@ const zhTranslations = {
   signUpWith: "Sign up with {provider}",
   forgotPassword: "Forgot your password?",
   sendResetInstructions: "Send reset instructions",
+  dailySummaryTitle: "每日摘要",
+  dailySummary: "您今天有 {today} 个任务，{backlog} 个逾期任务。",
+  upcoming: "即将到来",
 };
 
 const jaTranslations = {
@@ -1249,6 +1258,9 @@ const jaTranslations = {
   signUpWith: "Sign up with {provider}",
   forgotPassword: "Forgot your password?",
   sendResetInstructions: "Send reset instructions",
+  dailySummaryTitle: "デイリーサマリー",
+  dailySummary: "今日のタスクは {today} 件、期限切れは {backlog} 件です。",
+  upcoming: "今後の予定",
 };
 
 const deTranslations = {
@@ -1554,6 +1566,9 @@ const deTranslations = {
   signUpWith: "Sign up with {provider}",
   forgotPassword: "Forgot your password?",
   sendResetInstructions: "Send reset instructions",
+  dailySummaryTitle: "Tägliche Zusammenfassung",
+  dailySummary: "Sie haben {today} Aufgaben für heute und {backlog} überfällige Aufgaben.",
+  upcoming: "Bevorstehend",
 };
 
 const frTranslations = {
@@ -1859,6 +1874,9 @@ const frTranslations = {
   signUpWith: "Sign up with {provider}",
   forgotPassword: "Forgot your password?",
   sendResetInstructions: "Send reset instructions",
+  dailySummaryTitle: "Résumé quotidien",
+  dailySummary: "Vous avez {today} tâches pour aujourd'hui et {backlog} tâches en retard.",
+  upcoming: "À venir",
 };
 
 const esTranslations = {
@@ -2190,6 +2208,9 @@ const esTranslations = {
   signUpWith: "Sign up with {provider}",
   forgotPassword: "Forgot your password?",
   sendResetInstructions: "Send reset instructions",
+  dailySummaryTitle: "Resumen diario",
+  dailySummary: "Tienes {today} tareas para hoy y {backlog} tareas atrasadas.",
+  upcoming: "Próximo",
 };
 
 export const translations = {
