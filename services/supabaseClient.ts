@@ -2,12 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // User provided credentials
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://gckgfkonfdydliqgnldd.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_SYazz5g2WvcToaILp1DSDQ_x_EtLxzY';
-
-// Check if the key is the placeholder or invalid
-if (SUPABASE_ANON_KEY.startsWith('sb_publishable_')) {
-    console.warn("CẢNH BÁO: Đang sử dụng API Key mặc định không hợp lệ. Vui lòng cấu hình VITE_SUPABASE_ANON_KEY trong file .env hoặc trên Vercel.");
-}
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdja2dma29uZmR5ZGxpcWdubGRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NTQ2NzgsImV4cCI6MjA4NzMzMDY3OH0.TOy94W2U2rdqRwm6FFmHowh6bJWl6GmMZxckxtHDhWY';
 
 let client;
 
