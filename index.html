@@ -67,6 +67,17 @@
               'fire-flicker-intense': 'fire-flicker-intense 0.1s ease-in-out infinite',
               'fire-wave-intense': 'fire-wave-intense 1.5s ease-in-out infinite alternate',
               'shrink': 'shrink linear forwards',
+              'shutter-top': 'shutter-top 1.2s cubic-bezier(0.87, 0, 0.13, 1) forwards',
+              'shutter-bottom': 'shutter-bottom 1.2s cubic-bezier(0.87, 0, 0.13, 1) forwards',
+              'shutter-top-reverse': 'shutter-top-reverse 1.2s cubic-bezier(0.87, 0, 0.13, 1) forwards',
+              'shutter-bottom-reverse': 'shutter-bottom-reverse 1.2s cubic-bezier(0.87, 0, 0.13, 1) forwards',
+              'fade-in-up': 'fade-in-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'zoom-out': 'zoom-out 1.5s cubic-bezier(0.87, 0, 0.13, 1) forwards',
+              'cinematic-fade': 'cinematic-fade 2s ease-in-out forwards',
+              'cinematic-text': 'cinematic-text 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'cinematic-enter': 'cinematic-enter 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              'light-sweep': 'light-sweep 3s linear infinite',
+              'logo-reveal': 'logo-reveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
             },
             keyframes: {
               wiggle: {
@@ -140,6 +151,54 @@
               'slide-in-bottom': {
                 '0%': { transform: 'translateY(20px)', opacity: '0' },
                 '100%': { transform: 'translateY(0)', opacity: '1' }
+              },
+              'shutter-top': {
+                '0%': { transform: 'translateY(-100%)' },
+                '100%': { transform: 'translateY(0)' }
+              },
+              'shutter-bottom': {
+                '0%': { transform: 'translateY(100%)' },
+                '100%': { transform: 'translateY(0)' }
+              },
+              'shutter-top-reverse': {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(-100%)' }
+              },
+              'shutter-bottom-reverse': {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(100%)' }
+              },
+              'fade-in-up': {
+                '0%': { transform: 'translateY(40px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' }
+              },
+              'zoom-out': {
+                '0%': { transform: 'scale(1)', filter: 'blur(0px)', opacity: '1' },
+                '100%': { transform: 'scale(0.75) translateY(30px)', filter: 'blur(20px) brightness(0.4)', opacity: '0.3' }
+              },
+              'cinematic-fade': {
+                '0%': { opacity: '0', transform: 'scale(0.85)', filter: 'blur(15px)' },
+                '20%': { opacity: '1', transform: 'scale(1)', filter: 'blur(0px)' },
+                '80%': { opacity: '1', transform: 'scale(1.05)', filter: 'blur(0px)' },
+                '100%': { opacity: '0', transform: 'scale(1.15)', filter: 'blur(15px)' }
+              },
+              'cinematic-text': {
+                '0%': { opacity: '0', transform: 'scale(0.9)', letterSpacing: '0.05em', filter: 'blur(10px)' },
+                '20%': { opacity: '1', transform: 'scale(1)', letterSpacing: '0.2em', filter: 'blur(0px)' },
+                '80%': { opacity: '1', transform: 'scale(1.02)', letterSpacing: '0.25em', filter: 'blur(0px)' },
+                '100%': { opacity: '0', transform: 'scale(1.08)', letterSpacing: '0.4em', filter: 'blur(15px)' }
+              },
+              'cinematic-enter': {
+                '0%': { opacity: '0', transform: 'scale(1.05) translateY(-10px)', filter: 'blur(10px)' },
+                '100%': { opacity: '1', transform: 'scale(1) translateY(0)', filter: 'blur(0px)' }
+              },
+              'light-sweep': {
+                '0%': { backgroundPosition: '200% center' },
+                '100%': { backgroundPosition: '-200% center' }
+              },
+              'logo-reveal': {
+                '0%': { transform: 'scale(0.5) rotate(-15deg)', opacity: '0', filter: 'blur(20px)' },
+                '100%': { transform: 'scale(1) rotate(3deg)', opacity: '1', filter: 'blur(0px)' }
               },
               'fire-pulse': {
                 '0%': { transform: 'scale(1)', filter: 'drop-shadow(0 0 2px rgba(255, 165, 0, 0.5))', color: '#f97316' },

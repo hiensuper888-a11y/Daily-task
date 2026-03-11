@@ -63,41 +63,43 @@ const NotificationItem: React.FC<{ notif: DeadlineNotification, onDismiss: (id: 
   }
 
   return (
-    <div className={`pointer-events-auto group relative flex flex-col p-1 rounded-[1.5rem] bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} transition-all hover:scale-[1.02] border border-white/60 dark:border-white/10 overflow-hidden ${shadowColor}`}>
+    <div className={`pointer-events-auto group relative flex flex-col p-1.5 rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.16)] dark:hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)] border border-white/80 dark:border-white/10 overflow-hidden ${shadowColor}`}>
       {/* Animated Glow Background */}
-      <div className={`absolute -inset-10 bg-gradient-to-br ${accentColor} opacity-10 blur-2xl group-hover:opacity-20 transition-opacity duration-500`}></div>
+      <div className={`absolute -inset-10 bg-gradient-to-br ${accentColor} opacity-[0.08] blur-2xl group-hover:opacity-[0.15] transition-opacity duration-500`}></div>
 
       <div className="relative flex items-start gap-4 p-3 z-10">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${iconBg} transform group-hover:rotate-12 transition-transform duration-500`}>
-            <Icon size={24} strokeWidth={2} />
+          <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-lg ${iconBg} transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 relative`}>
+            <div className="absolute inset-0 rounded-[1.25rem] bg-white/20 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '2s' }}></div>
+            <Icon size={22} strokeWidth={2.5} className="relative z-10 drop-shadow-md" />
           </div>
           
           <div className="flex-1 min-w-0 pt-0.5">
-            <div className="flex justify-between items-center mb-1">
-                <p className={`text-[10px] font-black uppercase tracking-widest ${titleColor}`}>
-                {titleText}
+            <div className="flex justify-between items-center mb-1.5">
+                <p className={`text-[11px] font-bold uppercase tracking-wider ${titleColor} flex items-center gap-1.5`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                  {titleText}
                 </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
                     Just now
                 </span>
             </div>
-            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug pr-6">
+            <h4 className="text-[14px] font-semibold text-slate-800 dark:text-slate-100 leading-snug pr-6 drop-shadow-sm">
               {notif.taskText}
             </h4>
           </div>
 
           <button 
             onClick={handleDismiss}
-            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+            className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all duration-200 hover:rotate-90"
           >
-            <X size={16} />
+            <X size={16} strokeWidth={2.5} />
           </button>
       </div>
 
       {/* Progress Bar */}
-      <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-b-[1.5rem] overflow-hidden mt-1">
+      <div className="h-1 w-full bg-slate-100/50 dark:bg-slate-800/50 rounded-b-[1.5rem] overflow-hidden mt-1 mx-1 w-[calc(100%-8px)]">
           <div 
-            className={`h-full bg-gradient-to-r ${accentColor}`}
+            className={`h-full bg-gradient-to-r ${accentColor} rounded-full`}
             style={{ 
                 width: '100%',
                 animation: `shrink ${DURATION}ms linear forwards`

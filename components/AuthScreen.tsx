@@ -47,7 +47,7 @@ export const AuthScreen: React.FC = () => {
   const [introStage, setIntroStage] = useState(0);
 
   React.useEffect(() => {
-    const t1 = setTimeout(() => setIntroStage(1), 2200);
+    const t1 = setTimeout(() => setIntroStage(1), 2000);
     const t2 = setTimeout(() => setIntroStage(2), 3000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
@@ -151,47 +151,18 @@ export const AuthScreen: React.FC = () => {
     });
   };
 
-  if (introStage < 2) {
-    return (
-      <div className="w-full h-full relative overflow-hidden bg-slate-900 flex items-center justify-center">
-        {/* Animated Background Mesh */}
-        <div className="absolute inset-0 z-0 opacity-60">
-             <div className="absolute top-[10%] left-[10%] w-[50vw] h-[50vw] bg-indigo-600/40 rounded-full blur-[120px] animate-blob"></div>
-             <div className="absolute top-[30%] right-[10%] w-[40vw] h-[40vw] bg-purple-600/40 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '2s' }}></div>
-             <div className="absolute bottom-[10%] left-[30%] w-[45vw] h-[45vw] bg-emerald-500/30 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '4s' }}></div>
-        </div>
-        
-        <div className={`relative z-10 flex flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.87,0,0.13,1)] ${introStage === 1 ? 'scale-[3] opacity-0 blur-2xl' : 'scale-100 opacity-100'}`}>
-            <div className="relative animate-float">
-                <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-60 animate-pulse"></div>
-                <div className="w-32 h-32 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-indigo-500/50 relative z-10 border border-white/20 transform rotate-3">
-                    <CheckSquare size={64} className="text-white drop-shadow-lg" strokeWidth={2.5} />
-                </div>
-            </div>
-            <h1 className="mt-8 text-5xl font-black text-white tracking-tighter drop-shadow-2xl">
-                Daily Task
-            </h1>
-            <div className="flex gap-2.5 mt-8">
-                <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-bounce shadow-[0_0_10px_rgba(129,140,248,0.8)]" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-bounce shadow-[0_0_10px_rgba(192,132,252,0.8)]" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-bounce shadow-[0_0_10px_rgba(52,211,153,0.8)]" style={{ animationDelay: '300ms' }}></div>
-            </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full h-full relative overflow-y-auto custom-scrollbar bg-surface-50">
-        {/* Animated Background Mesh (matches App.tsx global style) */}
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-             <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-200/40 rounded-full blur-[80px] animate-blob"></div>
-             <div className="absolute top-[40%] right-[-10%] w-[40vw] h-[40vw] bg-purple-200/40 rounded-full blur-[80px] animate-blob animation-delay-2000"></div>
-             <div className="absolute bottom-[-10%] left-[20%] w-[40vw] h-[40vw] bg-emerald-100/40 rounded-full blur-[80px] animate-blob animation-delay-4000"></div>
-        </div>
+    <>
+      <div className="w-full h-full relative overflow-y-auto custom-scrollbar bg-surface-50">
+          {/* Animated Background Mesh (matches App.tsx global style) */}
+          <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+               <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-200/40 rounded-full blur-[80px] animate-blob"></div>
+               <div className="absolute top-[40%] right-[-10%] w-[40vw] h-[40vw] bg-purple-200/40 rounded-full blur-[80px] animate-blob animation-delay-2000"></div>
+               <div className="absolute bottom-[-10%] left-[20%] w-[40vw] h-[40vw] bg-emerald-100/40 rounded-full blur-[80px] animate-blob animation-delay-4000"></div>
+          </div>
 
-        {/* Language Switcher */}
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          {/* Language Switcher */}
+          <div className={`fixed top-4 right-4 z-50 transition-all duration-1000 delay-500 ${introStage < 1 ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
             <div className="flex items-center gap-1.5 bg-white/30 backdrop-blur-xl p-1.5 rounded-2xl border border-white/40 shadow-sm overflow-x-auto max-w-[calc(100vw-32px)] scrollbar-none">
                 {languages.map(lang => (
                     <button 
@@ -207,7 +178,7 @@ export const AuthScreen: React.FC = () => {
         </div>
 
         {/* Scrollable Container */}
-        <div className="min-h-full w-full flex flex-col items-center justify-center p-4 py-12 relative z-10">
+        <div className={`min-h-full w-full flex flex-col items-center justify-center p-4 py-12 relative z-10 transition-all duration-1000 delay-300 ${introStage < 1 ? 'opacity-0 scale-95 translate-y-8' : 'opacity-100 scale-100 translate-y-0'}`}>
             
             {/* APP LOGO SECTION */}
             <div className="mb-8 flex flex-col items-center animate-slide-up">
@@ -330,6 +301,43 @@ export const AuthScreen: React.FC = () => {
                 </div>
             </div>
         </div>
-    </div>
+      </div>
+
+      {/* Intro Overlay */}
+      {introStage < 2 && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none overflow-hidden bg-slate-950">
+            {/* Shutters with glowing edges */}
+            <div className={`absolute inset-x-0 top-0 h-1/2 bg-slate-950 z-20 border-b border-indigo-500/20 shadow-[0_10px_40px_rgba(99,102,241,0.15)] ${introStage === 1 ? 'animate-shutter-top-reverse' : ''}`}></div>
+            <div className={`absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 z-20 border-t border-indigo-500/20 shadow-[0_-10px_40px_rgba(99,102,241,0.15)] ${introStage === 1 ? 'animate-shutter-bottom-reverse' : ''}`}></div>
+            
+            {/* Cinematic Vignette */}
+            <div className={`absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.85)_100%)] z-10 transition-opacity duration-1000 ${introStage === 1 ? 'opacity-0' : 'opacity-100'}`}></div>
+
+            {/* Animated Background Mesh for Intro */}
+            <div className={`absolute inset-0 z-0 opacity-60 transition-opacity duration-1000 ${introStage === 1 ? 'opacity-0' : ''}`}>
+                 <div className="absolute top-[10%] left-[10%] w-[50vw] h-[50vw] bg-indigo-600/30 rounded-full blur-[120px] animate-blob"></div>
+                 <div className="absolute top-[30%] right-[10%] w-[40vw] h-[40vw] bg-purple-600/30 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '2s' }}></div>
+                 <div className="absolute bottom-[10%] left-[30%] w-[45vw] h-[45vw] bg-emerald-500/20 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '4s' }}></div>
+            </div>
+            
+            <div className={`relative z-30 flex flex-col items-center transition-all duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] ${introStage === 1 ? 'scale-[2] opacity-0 blur-3xl translate-y-10' : 'scale-100 opacity-100 blur-0 translate-y-0'}`}>
+                <div className="relative animate-logo-reveal">
+                    <div className="absolute inset-0 bg-indigo-500 blur-[60px] opacity-50 animate-pulse"></div>
+                    <div className="w-32 h-32 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_80px_rgba(99,102,241,0.4)] relative z-10 border border-white/20">
+                        <CheckSquare size={64} className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] animate-pulse" strokeWidth={2.5} />
+                    </div>
+                </div>
+                <h1 className="mt-12 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white bg-[length:200%_auto] animate-light-sweep tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                    Daily Task
+                </h1>
+                <div className="flex gap-3 mt-10">
+                    <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_15px_rgba(129,140,248,1)]" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse shadow-[0_0_15px_rgba(192,132,252,1)]" style={{ animationDelay: '200ms' }}></div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_15px_rgba(52,211,153,1)]" style={{ animationDelay: '400ms' }}></div>
+                </div>
+            </div>
+        </div>
+      )}
+    </>
   );
 };

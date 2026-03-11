@@ -904,7 +904,7 @@ const AppContent: React.FC = () => {
             setIsExiting(true);
             
             // Wait for animation to finish
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 3000));
             
             // Actually logout
             try {
@@ -944,26 +944,32 @@ const AppContent: React.FC = () => {
 
     return (
         <>
-            <div className={`w-full h-full transition-all duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] ${isExiting ? 'scale-90 opacity-0 blur-xl' : 'scale-100 opacity-100 blur-0'}`}>
+            <div className={`w-full h-full transition-all duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] ${isExiting ? 'animate-zoom-out' : 'scale-100 opacity-100 blur-0'}`}>
                 <AuthenticatedApp />
             </div>
             
-            {/* Exit Overlay Animation */}
+            {/* Cinematic Exit Overlay */}
             {isExiting && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
-                    <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-2xl animate-fade-in" style={{ animationDuration: '0.5s' }}></div>
-                    <div className="relative z-10 flex flex-col items-center animate-slide-up">
-                        <div className="relative animate-float">
-                            <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-60 animate-pulse"></div>
-                            <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/50 relative z-10 border border-white/20 transform -rotate-3">
-                                <LogOut size={40} className="text-white drop-shadow-lg ml-1" strokeWidth={2.5} />
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none overflow-hidden">
+                    {/* Shutters with glowing edges */}
+                    <div className="absolute inset-x-0 top-0 h-1/2 bg-slate-950 animate-shutter-top z-20 border-b border-indigo-500/20 shadow-[0_10px_40px_rgba(99,102,241,0.15)]"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 animate-shutter-bottom z-20 border-t border-indigo-500/20 shadow-[0_-10px_40px_rgba(99,102,241,0.15)]"></div>
+                    
+                    {/* Cinematic Vignette */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.9)_100%)] z-10 opacity-0 animate-fade-in" style={{ animationDelay: '0.2s', animationDuration: '1s', animationFillMode: 'both' }}></div>
+
+                    <div className="relative z-30 flex flex-col items-center animate-cinematic-fade" style={{ animationDelay: '0.4s', animationDuration: '2.5s', animationFillMode: 'both' }}>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-indigo-500 blur-[50px] opacity-50 animate-pulse"></div>
+                            <div className="w-24 h-24 bg-slate-900 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_60px_rgba(99,102,241,0.3)] relative z-10 border border-white/10 transform rotate-3">
+                                <LogOut size={40} className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] ml-1 animate-pulse" strokeWidth={2} />
                             </div>
                         </div>
-                        <h2 className="mt-8 text-3xl font-black text-white tracking-widest uppercase drop-shadow-2xl">{t.logout || "Hẹn gặp lại"}</h2>
-                        <div className="flex gap-2.5 mt-6">
-                            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce shadow-[0_0_10px_rgba(129,140,248,0.8)]" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce shadow-[0_0_10px_rgba(192,132,252,0.8)]" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce shadow-[0_0_10px_rgba(52,211,153,0.8)]" style={{ animationDelay: '300ms' }}></div>
+                        <h2 className="mt-10 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white bg-[length:200%_auto] uppercase drop-shadow-2xl animate-cinematic-text" style={{ animationDelay: '0.6s', animationDuration: '2.4s', animationFillMode: 'both' }}>{t.logout || "Hẹn gặp lại"}</h2>
+                        <div className="flex gap-3 mt-8">
+                            <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: '200ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: '400ms' }}></div>
                         </div>
                     </div>
                 </div>

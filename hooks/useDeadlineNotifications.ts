@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Task } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { playNotificationSound } from '../utils/sound';
 
 export interface DeadlineNotification {
   id: string;
@@ -93,6 +94,7 @@ export function useDeadlineNotifications(tasks: Task[]) {
 
       if (newNotifications.length > 0) {
         setNotifications(prev => [...prev, ...newNotifications]);
+        playNotificationSound();
       }
     };
 
