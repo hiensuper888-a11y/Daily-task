@@ -76,13 +76,8 @@ export const Profile: React.FC = () => {
   }, [profile, isEditing]);
 
   const logout = () => { 
-      if (isFirebaseConfigured() && auth) signOut(auth).catch(console.error); 
-      setProfile(DEFAULT_PROFILE); 
-      localStorage.removeItem(SESSION_KEY); 
-      localStorage.removeItem('user_profile'); // Clear current profile from storage
-      window.dispatchEvent(new Event('auth-change')); 
-      window.dispatchEvent(new Event('local-storage'));
-      // App.tsx will detect isLoggedIn is false (or profile missing) and switch to AuthScreen
+      // Dispatch event to trigger exit animation in App.tsx
+      window.dispatchEvent(new Event('logout-start'));
   };
 
   const handleSave = async () => { 

@@ -882,6 +882,8 @@ const AuthenticatedApp: React.FC = () => {
 const AppContent: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [localSession, setLocalSession] = useState<string | null>(localStorage.getItem(SESSION_KEY));
+    const [isExiting, setIsExiting] = useState(false);
+    const { t } = useLanguage();
 
     useEffect(() => {
         // Supabase Auth Listener
@@ -898,16 +900,39 @@ const AppContent: React.FC = () => {
             setLocalSession(localStorage.getItem(SESSION_KEY));
         };
         
+        const handleLogoutStart = async () => {
+            setIsExiting(true);
+            
+            // Wait for animation to finish
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Actually logout
+            try {
+                const { isFirebaseConfigured, auth, signOut } = await import('./services/authService');
+                if (isFirebaseConfigured() && auth) await signOut(auth).catch(console.error); 
+            } catch (e) { console.error(e) }
+            
+            localStorage.removeItem(SESSION_KEY); 
+            localStorage.removeItem('user_profile'); 
+            window.dispatchEvent(new Event('auth-change')); 
+            window.dispatchEvent(new Event('local-storage'));
+            
+            // Reset exit state after a tiny delay to ensure AuthScreen mounts
+            setTimeout(() => setIsExiting(false), 100);
+        };
+
         // Listen for both custom event and storage events
         window.addEventListener('auth-change', handleAuthChange);
         window.addEventListener('storage', handleAuthChange);
         window.addEventListener('local-storage', handleAuthChange);
+        window.addEventListener('logout-start', handleLogoutStart);
 
         return () => {
             subscription.unsubscribe();
             window.removeEventListener('auth-change', handleAuthChange);
             window.removeEventListener('storage', handleAuthChange);
             window.removeEventListener('local-storage', handleAuthChange);
+            window.removeEventListener('logout-start', handleLogoutStart);
         };
     }, []);
 
@@ -917,7 +942,34 @@ const AppContent: React.FC = () => {
         return <AuthScreen />;
     }
 
-    return <AuthenticatedApp />;
+    return (
+        <>
+            <div className={`w-full h-full transition-all duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] ${isExiting ? 'scale-90 opacity-0 blur-xl' : 'scale-100 opacity-100 blur-0'}`}>
+                <AuthenticatedApp />
+            </div>
+            
+            {/* Exit Overlay Animation */}
+            {isExiting && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+                    <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-2xl animate-fade-in" style={{ animationDuration: '0.5s' }}></div>
+                    <div className="relative z-10 flex flex-col items-center animate-slide-up">
+                        <div className="relative animate-float">
+                            <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-60 animate-pulse"></div>
+                            <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/50 relative z-10 border border-white/20 transform -rotate-3">
+                                <LogOut size={40} className="text-white drop-shadow-lg ml-1" strokeWidth={2.5} />
+                            </div>
+                        </div>
+                        <h2 className="mt-8 text-3xl font-black text-white tracking-widest uppercase drop-shadow-2xl">{t.logout || "Hẹn gặp lại"}</h2>
+                        <div className="flex gap-2.5 mt-6">
+                            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce shadow-[0_0_10px_rgba(129,140,248,0.8)]" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce shadow-[0_0_10px_rgba(192,132,252,0.8)]" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce shadow-[0_0_10px_rgba(52,211,153,0.8)]" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
 };
 
 const App = () => (

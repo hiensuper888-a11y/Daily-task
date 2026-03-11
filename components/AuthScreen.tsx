@@ -44,6 +44,13 @@ export const AuthScreen: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [introStage, setIntroStage] = useState(0);
+
+  React.useEffect(() => {
+    const t1 = setTimeout(() => setIntroStage(1), 2200);
+    const t2 = setTimeout(() => setIntroStage(2), 3000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   const languages = [
     { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
@@ -143,6 +150,36 @@ export const AuthScreen: React.FC = () => {
       }
     });
   };
+
+  if (introStage < 2) {
+    return (
+      <div className="w-full h-full relative overflow-hidden bg-slate-900 flex items-center justify-center">
+        {/* Animated Background Mesh */}
+        <div className="absolute inset-0 z-0 opacity-60">
+             <div className="absolute top-[10%] left-[10%] w-[50vw] h-[50vw] bg-indigo-600/40 rounded-full blur-[120px] animate-blob"></div>
+             <div className="absolute top-[30%] right-[10%] w-[40vw] h-[40vw] bg-purple-600/40 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '2s' }}></div>
+             <div className="absolute bottom-[10%] left-[30%] w-[45vw] h-[45vw] bg-emerald-500/30 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '4s' }}></div>
+        </div>
+        
+        <div className={`relative z-10 flex flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.87,0,0.13,1)] ${introStage === 1 ? 'scale-[3] opacity-0 blur-2xl' : 'scale-100 opacity-100'}`}>
+            <div className="relative animate-float">
+                <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-60 animate-pulse"></div>
+                <div className="w-32 h-32 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-indigo-500/50 relative z-10 border border-white/20 transform rotate-3">
+                    <CheckSquare size={64} className="text-white drop-shadow-lg" strokeWidth={2.5} />
+                </div>
+            </div>
+            <h1 className="mt-8 text-5xl font-black text-white tracking-tighter drop-shadow-2xl">
+                Daily Task
+            </h1>
+            <div className="flex gap-2.5 mt-8">
+                <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-bounce shadow-[0_0_10px_rgba(129,140,248,0.8)]" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-bounce shadow-[0_0_10px_rgba(192,132,252,0.8)]" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-bounce shadow-[0_0_10px_rgba(52,211,153,0.8)]" style={{ animationDelay: '300ms' }}></div>
+            </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full relative overflow-y-auto custom-scrollbar bg-surface-50">
