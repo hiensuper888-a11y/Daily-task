@@ -318,6 +318,25 @@ export const AuthScreen: React.FC = () => {
       {/* Intro Overlay */}
       {introStage < 2 && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none overflow-hidden bg-slate-950">
+            {/* Starry Sky Background */}
+            <div className={`absolute inset-0 z-0 transition-opacity duration-1000 ${introStage === 1 ? 'opacity-0' : 'opacity-100'}`} style={{
+                backgroundImage: 'radial-gradient(2px 2px at 20px 30px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 40px 70px, #fdf, rgba(0,0,0,0)), radial-gradient(2px 2px at 50px 160px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 130px 80px, #fdf, rgba(0,0,0,0)), radial-gradient(2px 2px at 160px 120px, #fff, rgba(0,0,0,0))',
+                backgroundRepeat: 'repeat',
+                backgroundSize: '200px 200px',
+            }}></div>
+
+            {/* Forest Silhouette at the bottom */}
+            <div className={`absolute bottom-0 inset-x-0 h-[30vh] pointer-events-none z-10 transition-transform duration-1000 ${introStage === 1 ? 'translate-y-full' : 'translate-y-0'}`}>
+                {/* Back layer of trees */}
+                <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="absolute bottom-0 w-full h-full text-slate-900 fill-current opacity-80">
+                    <path d="M0,100 L1000,100 L1000,60 L980,80 L960,40 L940,70 L920,30 L900,65 L880,25 L860,55 L840,15 L820,60 L800,20 L780,50 L760,35 L740,75 L720,25 L700,65 L680,15 L660,55 L640,30 L620,70 L600,20 L580,60 L560,10 L540,50 L520,25 L500,65 L480,15 L460,55 L440,30 L420,70 L400,20 L380,60 L360,10 L340,50 L320,25 L300,65 L280,15 L260,55 L240,30 L220,70 L200,20 L180,60 L160,10 L140,50 L120,25 L100,65 L80,15 L60,55 L40,30 L20,70 L0,20 Z" />
+                </svg>
+                {/* Front layer of trees */}
+                <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="absolute bottom-0 w-full h-[80%] text-slate-950 fill-current">
+                    <path d="M0,100 L1000,100 L1000,50 L970,80 L950,30 L920,70 L890,20 L860,60 L830,10 L800,50 L770,25 L740,65 L710,15 L680,55 L650,30 L620,70 L590,20 L560,60 L530,10 L500,50 L470,25 L440,65 L410,15 L380,55 L350,30 L320,70 L290,20 L260,60 L230,10 L200,50 L170,25 L140,65 L110,15 L80,55 L50,30 L20,70 L0,40 Z" />
+                </svg>
+            </div>
+
             {/* Shutters with glowing edges */}
             <div className={`absolute inset-x-0 top-0 h-1/2 bg-slate-950 z-20 border-b border-purple-500/20 shadow-[0_10px_40px_rgba(168,85,247,0.15)] ${introStage === 1 ? 'animate-shutter-top-reverse' : ''}`}></div>
             <div className={`absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 z-20 border-t border-purple-500/20 shadow-[0_-10px_40px_rgba(168,85,247,0.15)] ${introStage === 1 ? 'animate-shutter-bottom-reverse' : ''}`}></div>
@@ -325,15 +344,18 @@ export const AuthScreen: React.FC = () => {
             {/* Cinematic Vignette */}
             <div className={`absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.85)_100%)] z-10 transition-opacity duration-1000 ${introStage === 1 ? 'opacity-0' : 'opacity-100'}`}></div>
 
-            {/* Animated Background Mesh for Intro */}
-            <div className={`absolute inset-0 z-0 opacity-60 transition-opacity duration-1000 ${introStage === 1 ? 'opacity-0' : ''}`}>
-                 <div className="absolute top-[10%] left-[10%] w-[50vw] h-[50vw] bg-indigo-600/30 rounded-full blur-[120px] animate-blob"></div>
-                 <div className="absolute top-[30%] right-[10%] w-[40vw] h-[40vw] bg-purple-600/30 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '2s' }}></div>
-                 <div className="absolute bottom-[10%] left-[30%] w-[45vw] h-[45vw] bg-emerald-500/20 rounded-full blur-[120px] animate-blob" style={{ animationDelay: '4s' }}></div>
-            </div>
-            
             <div className={`relative z-30 flex flex-col items-center transition-all duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] ${introStage === 1 ? 'scale-[2] opacity-0 blur-3xl translate-y-10' : 'scale-100 opacity-100 blur-0 translate-y-0'}`}>
                 <div className="relative animate-logo-fire-reveal flex items-center justify-center w-64 h-64">
+                    {/* Purple Light Rays */}
+                    <div className="absolute inset-[-200%] flex items-center justify-center animate-[spin_40s_linear_infinite] pointer-events-none z-0" style={{
+                        maskImage: 'radial-gradient(circle at center, black 10%, transparent 60%)',
+                        WebkitMaskImage: 'radial-gradient(circle at center, black 10%, transparent 60%)'
+                    }}>
+                        <div className="w-full h-full" style={{
+                            background: 'repeating-conic-gradient(from 0deg, transparent 0deg 10deg, rgba(168, 85, 247, 0.3) 10deg 20deg, transparent 20deg 30deg, rgba(217, 70, 239, 0.2) 30deg 40deg)'
+                        }}></div>
+                    </div>
+
                     {/* Purple Sun Fire Surrounding Logo */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                         {/* Massive Sun Glow */}
