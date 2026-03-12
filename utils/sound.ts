@@ -39,8 +39,93 @@ export const playSuccessSound = () => {
 };
 
 /**
- * Plays a subtle "Notification" chime using the Web Audio API.
+ * Plays a continuous fire crackling sound using the Web Audio API.
+ * Returns a function to stop the sound.
  */
+export const playFireSound = () => {
+  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContext) return () => {};
+
+  const ctx = new AudioContext();
+  
+  // Create an empty buffer for noise
+  const bufferSize = ctx.sampleRate * 2; // 2 seconds of noise
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  
+  // Fill buffer with white noise
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  
+  // Create noise source
+  const noiseSource = ctx.createBufferSource();
+  noiseSource.buffer = buffer;
+  noiseSource.loop = true;
+  
+  // Filter the noise to sound like fire (low pass + band pass)
+  const lowpass = ctx.createBiquadFilter();
+  lowpass.type = 'lowpass';
+  lowpass.frequency.value = 1000;
+  
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = 'bandpass';
+  bandpass.frequency.value = 500;
+  bandpass.Q.value = 0.5;
+  
+  // Modulate the gain to create crackling effect
+  const gainNode = ctx.createGain();
+  gainNode.gain.value = 0.5;
+  
+  // Connect nodes
+  noiseSource.connect(lowpass);
+  lowpass.connect(bandpass);
+  bandpass.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  
+  // Start the noise
+  noiseSource.start();
+  
+  // Create crackles
+  const crackleInterval = setInterval(() => {
+    if (ctx.state === 'closed') {
+      clearInterval(crackleInterval);
+      return;
+    }
+    
+    // Random crackle
+    if (Math.random() > 0.3) {
+      const crackleGain = ctx.createGain();
+      crackleGain.connect(ctx.destination);
+      
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(Math.random() * 200 + 100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.1);
+      
+      crackleGain.gain.setValueAtTime(0, ctx.currentTime);
+      crackleGain.gain.linearRampToValueAtTime(Math.random() * 0.3 + 0.1, ctx.currentTime + 0.01);
+      crackleGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      
+      osc.connect(crackleGain);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    }
+    
+    // Modulate main fire volume slightly
+    gainNode.gain.setTargetAtTime(Math.random() * 0.4 + 0.2, ctx.currentTime, 0.1);
+    
+  }, 100);
+  
+  // Return a cleanup function
+  return () => {
+    clearInterval(crackleInterval);
+    try {
+      noiseSource.stop();
+      ctx.close();
+    } catch (e) {}
+  };
+};
 export const playNotificationSound = () => {
   const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioContext) return;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Mail, Save, Calendar, MapPin, Home, Briefcase, Camera, Phone, LayoutDashboard, Building2, UserSquare, Lock, Trash2, AlertTriangle, Flame, Trophy } from 'lucide-react';
+import { User, LogOut, Mail, Save, Calendar, MapPin, Home, Briefcase, Camera, Phone, LayoutDashboard, Building2, UserSquare, Lock, Trash2, AlertTriangle, Flame, Trophy, MessageSquareHeart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { UserProfile, Task } from '../types';
@@ -15,6 +15,7 @@ import {
   getCurrentUser
 } from '../services/authService';
 import { Moon, Sun } from 'lucide-react';
+import { FeedbackModal } from './FeedbackModal';
 
 const DEFAULT_PROFILE: UserProfile = {
     uid: '',
@@ -68,6 +69,9 @@ export const Profile: React.FC = () => {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Feedback State
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   useEffect(() => {
     if (!isEditing) {
@@ -354,6 +358,33 @@ export const Profile: React.FC = () => {
                 </div>
             </div>
         </div>
+
+        {/* Help & Feedback Section */}
+        <div className="glass-panel rounded-[2rem] p-8 border-white/60 dark:border-white/10 mb-6">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+                    <MessageSquareHeart size={20} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Trợ giúp & Phản hồi</h3>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 dark:from-indigo-900/10 dark:to-purple-900/10 p-6 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100">Bạn nghĩ gì về Daily Task?</h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md">
+                        Mọi ý kiến đóng góp của bạn đều giúp chúng tôi cải thiện ứng dụng tốt hơn mỗi ngày. Đừng ngần ngại chia sẻ nhé!
+                    </p>
+                </div>
+                <button 
+                    onClick={() => setShowFeedbackModal(true)}
+                    className="px-6 py-3 w-full sm:w-auto bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 active:scale-95 whitespace-nowrap flex items-center justify-center gap-2"
+                >
+                    <MessageSquareHeart size={18} /> Gửi Góp Ý
+                </button>
+            </div>
+        </div>
+
+        <FeedbackModal isOpen={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} />
     </div>
   );
 

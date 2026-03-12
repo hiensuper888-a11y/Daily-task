@@ -11,6 +11,7 @@ import { FloatingDock } from './components/FloatingDock';
 import { AuthScreen } from './components/AuthScreen';
 import { supabase } from './services/supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import { playFireSound } from './utils/sound';
 
 const TodoList = React.lazy(() => import('./components/TodoList').then(module => ({ default: module.TodoList })));
 const CalendarView = React.lazy(() => import('./components/CalendarView').then(module => ({ default: module.CalendarView })));
@@ -902,9 +903,12 @@ const AppContent: React.FC = () => {
         
         const handleLogoutStart = async () => {
             setIsExiting(true);
+            const stopFireSound = playFireSound();
             
             // Wait for animation to finish
             await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            stopFireSound();
             
             // Actually logout
             try {
@@ -952,24 +956,63 @@ const AppContent: React.FC = () => {
             {isExiting && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none overflow-hidden">
                     {/* Shutters with glowing edges */}
-                    <div className="absolute inset-x-0 top-0 h-1/2 bg-slate-950 animate-shutter-top z-20 border-b border-indigo-500/20 shadow-[0_10px_40px_rgba(99,102,241,0.15)]"></div>
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 animate-shutter-bottom z-20 border-t border-indigo-500/20 shadow-[0_-10px_40px_rgba(99,102,241,0.15)]"></div>
+                    <div className="absolute inset-x-0 top-0 h-1/2 bg-slate-950 animate-shutter-top z-20 border-b border-purple-500/20 shadow-[0_10px_40px_rgba(168,85,247,0.15)]"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 animate-shutter-bottom z-20 border-t border-purple-500/20 shadow-[0_-10px_40px_rgba(168,85,247,0.15)]"></div>
                     
                     {/* Cinematic Vignette */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.9)_100%)] z-10 opacity-0 animate-fade-in" style={{ animationDelay: '0.2s', animationDuration: '1s', animationFillMode: 'both' }}></div>
 
                     <div className="relative z-30 flex flex-col items-center animate-cinematic-fade" style={{ animationDelay: '0.4s', animationDuration: '2.5s', animationFillMode: 'both' }}>
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-indigo-500 blur-[50px] opacity-50 animate-pulse"></div>
-                            <div className="w-24 h-24 bg-slate-900 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_60px_rgba(99,102,241,0.3)] relative z-10 border border-white/10 transform rotate-3">
-                                <LogOut size={40} className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] ml-1 animate-pulse" strokeWidth={2} />
+                        <div className="relative animate-logo-fire-reveal flex items-center justify-center w-64 h-64">
+                            {/* Realistic Purple Fire Behind Logo */}
+                            <div className="absolute inset-0 flex items-end justify-center pb-8 pointer-events-none z-0">
+                                {/* Base Glow */}
+                                <div className="absolute bottom-4 w-48 h-24 bg-purple-700 blur-[40px] opacity-90 animate-pulse-slow rounded-[100%] mix-blend-screen"></div>
+                                <div className="absolute bottom-6 w-32 h-16 bg-fuchsia-500 blur-[20px] opacity-100 animate-pulse rounded-[100%] mix-blend-screen"></div>
+                                
+                                {/* Licking Flames (CSS shapes) */}
+                                <div className="absolute bottom-8 w-full h-full flex items-end justify-center">
+                                    {/* Main central flame */}
+                                    <div className="absolute bottom-0 w-24 h-40 bg-gradient-to-t from-purple-800 via-fuchsia-600 to-transparent rounded-[50%_50%_20%_20%] blur-[8px] animate-fire-wave-intense mix-blend-screen origin-bottom" style={{ animationDuration: '1.2s' }}></div>
+                                    <div className="absolute bottom-0 w-16 h-32 bg-gradient-to-t from-fuchsia-600 via-pink-400 to-transparent rounded-[50%_50%_20%_20%] blur-[4px] animate-fire-wave-intense mix-blend-screen origin-bottom" style={{ animationDuration: '1s', animationDelay: '0.2s' }}></div>
+                                    <div className="absolute bottom-0 w-8 h-20 bg-gradient-to-t from-pink-300 to-white rounded-[50%_50%_20%_20%] blur-[2px] animate-fire-wave-intense mix-blend-screen origin-bottom" style={{ animationDuration: '0.8s', animationDelay: '0.4s' }}></div>
+                                    
+                                    {/* Left side flames */}
+                                    <div className="absolute bottom-2 -left-4 w-16 h-28 bg-gradient-to-t from-purple-700 via-fuchsia-500 to-transparent rounded-[50%_50%_20%_20%] blur-[6px] animate-flame-wobble mix-blend-screen origin-bottom -rotate-12" style={{ animationDuration: '1.5s' }}></div>
+                                    <div className="absolute bottom-4 -left-8 w-12 h-20 bg-gradient-to-t from-purple-800 to-transparent rounded-[50%_50%_20%_20%] blur-[8px] animate-flame-wobble mix-blend-screen origin-bottom -rotate-24" style={{ animationDuration: '1.8s', animationDelay: '0.3s' }}></div>
+                                    
+                                    {/* Right side flames */}
+                                    <div className="absolute bottom-2 -right-4 w-16 h-28 bg-gradient-to-t from-purple-700 via-fuchsia-500 to-transparent rounded-[50%_50%_20%_20%] blur-[6px] animate-flame-wobble mix-blend-screen origin-bottom rotate-12" style={{ animationDuration: '1.4s', animationDelay: '0.1s' }}></div>
+                                    <div className="absolute bottom-4 -right-8 w-12 h-20 bg-gradient-to-t from-purple-800 to-transparent rounded-[50%_50%_20%_20%] blur-[8px] animate-flame-wobble mix-blend-screen origin-bottom rotate-24" style={{ animationDuration: '1.7s', animationDelay: '0.5s' }}></div>
+                                    
+                                    {/* Detached rising flames */}
+                                    <div className="absolute bottom-10 left-4 w-8 h-12 bg-fuchsia-500 rounded-[50%] blur-[4px] animate-flame-rise mix-blend-screen" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }}></div>
+                                    <div className="absolute bottom-12 right-6 w-6 h-10 bg-pink-400 rounded-[50%] blur-[3px] animate-flame-rise mix-blend-screen" style={{ animationDuration: '1.2s', animationDelay: '0.7s' }}></div>
+                                    <div className="absolute bottom-8 left-12 w-10 h-16 bg-purple-500 rounded-[50%] blur-[5px] animate-flame-rise mix-blend-screen" style={{ animationDuration: '1.8s', animationDelay: '0.4s' }}></div>
+                                </div>
+
+                                {/* Rising Purple Sparks */}
+                                <div className="absolute bottom-8 left-[20%] w-2 h-2 bg-fuchsia-300 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }}></div>
+                                <div className="absolute bottom-12 left-[80%] w-1.5 h-1.5 bg-purple-300 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '2.2s', animationDelay: '0.8s' }}></div>
+                                <div className="absolute bottom-10 left-[40%] w-2.5 h-2.5 bg-pink-200 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '1.8s', animationDelay: '0.5s' }}></div>
+                                <div className="absolute bottom-6 left-[60%] w-1 h-1 bg-white rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '2.5s', animationDelay: '0.1s' }}></div>
+                                <div className="absolute bottom-16 left-[30%] w-2 h-2 bg-purple-200 rounded-full animate-spark-rise opacity-0 blur-[2px]" style={{ animationDuration: '1.7s', animationDelay: '0.9s' }}></div>
+                                <div className="absolute bottom-14 left-[70%] w-1.5 h-1.5 bg-pink-100 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '2.0s', animationDelay: '0.3s' }}></div>
+                            </div>
+
+                            {/* Ambient Glow spreading out */}
+                            <div className="absolute inset-[-50%] bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.4)_0%,transparent_70%)] opacity-80 animate-purple-fire-intense mix-blend-screen pointer-events-none"></div>
+                            
+                            {/* Logo Box */}
+                            <div className="w-24 h-24 bg-gradient-to-tr from-purple-950 via-purple-800 to-fuchsia-600 rounded-[2rem] flex items-center justify-center shadow-[0_0_60px_rgba(168,85,247,0.8)] relative z-10 border border-fuchsia-300/40 animate-flame-dance">
+                                <LogOut size={40} className="text-white drop-shadow-[0_0_20px_rgba(255,255,255,1)] ml-1 animate-fire-flicker-intense" strokeWidth={2.5} />
                             </div>
                         </div>
-                        <h2 className="mt-10 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white bg-[length:200%_auto] uppercase drop-shadow-2xl animate-cinematic-text" style={{ animationDelay: '0.6s', animationDuration: '2.4s', animationFillMode: 'both' }}>{t.logout || "Hẹn gặp lại"}</h2>
+                        <h2 className="mt-8 text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-200 to-white bg-[length:200%_auto] uppercase drop-shadow-[0_0_30px_rgba(168,85,247,0.5)] animate-cinematic-text" style={{ animationDelay: '0.6s', animationDuration: '2.4s', animationFillMode: 'both' }}>{t.logout || "Hẹn gặp lại"}</h2>
                         <div className="flex gap-3 mt-8">
-                            <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: '200ms' }}></div>
-                            <div className="w-2 h-2 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: '400ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse shadow-[0_0_15px_rgba(192,132,252,1)]" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse shadow-[0_0_15px_rgba(232,121,249,1)]" style={{ animationDelay: '200ms' }}></div>
+                            <div className="w-2 h-2 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_rgba(244,114,182,1)]" style={{ animationDelay: '400ms' }}></div>
                         </div>
                     </div>
                 </div>

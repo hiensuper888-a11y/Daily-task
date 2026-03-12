@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, RefreshCw, CheckSquare, ArrowRight, Globe } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, RefreshCw, CheckSquare, ArrowRight, Globe, Flame } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { 
@@ -13,6 +13,7 @@ import {
 import { SESSION_KEY } from '../hooks/useRealtimeStorage';
 import { UserProfile } from '../types';
 import { supabase } from '../services/supabaseClient';
+import { playFireSound } from '../utils/sound';
 
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -47,9 +48,20 @@ export const AuthScreen: React.FC = () => {
   const [introStage, setIntroStage] = useState(0);
 
   React.useEffect(() => {
+    // Play fire sound
+    const stopFireSound = playFireSound();
+    
     const t1 = setTimeout(() => setIntroStage(1), 2000);
-    const t2 = setTimeout(() => setIntroStage(2), 3000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t2 = setTimeout(() => {
+        setIntroStage(2);
+        stopFireSound();
+    }, 3000);
+    
+    return () => { 
+        clearTimeout(t1); 
+        clearTimeout(t2); 
+        stopFireSound();
+    };
   }, []);
 
   const languages = [
@@ -307,8 +319,8 @@ export const AuthScreen: React.FC = () => {
       {introStage < 2 && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none overflow-hidden bg-slate-950">
             {/* Shutters with glowing edges */}
-            <div className={`absolute inset-x-0 top-0 h-1/2 bg-slate-950 z-20 border-b border-indigo-500/20 shadow-[0_10px_40px_rgba(99,102,241,0.15)] ${introStage === 1 ? 'animate-shutter-top-reverse' : ''}`}></div>
-            <div className={`absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 z-20 border-t border-indigo-500/20 shadow-[0_-10px_40px_rgba(99,102,241,0.15)] ${introStage === 1 ? 'animate-shutter-bottom-reverse' : ''}`}></div>
+            <div className={`absolute inset-x-0 top-0 h-1/2 bg-slate-950 z-20 border-b border-purple-500/20 shadow-[0_10px_40px_rgba(168,85,247,0.15)] ${introStage === 1 ? 'animate-shutter-top-reverse' : ''}`}></div>
+            <div className={`absolute inset-x-0 bottom-0 h-1/2 bg-slate-950 z-20 border-t border-purple-500/20 shadow-[0_-10px_40px_rgba(168,85,247,0.15)] ${introStage === 1 ? 'animate-shutter-bottom-reverse' : ''}`}></div>
             
             {/* Cinematic Vignette */}
             <div className={`absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.85)_100%)] z-10 transition-opacity duration-1000 ${introStage === 1 ? 'opacity-0' : 'opacity-100'}`}></div>
@@ -321,13 +333,47 @@ export const AuthScreen: React.FC = () => {
             </div>
             
             <div className={`relative z-30 flex flex-col items-center transition-all duration-1000 ease-[cubic-bezier(0.87,0,0.13,1)] ${introStage === 1 ? 'scale-[2] opacity-0 blur-3xl translate-y-10' : 'scale-100 opacity-100 blur-0 translate-y-0'}`}>
-                <div className="relative animate-logo-reveal">
-                    <div className="absolute inset-0 bg-indigo-500 blur-[60px] opacity-50 animate-pulse"></div>
-                    <div className="w-32 h-32 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_80px_rgba(99,102,241,0.4)] relative z-10 border border-white/20">
-                        <CheckSquare size={64} className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] animate-pulse" strokeWidth={2.5} />
+                <div className="relative animate-logo-fire-reveal flex items-center justify-center w-64 h-64">
+                    {/* Purple Sun Fire Surrounding Logo */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                        {/* Massive Sun Glow */}
+                        <div className="absolute w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(217,70,239,0.6)_0%,rgba(147,51,234,0.4)_30%,rgba(88,28,135,0.2)_50%,transparent_70%)] blur-[30px] animate-pulse-slow mix-blend-screen"></div>
+                        
+                        {/* Intense Core */}
+                        <div className="absolute w-40 h-40 bg-white blur-[20px] opacity-40 animate-pulse mix-blend-screen rounded-full"></div>
+                        <div className="absolute w-48 h-48 bg-fuchsia-400 blur-[25px] opacity-70 animate-fire-pulse mix-blend-screen rounded-full"></div>
+
+                        {/* Corona / Licking Flames surrounding */}
+                        <div className="absolute inset-0 flex items-center justify-center animate-[spin_15s_linear_infinite]">
+                            <div className="absolute w-56 h-56 bg-gradient-to-t from-purple-700 via-fuchsia-500 to-transparent rounded-[40%_60%_70%_30%] blur-[8px] animate-flame-wobble mix-blend-screen opacity-90"></div>
+                            <div className="absolute w-56 h-56 bg-gradient-to-r from-purple-700 via-fuchsia-500 to-transparent rounded-[60%_40%_30%_70%] blur-[8px] animate-flame-wobble mix-blend-screen opacity-90" style={{ animationDelay: '0.5s' }}></div>
+                            <div className="absolute w-64 h-64 bg-gradient-to-b from-purple-800 via-pink-500 to-transparent rounded-[50%_50%_20%_20%] blur-[10px] animate-fire-wave-intense mix-blend-screen opacity-80 rotate-45" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="absolute w-64 h-64 bg-gradient-to-l from-purple-800 via-pink-500 to-transparent rounded-[20%_50%_50%_20%] blur-[10px] animate-fire-wave-intense mix-blend-screen opacity-80 -rotate-45" style={{ animationDelay: '0.7s' }}></div>
+                        </div>
+                        
+                        {/* Counter-rotating flames */}
+                        <div className="absolute inset-0 flex items-center justify-center animate-[spin_20s_linear_infinite_reverse]">
+                            <div className="absolute w-60 h-60 bg-gradient-to-tr from-fuchsia-600 via-purple-500 to-transparent rounded-[30%_70%_70%_30%] blur-[12px] animate-flame-wobble mix-blend-screen opacity-70" style={{ animationDelay: '1s' }}></div>
+                            <div className="absolute w-60 h-60 bg-gradient-to-bl from-pink-500 via-purple-600 to-transparent rounded-[70%_30%_30%_70%] blur-[12px] animate-fire-wave-intense mix-blend-screen opacity-70" style={{ animationDelay: '1.5s' }}></div>
+                        </div>
+
+                        {/* Radial Sparks */}
+                        <div className="absolute w-full h-full animate-[spin_10s_linear_infinite]">
+                            <div className="absolute top-0 left-1/2 w-2 h-2 bg-fuchsia-300 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '1.5s', animationDelay: '0.2s' }}></div>
+                            <div className="absolute bottom-0 left-1/2 w-1.5 h-1.5 bg-purple-300 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '2.2s', animationDelay: '0.8s' }}></div>
+                            <div className="absolute left-0 top-1/2 w-2.5 h-2.5 bg-pink-200 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '1.8s', animationDelay: '0.5s' }}></div>
+                            <div className="absolute right-0 top-1/2 w-1 h-1 bg-white rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '2.5s', animationDelay: '0.1s' }}></div>
+                            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-purple-200 rounded-full animate-spark-rise opacity-0 blur-[2px]" style={{ animationDuration: '1.7s', animationDelay: '0.9s' }}></div>
+                            <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-pink-100 rounded-full animate-spark-rise opacity-0 blur-[1px]" style={{ animationDuration: '2.0s', animationDelay: '0.3s' }}></div>
+                        </div>
+                    </div>
+                    
+                    {/* Logo Box */}
+                    <div className="w-32 h-32 bg-gradient-to-tr from-purple-950 via-purple-800 to-fuchsia-600 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_80px_rgba(168,85,247,0.8)] relative z-10 border border-fuchsia-300/40 animate-flame-dance">
+                        <CheckSquare size={64} className="text-white drop-shadow-[0_0_20px_rgba(255,255,255,1)] animate-fire-flicker-intense" strokeWidth={2.5} />
                     </div>
                 </div>
-                <h1 className="mt-12 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white bg-[length:200%_auto] animate-light-sweep tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                <h1 className="mt-8 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-200 to-white bg-[length:200%_auto] animate-light-sweep tracking-tighter drop-shadow-[0_0_30px_rgba(168,85,247,0.5)]">
                     Daily Task
                 </h1>
                 <div className="flex gap-3 mt-10">

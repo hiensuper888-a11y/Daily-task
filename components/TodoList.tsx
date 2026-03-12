@@ -113,6 +113,60 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
       setSearchQuery(''); // Reset search on group switch
   }, [activeGroup?.id]);
 
+  // --- STREAK RECOVERY (Fix bug) ---
+  useEffect(() => {
+    if (currentUserId === 'guest' || tasks.length === 0 || isFetching) return;
+    
+    const hasRecovered = localStorage.getItem('streak_recovered_v4');
+    if (hasRecovered) return;
+
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('en-CA');
+    
+    let calculatedStreak = 0;
+    let checkDate = new Date(today);
+    
+    // Check today
+    const hasToday = tasks.some(t => t.completed && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === todayStr);
+    if (hasToday) {
+        calculatedStreak++;
+    }
+    
+    // Check backwards
+    checkDate.setDate(checkDate.getDate() - 1);
+    while (true) {
+        const dateStr = checkDate.toLocaleDateString('en-CA');
+        const hasTask = tasks.some(t => t.completed && t.completedAt && new Date(t.completedAt).toLocaleDateString('en-CA') === dateStr);
+        if (hasTask) {
+            calculatedStreak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+
+    if (calculatedStreak > (userProfile.currentStreak || 0)) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const newLastDate = hasToday ? todayStr : yesterday.toLocaleDateString('en-CA');
+        
+        setUserProfile(prev => ({
+            ...prev,
+            currentStreak: calculatedStreak,
+            longestStreak: Math.max(prev.longestStreak || 0, calculatedStreak),
+            lastTaskCompletedDate: newLastDate
+        }));
+        
+        supabase.from('profiles').update({
+            current_streak: calculatedStreak,
+            longest_streak: Math.max(userProfile.longestStreak || 0, calculatedStreak),
+            last_task_completed_date: newLastDate
+        }).eq('id', currentUserId).then();
+    }
+    
+    localStorage.setItem('streak_recovered_v4', 'true');
+  }, [tasks, userProfile.currentStreak, userProfile.longestStreak, currentUserId, setUserProfile, isFetching]);
+
   // Fetch tasks from Supabase
   useEffect(() => {
       if (currentUserId === 'guest') return;
@@ -304,8 +358,8 @@ export const TodoList: React.FC<TodoListProps> = ({ activeGroup, onOpenSettings,
     });
 
     if (todayTasks.length === 0) return; // No tasks for today
-    const allCompleted = todayTasks.every(t => t.completed);
-    if (!allCompleted) return; // Not all completed
+    const anyCompleted = todayTasks.some(t => t.completed);
+    if (!anyCompleted) return; // Not any completed
     
     let updatedProfile = { ...userProfile };
     let streakChanged = false;
